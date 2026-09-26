@@ -208,6 +208,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
           <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span></dd>
         </dl>
         <p className="note">&quot;A bad day&quot; is the 1-in-20 worst day of the past year{isFund ? ", for the whole fund" : ""}.</p>
+        {isFund && <Link className="linkb" href={`/fund/${e.symbol}`}>What&apos;s inside {e.symbol} ›</Link>}
         {kind !== "etf" && !isCrypto && <Link className="linkb" href={`/company/${e.symbol}`}>Open {e.symbol} ›</Link>}
       </div>
     </div>

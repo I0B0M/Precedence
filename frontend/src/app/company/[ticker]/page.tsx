@@ -99,6 +99,7 @@ export default function CompanyScreen() {
             <>
               <p className="say-big">{co.kind === "etf" ? "Funds hold many stocks; open a stock to see its signals." : "Nothing unusual is happening. No need to do anything."}</p>
               {isFund && <MarketCard where="self" onlyFor={co.ticker} />}
+              {isFund && <Link className="linkb" href={`/fund/${co.ticker}`}>See what&apos;s inside {co.ticker} ›</Link>}
             </>
           )}
           <div className="stack" style={{ gap: 6, marginTop: 6 }}>

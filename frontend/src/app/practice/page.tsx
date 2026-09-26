@@ -146,7 +146,7 @@ export default function PracticeScreen() {
                 const c = price.get(sym);
                 const e = board?.exposure.find((x) => x.symbol === sym);
                 return (
-                  <Link key={sym} href={`/company/${sym}`} className="list-row" style={{ alignItems: "center" }}>
+                  <Link key={sym} href={c?.kind === "etf" ? `/fund/${sym}` : `/company/${sym}`} className="list-row" style={{ alignItems: "center" }}>
                     <span>
                       <b>{sym}</b> <span className="mute">{sharesText(sh)} share{sh === 1 ? "" : "s"}</span>
                       {e && <span className="note" style={{ display: "block" }}>{c?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>}
