@@ -138,7 +138,7 @@ export default function CompanyScreen() {
             ) : (
               <>
                 <p className="mute">You don&apos;t own {co.ticker}. Bring in what you own and this shows it in dollars.</p>
-                <Link className="btn light small" href="/import" style={{ alignSelf: "flex-start" }}>Bring holdings in</Link>
+                <Link className="btn light small" href="/import" style={{ alignSelf: "flex-start" }}>Add an account</Link>
               </>
             )}
             {mine && <p className="note">&quot;A bad day&quot; is this {isFund ? "fund" : "stock"}&apos;s 1-in-20 worst day of the past year.</p>}

@@ -33,7 +33,7 @@ export default function HoldingsBoard() {
       <div className="empty">
         <h2>Nothing here yet</h2>
         <p className="mute">Bring in what you own and Stone will tell you the one thing that matters today.</p>
-        <Link className="btn" href="/import">Bring holdings in</Link>
+        <Link className="btn" href="/import">Add an account</Link>
       </div>
     );
   }
@@ -108,7 +108,7 @@ export default function HoldingsBoard() {
       </div>
 
       <div className="row-flex" style={{ marginTop: 20 }}>
-        <Link className="btn light small" href="/import">Change holdings</Link>
+        <Link className="btn small" href="/import">Add an account</Link>
         {status?.data === "sample" && (
           <button className="linkb" type="button" onClick={() => setHoldings(SAMPLE_PORTFOLIO)}>Reset to the sample portfolio</button>
         )}

@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMode, type Mode } from "@/lib/mode";
 
+// Bringing holdings in lives on the Portfolio page ("Add an account") and in the start flow, not in the nav.
 const LINKS = [
-  { href: "/", label: "What you own" },
-  { href: "/lab", label: "Test it" },
-  { href: "/import", label: "Bring holdings in" },
+  { href: "/", label: "Portfolio" },
+  { href: "/lab", label: "Does it matter?" },
+  { href: "/practice", label: "Practice" },
 ];
+const PORTFOLIO_PATHS = ["/company", "/import"];
 
 const MODES: { value: Mode; label: string }[] = [
   { value: "lite", label: "Lite" },
@@ -34,7 +36,7 @@ export function Header() {
       <nav className="nav" aria-label="Main">
         {LINKS.map((l) => (
           <Link key={l.href} href={l.href}
-            aria-current={(l.href === "/" ? path === "/" || path.startsWith("/company") : path.startsWith(l.href)) ? "page" : undefined}>
+            aria-current={(l.href === "/" ? path === "/" || PORTFOLIO_PATHS.some((p) => path.startsWith(p)) : path.startsWith(l.href)) ? "page" : undefined}>
             {l.label}
           </Link>
         ))}
