@@ -101,6 +101,16 @@ def company(ticker: str, c: psycopg.Connection = Conn):
     }
 
 
+@app.get("/api/scan")
+def scan(c: psycopg.Connection = Conn):
+    """The latest full scan: how many stock-signal pairs were tested and how many came out STRONG."""
+    row = c.execute("select * from signal_scans order by run_at desc limit 1").fetchone()
+    if not row:
+        return None
+    return {**row, "run_at": row["run_at"].isoformat(), "as_of": row["as_of"].isoformat(),
+            "expected_by_chance": float(row["expected_by_chance"])}
+
+
 @app.get("/api/lab/signals")
 def lab_signals():
     return [{"key": s.key, "lite": s.lite, "pro": s.pro, "horizon": s.horizon} for s in engine.SPECS.values()]

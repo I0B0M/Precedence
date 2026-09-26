@@ -27,7 +27,28 @@ export interface SignalResult {
   high: number | null;
   label: Label;
   firing: { known_at: string; note: string } | null;
+  holdout: { first: Half; second: Half; held_up: boolean } | null;
   cases?: Case[];
+}
+
+export interface Half {
+  n: number;
+  hits: number;
+  hit_rate: number | null;
+  normal_rate: number | null;
+  normal_n: number;
+  label: Label;
+}
+
+export interface Scan {
+  run_at: string;
+  stocks: number;
+  tested: number;
+  eligible: number;
+  strong: number;
+  strong_held_up: number;
+  expected_by_chance: number;
+  as_of: string;
 }
 
 export interface Status {
@@ -161,6 +182,7 @@ export const api = {
   status: () => call<Status>("/api/status"),
   companies: () => call<CompanyRow[]>("/api/companies"),
   company: (t: string) => call<CompanyDetail>(`/api/companies/${encodeURIComponent(t)}`),
+  scan: () => call<Scan | null>("/api/scan"),
   labSignals: () => call<{ key: string; lite: string; pro: string; horizon: number }[]>("/api/lab/signals"),
   lab: (t: string, s: string) => call<SignalResult>(`/api/lab/${encodeURIComponent(t)}/${s}`),
   portfolio: (holdings: Holding[]) => call<PortfolioOut>("/api/portfolio", post({ holdings })),

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { HitDots, LabelTag } from "@/components/bits";
+import { HitDots, HoldoutNote, LabelTag } from "@/components/bits";
 import { api, type CompanyRow, type SignalResult } from "@/lib/api";
 import { horizonWords, pct, shortDate, whole } from "@/lib/format";
 import { liteHistory, liteVerdict } from "@/lib/words";
@@ -104,6 +104,10 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
             )}
           </div>
         </div>
+      )}
+
+      {r.holdout && (
+        <p className="pro-only">Split-half hold-out: <HoldoutNote s={r} /></p>
       )}
 
       {r.firing && (

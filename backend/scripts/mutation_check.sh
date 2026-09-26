@@ -37,5 +37,7 @@ mut "skipped event never firing"       "            if i + h - 1 >= len(bars):
                 firing = ev
             continue"                  "            continue"
 mut "WATCH ignores the label"          'r.firing and r.label == STRONG'      'r.firing'
+mut "held up if either half holds"     "        return all(h.hit_rate"           "        return any(h.hit_rate"
+mut "hold-out never runs"                 "if r.label == STRONG else r"            "if False else r"
 cmp -s "$BAK" "$F" && echo "engine.py restored, identical to original"
 rm "$BAK" "$OUT"

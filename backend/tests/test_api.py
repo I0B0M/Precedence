@@ -43,6 +43,9 @@ def test_unknown_company_is_404(client):
 def test_signal_lab_returns_cases(client):
     body = client.get("/api/lab/MRDN/rate_jump").json()
     assert body["label"] == "STRONG" and len(body["cases"]) == body["n"] == 12
+    h = body["holdout"]
+    assert h["first"]["n"] + h["second"]["n"] == 12 and isinstance(h["held_up"], bool)
+    assert client.get("/api/lab/ORCA/gap_down").json()["holdout"] is None  # only STRONG gets one
     assert client.get("/api/lab/MRDN/moon_phase").status_code == 404
     assert client.get("/api/lab/BRD500/gap_down").status_code == 400
 
@@ -70,3 +73,10 @@ def test_screenshot_import_says_not_connected_without_key(client, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "")
     r = client.post("/api/import/screenshot", files={"file": ("s.png", b"\x89PNG", "image/png")})
     assert r.status_code == 503 and "isn't connected yet" in r.json()["detail"]
+
+
+def test_scan_is_empty_until_a_scan_runs(client):
+    conn = db.connect(os.environ["DATABASE_URL"])
+    conn.execute("delete from signal_scans")
+    conn.commit()
+    assert client.get("/api/scan").json() is None

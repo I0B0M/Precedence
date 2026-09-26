@@ -28,6 +28,13 @@ def result_json(r: engine.Result, with_cases: bool = True) -> dict:
         "low": r.low, "high": r.high, "label": r.label,
         "firing": {"known_at": r.firing.known_at.isoformat(), "note": r.firing.note} if r.firing else None,
     }
+    if r.holdout:
+        half = lambda h: {"n": h.n, "hits": h.hits, "hit_rate": h.hit_rate, "normal_rate": h.normal_rate,
+                          "normal_n": h.normal_n, "label": h.label}
+        out["holdout"] = {"first": half(r.holdout.first), "second": half(r.holdout.second),
+                          "held_up": r.holdout.held_up}
+    else:
+        out["holdout"] = None
     if with_cases:
         out["cases"] = [{"known_at": c.known_at.isoformat(), "entry_day": c.entry_day.isoformat(),
                          "exit_day": c.exit_day.isoformat(), "ret": c.ret, "hit": c.hit, "note": c.note}

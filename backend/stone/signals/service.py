@@ -44,11 +44,11 @@ def run_all(conn: psycopg.Connection, ticker: str, rates: list[tuple] | None = N
     bars = load_bars(conn, ticker)
     rates = load_rates(conn) if rates is None else rates
     sales = load_sales(conn, ticker)
-    return {key: engine.evaluate(spec, bars, events_for(key, bars, rates, sales))
+    return {key: engine.test_signal(spec, bars, events_for(key, bars, rates, sales))
             for key, spec in engine.SPECS.items()}
 
 
 def run_one(conn: psycopg.Connection, ticker: str, spec_key: str) -> engine.Result:
     bars = load_bars(conn, ticker)
     spec = engine.SPECS[spec_key]
-    return engine.evaluate(spec, bars, events_for(spec_key, bars, load_rates(conn), load_sales(conn, ticker)))
+    return engine.test_signal(spec, bars, events_for(spec_key, bars, load_rates(conn), load_sales(conn, ticker)))

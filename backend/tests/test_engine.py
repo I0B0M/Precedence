@@ -214,3 +214,30 @@ def test_watch_only_when_a_strong_signal_is_firing():
     weak_live = e.evaluate(spec, bars, [e.Event(at(bars[-1].day, 17), "now")])
     assert weak_live.label == e.WEAK and weak_live.firing
     assert e.holding_state([weak_live]) == e.CALM
+
+
+def test_strong_result_gets_a_holdout_that_held_up():
+    spec = e.Spec("t", "", "", 5)
+    r = e.test_signal(spec, *strong_setup(fire_now=False))
+    assert r.label == e.STRONG and r.holdout is not None
+    assert r.holdout.first.n + r.holdout.second.n == r.n
+    assert r.holdout.first.n > 0 and r.holdout.second.n > 0
+    assert r.holdout.held_up
+
+
+def test_holdout_fails_when_one_half_does_not_hold():
+    bars, evs = strong_setup(fire_now=False)
+    half = len(bars) // 2
+    for i in range(half, len(bars)):  # second half: events are followed by rises, normal days fall
+        falling = bars[i].close < bars[i].open
+        bars[i] = B(bars[i].day, 100, 103 if falling else 99.5)
+    h = e.holdout(e.Spec("t", "", "", 5), bars, evs)
+    assert h.first.hit_rate > h.first.normal_rate
+    assert h.second.hit_rate < h.second.normal_rate
+    assert not h.held_up
+
+
+def test_only_strong_results_get_a_holdout():
+    bars = flat_bars(30)
+    r = e.test_signal(e.Spec("t", "", "", 5), bars, [e.Event(at(bars[5].day, 17), "x")])
+    assert r.label == e.WEAK and r.holdout is None

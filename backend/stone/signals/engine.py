@@ -10,11 +10,13 @@ Pure functions, no I/O. For each signal:
   6. label: WEAK if fewer than 10 cases; STRONG only if the range's low end is
      above the normal rate; otherwise NOT PROVEN
 A holding is WATCH only when a STRONG signal is firing right now.
+Every STRONG result also gets a split-half hold-out (first vs second half of the
+history); Pro shows whether it held up in both.
 """
 
 import bisect
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
 from typing import Protocol
 from zoneinfo import ZoneInfo
@@ -82,6 +84,19 @@ class Result:
     label: str
     firing: Event | None
     cases: list[Case] = field(default_factory=list)
+    holdout: "Holdout | None" = None
+
+
+@dataclass(frozen=True)
+class Holdout:
+    """The same test run separately on each half of the history."""
+    first: "Result"
+    second: "Result"
+
+    @property
+    def held_up(self) -> bool:
+        return all(h.hit_rate is not None and h.normal_rate is not None and h.hit_rate > h.normal_rate
+                   for h in (self.first, self.second))
 
 
 # ---------- statistics ----------
@@ -223,6 +238,21 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event]) -> Result:
         low=low, high=high, label=label_for(n, low if low is not None else 0.0, normal_rate),
         firing=firing, cases=cases,
     )
+
+
+def holdout(spec: Spec, bars: list[BarLike], events: list[Event]) -> Holdout:
+    bars = sorted(bars, key=lambda b: b.day)
+    mid = len(bars) // 2
+    cut = open_at(bars[mid].day)
+    first = evaluate(spec, bars[:mid], [e for e in events if e.known_at < cut])
+    second = evaluate(spec, bars[mid:], [e for e in events if e.known_at >= cut])
+    return Holdout(first, second)
+
+
+def test_signal(spec: Spec, bars: list[BarLike], events: list[Event]) -> Result:
+    """evaluate(), plus the split-half hold-out for anything that comes out STRONG."""
+    r = evaluate(spec, bars, events)
+    return replace(r, holdout=holdout(spec, bars, events)) if r.label == STRONG else r
 
 
 def holding_state(results: list[Result]) -> str:

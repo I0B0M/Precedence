@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { HitDots, LabelTag, StateBadge } from "@/components/bits";
+import { HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
 import { PriceChart, type Pin } from "@/components/PriceChart";
-import { api, type CompanyDetail, type ExposureRow } from "@/lib/api";
+import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
 import { bigMoney, dateTimeET, money, pct, shortDate, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
@@ -16,8 +16,10 @@ export default function CompanyScreen() {
   const [d, setD] = useState<CompanyDetail | null>(null);
   const [mine, setMine] = useState<ExposureRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scan, setScan] = useState<Scan | null>(null);
 
   useEffect(() => {
+    api.scan().then(setScan).catch(() => {});
     api.company(ticker).then((body) => {
       setD(body);
       const holdings = readHoldings() ?? (body.company.source === "sample" ? SAMPLE_PORTFOLIO : []);
@@ -138,7 +140,7 @@ export default function CompanyScreen() {
             <h3>Signals tested on {co.ticker}&apos;s own history</h3>
             <div className="tscroll">
               <table>
-                <thead><tr><th>Signal</th><th className="num">Cases</th><th className="num">Lower after</th><th className="num">Normal days</th><th className="num">90% range</th><th>Verdict</th><th>Now</th><th /></tr></thead>
+                <thead><tr><th>Signal</th><th className="num">Cases</th><th className="num">Lower after</th><th className="num">Normal days</th><th className="num">90% range</th><th>Verdict</th><th>Hold-out</th><th>Now</th><th /></tr></thead>
                 <tbody>
                   {d.signals.map((s) => (
                     <tr key={s.signal}>
@@ -148,6 +150,7 @@ export default function CompanyScreen() {
                       <td className="num">{whole(s.normal_rate)}<div className="note">of {s.normal_n} days</div></td>
                       <td className="num">{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</td>
                       <td><LabelTag label={s.label} /></td>
+                      <td><HoldoutNote s={s} /></td>
                       <td>{s.firing ? <b>firing</b> : <span className="mute">—</span>}</td>
                       <td><Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>cases</Link></td>
                     </tr>
@@ -157,6 +160,7 @@ export default function CompanyScreen() {
             </div>
             <p className="note">STRONG only when the range&apos;s low end beats the normal-day rate. Fewer than 10 cases is always WEAK.
               Timed from SEC acceptance; measured from the next market open.</p>
+            <ScanLine scan={scan} />
           </div>
         )}
 

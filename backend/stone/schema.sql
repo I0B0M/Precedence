@@ -97,6 +97,20 @@ create table if not exists etf_holdings (
     primary key (etf, holding, as_of)
 );
 
+-- One row per full scan of every stock x signal, so "how many did you test?" has a real answer.
+-- expected_by_chance = 5% of the eligible pairs: the low end of a 90% range sits above the
+-- true rate about 1 time in 20 by luck alone.
+create table if not exists signal_scans (
+    run_at             timestamptz primary key,
+    stocks             integer not null,
+    tested             integer not null,
+    eligible           integer not null,  -- pairs with 10+ cases (only these can be STRONG)
+    strong             integer not null,
+    strong_held_up     integer not null,
+    expected_by_chance numeric not null,
+    as_of              date not null
+);
+
 -- Tiger Data runs TimescaleDB: make prices a hypertable there. Plain Postgres
 -- (local fallback) has no extension, so this block does nothing.
 do $$
