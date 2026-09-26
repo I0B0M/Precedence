@@ -34,15 +34,18 @@ function subscribe(cb: () => void) {
   };
 }
 
-const ModeContext = createContext<{ mode: Mode; toggle: () => void }>({ mode: "lite", toggle: () => {} });
+const ModeContext = createContext<{ mode: Mode; toggle: () => void; set: (m: Mode) => void }>({
+  mode: "lite", toggle: () => {}, set: () => {},
+});
 
 export function ModeProvider({ children }: { children: React.ReactNode }) {
   const mode = useSyncExternalStore(subscribe, read, () => "lite" as Mode);
+  // layout.tsx sets data-mode before first paint; this keeps it in step afterwards
   useEffect(() => {
-    document.body.classList.toggle("pro", mode === "pro");
+    document.documentElement.dataset.mode = mode;
   }, [mode]);
   const toggle = useCallback(() => write(read() === "lite" ? "pro" : "lite"), []);
-  return <ModeContext.Provider value={{ mode, toggle }}>{children}</ModeContext.Provider>;
+  return <ModeContext.Provider value={{ mode, toggle, set: write }}>{children}</ModeContext.Provider>;
 }
 
 export const useMode = () => useContext(ModeContext);

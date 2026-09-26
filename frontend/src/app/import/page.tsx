@@ -6,6 +6,11 @@ import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib
 import { money } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 
+const CONNECT = [
+  { name: "Robinhood", what: "Stocks and funds" },
+  { name: "Binance", what: "Crypto" },
+];
+
 type EditRow = { symbol: string; shares: string; price: string; value: string };
 
 const toEdit = (r: ReadRow): EditRow => ({
@@ -92,17 +97,37 @@ export default function ImportScreen() {
   return (
     <section className="stack" style={{ gap: 22 }}>
       <div className="stack" style={{ gap: 8 }}>
-        <span className="ticker">Bring holdings in</span>
-        <h1>Snap a screenshot of any app</h1>
-        <p className="mute" style={{ maxWidth: "60ch" }}>
-          We read the rows, then check they add up to the total printed on your screen. If they don&apos;t, we find the misread
-          before anything is saved.
-        </p>
+        <span className="ticker">Add an account</span>
+        <h1>Bring in what you own</h1>
+        <p className="lede">Connect an account, or add a screenshot of any app. Stone only reads what you own; it can never trade or move money.</p>
+      </div>
+
+      {/* Connecting isn't built yet (no SnapTrade endpoint), so these stay disabled. Never fake a connection. */}
+      <div className="card">
+        <h3>Connect an account</h3>
+        <div className="list">
+          {CONNECT.map((c) => (
+            <div key={c.name} className="list-row" style={{ alignItems: "center" }}>
+              <span><b>{c.name}</b><span className="note" style={{ display: "block" }}>{c.what} · read-only</span></span>
+              <button className="btn light small" type="button" disabled>Connecting opens soon</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="stack" style={{ gap: 12, marginTop: 8 }}>
+        <h2>Your app isn&apos;t here? Add a screenshot</h2>
+        <p className="mute">We read the rows, then check they add up to the total printed on your screen. If they don&apos;t, we find the misread
+          before anything is saved.</p>
       </div>
 
       <div className="drop">
-        <b>Screenshot from Robinhood, Cash App, Webull, anything</b>
-        <input type="file" accept="image/*" disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+        <b>A screenshot from Cash App, Webull, Fidelity, anything</b>
+        <label className={`btn${busy ? " is-busy" : ""}`}>
+          <input className="sr-only" type="file" accept="image/*" disabled={busy}
+            onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+          {busy ? "Reading…" : "Choose a screenshot"}
+        </label>
         {busy && <span className="note">Reading your screenshot…</span>}
         {note && <span className="badline">{note}</span>}
         {status?.data === "sample" && (
@@ -111,7 +136,8 @@ export default function ImportScreen() {
       </div>
 
       <div className="card">
-        <h3>What we read</h3>
+        <h3>Check the rows</h3>
+        <p className="note">No screenshot? Type your holdings here instead.</p>
         <div className="tscroll">
           <table className="readtable">
             <thead><tr><th>Ticker</th><th>Shares</th><th>Price</th><th>Value</th><th /></tr></thead>
@@ -147,9 +173,9 @@ export default function ImportScreen() {
         </div>
         <div className="row-flex">
           <label htmlFor="total"><b>Total shown on your screen</b></label>
-          <input id="total" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); }} inputMode="decimal"
-            style={{ border: "var(--soft)", background: "var(--bg)", borderRadius: 8, padding: "6px 8px", width: 160 }} />
-          <button className="btn" type="button" onClick={() => runCheck()}>Check it adds up</button>
+          <input id="total" className="field" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); }} inputMode="decimal"
+            style={{ width: 160 }} />
+          <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
 
         {check && (
@@ -158,15 +184,11 @@ export default function ImportScreen() {
           </div>
         )}
         <div className="row-flex">
-          <button className="btn hl" type="button" disabled={check?.status !== "ok"} onClick={save}>Save as my holdings</button>
+          <button className="btn" type="button" disabled={check?.status !== "ok"} onClick={save}>Save as my holdings</button>
           {check && check.status !== "ok" && <span className="note">Saving unlocks once the rows add up to the total.</span>}
         </div>
       </div>
 
-      <div className="card">
-        <h3>Robinhood, read-only</h3>
-        <p className="mute">Connecting Robinhood directly (through SnapTrade, read-only) is coming next. We will never be able to trade or move money.</p>
-      </div>
     </section>
   );
 }

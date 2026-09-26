@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 const API = process.env.STONE_API_URL ?? "http://localhost:8000";
 
 const nextConfig: NextConfig = {
+  devIndicators: false, // keep the dev bubble out of screenshots and the demo video
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${API}/api/:path*` }];
   },

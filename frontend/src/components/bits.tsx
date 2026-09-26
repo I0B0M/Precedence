@@ -1,7 +1,9 @@
 import type { Label, Scan, SignalResult, State } from "@/lib/api";
 import { whole } from "@/lib/format";
 
-export function StateBadge({ state }: { state: State }) {
+/** CALM / WATCH. A fund or stock the engine hasn't tested gets a quiet "Not tested", never "Calm". */
+export function StateBadge({ state }: { state: State | null }) {
+  if (state == null) return <span className="badge untested">Not tested</span>;
   return (
     <span className={`badge ${state === "WATCH" ? "watch" : "calm"}`}>
       <span className="lite-only">{state === "WATCH" ? "Heads up" : "Calm"}</span>
@@ -19,8 +21,14 @@ export function HitDots({ cases, vsMarket = false }: { cases: { hit: boolean }[]
   if (!cases.length) return null;
   const what = vsMarket ? "did worse than the market" : "were lower";
   return (
-    <div className="hitdots" role="img" aria-label={`${cases.filter((c) => c.hit).length} of ${cases.length} ${what}`}>
-      {cases.map((c, i) => <i key={i} className={c.hit ? "h" : undefined} />)}
+    <div className="stack" style={{ gap: 8 }}>
+      <div className="hitdots" role="img" aria-label={`${cases.filter((c) => c.hit).length} of ${cases.length} ${what}`}>
+        {cases.map((c, i) => <i key={i} className={c.hit ? "h" : undefined} style={{ "--i": i } as React.CSSProperties} />)}
+      </div>
+      <p className="note dotkey" aria-hidden>
+        <span><i className="h" /> {vsMarket ? "did worse than the market" : "was lower after"}</span>
+        <span><i /> didn&apos;t</span>
+      </p>
     </div>
   );
 }
@@ -32,8 +40,8 @@ export function HoldoutNote({ s }: { s: SignalResult }) {
   return (
     <span>
       <b>{held_up ? "held up" : "did not hold"}</b>
-      <div className="note">1st half {first.n} cases {whole(first.hit_rate)} vs {whole(first.normal_rate)} ·
-        2nd half {second.n} cases {whole(second.hit_rate)} vs {whole(second.normal_rate)}</div>
+      <span className="note" style={{ display: "block" }}>1st half {first.n} cases {whole(first.hit_rate)} vs {whole(first.normal_rate)} ·
+        2nd half {second.n} cases {whole(second.hit_rate)} vs {whole(second.normal_rate)}</span>
     </span>
   );
 }
