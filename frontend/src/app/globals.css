@@ -124,7 +124,7 @@ html[data-mode="pro"] .grid2.pro-only { display: grid !important; }
   cursor: pointer; flex: none; position: relative;
   transition: background-color 0.2s var(--ease), transform 0.2s var(--ease);
 }
-.osw::before { content: ""; position: absolute; inset: -10px; }   /* 44px-ish hit area without changing the letter */
+.osw::before { content: ""; position: absolute; inset: -13px; }   /* ~45px hit area */   /* 44px-ish hit area without changing the letter */
 .osw:hover { transform: scale(1.06); }
 .osw:active { transform: scale(0.94); }
 .osw[aria-checked="true"] { background: var(--accent); }
@@ -424,6 +424,22 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
   .practice-banner { top: 96px; }
   .say-big { font-size: 18px; }
 }
+/* Phone: every tap target at least 44px, without changing how tables lay out. */
+@media (max-width: 640px) {
+  .nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0; }
+  .seg button { min-height: 44px; padding: 8px 18px; }
+  .seg { padding: 2px; }
+  .btn, .btn.small { min-height: 44px; }
+  .linkb { min-height: 44px; }
+  .quick button { min-height: 44px; padding: 8px 14px; }
+  .field, .select, .readtable input { min-height: 44px; }
+  .seg-choice button { min-height: 44px; }
+  .list-row { min-height: 44px; }
+  td a { display: inline-block; min-width: 44px; padding: 13px 14px 13px 0; margin: -13px -14px -13px 0; }
+  .receipt .kv { font-size: 16px; }
+  .receipt .kv dd { white-space: normal; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
