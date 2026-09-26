@@ -203,7 +203,7 @@ export default function ImportScreen() {
 
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Everything else you own</h2>
-        <p className="mute">A home, a 401(k) or an IRA. Stone keeps what you type; values show only once there&apos;s a real estimate.</p>
+        <p className="mute">A home, a 401(k) or an IRA, crypto. Stone keeps what you type; values show only once there&apos;s a real estimate.</p>
       </div>
       <OtherAssetsForms />
     </section>

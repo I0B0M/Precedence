@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { money } from "@/lib/format";
-import { addProperty, addRetirement, removeOther, useOtherAssets, type RetirementFund } from "@/lib/other-assets";
+import { addCrypto, addProperty, addRetirement, removeOther, useOtherAssets, type RetirementFund } from "@/lib/other-assets";
 
 const num = (s: string) => {
   const v = Number(s.replace(/[$,\s]/g, ""));
@@ -21,6 +21,9 @@ export function OtherAssetsForms() {
   const [funds, setFunds] = useState([{ name: "", amount: "" }]);
   const [fundsSaved, setFundsSaved] = useState(false);
 
+  const [coins, setCoins] = useState([{ symbol: "", amount: "" }]);
+  const [coinsSaved, setCoinsSaved] = useState(false);
+  const coinRows = coins.filter((c) => /^[A-Za-z0-9.]{2,10}$/.test(c.symbol.trim()) && num(c.amount) != null);
   const homeOk = place.trim().length > 1 && num(price) != null && /^\d{4}-\d{2}$/.test(bought);
   const fundRows = funds.filter((f) => f.name.trim() && num(f.amount) != null);
 
@@ -66,6 +69,26 @@ export function OtherAssetsForms() {
         {fundsSaved && <p className="okline">Saved. Funds show on your portfolio; matching them to an index comes next.</p>}
         <p className="note">A screenshot of a 401(k) statement: coming soon. The reader handles stock tickers today, not fund names.</p>
       </div>
+
+      <div className="card">
+        <h3>Add crypto</h3>
+        <p className="note">Symbol and how much you hold, as your wallet or exchange shows it. Fractions are fine (0.035).</p>
+        {coins.map((c, i) => (
+          <div key={i} className="fund-row">
+            <input className="field" aria-label={`Crypto symbol ${i + 1}`} placeholder="BTC" value={c.symbol} autoCapitalize="characters"
+              onChange={(e) => { setCoins(coins.map((x, j) => (j === i ? { ...x, symbol: e.target.value.toUpperCase() } : x))); setCoinsSaved(false); }} />
+            <input className="field" aria-label={`Amount held ${i + 1}`} placeholder="0.035" inputMode="decimal" value={c.amount}
+              onChange={(e) => { setCoins(coins.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x))); setCoinsSaved(false); }} />
+          </div>
+        ))}
+        <button className="linkb" type="button" onClick={() => setCoins([...coins, { symbol: "", amount: "" }])}>Add a coin</button>
+        <button className="btn" type="button" disabled={!coinRows.length} style={{ alignSelf: "flex-start" }}
+          onClick={() => { addCrypto(coinRows.map((c) => ({ symbol: c.symbol.trim().toUpperCase(), amount: num(c.amount)! }))); setCoins([{ symbol: "", amount: "" }]); setCoinsSaved(true); }}>
+          Add {coinRows.length > 1 ? `${coinRows.length} coins` : "this coin"}
+        </button>
+        {coinsSaved && <p className="okline">Saved. It shows on your portfolio as &quot;Price coming soon&quot;.</p>}
+        <p className="note">Stone doesn&apos;t price crypto yet, so we keep what you typed and show no dollar value until it does.</p>
+      </div>
     </div>
   );
 }
@@ -73,7 +96,7 @@ export function OtherAssetsForms() {
 /** Board: what you added that Stone can't value or test yet. Not counted in the total. */
 export function OtherAssetsRows() {
   const v = useOtherAssets();
-  if (!v.properties.length && !v.retirement.length) return null;
+  if (!v.properties.length && !v.retirement.length && !v.crypto.length) return null;
   return (
     <div className="stack" style={{ gap: 10, marginTop: 24 }}>
       <span className="ticker">Also yours</span>
@@ -95,6 +118,16 @@ export function OtherAssetsRows() {
               <span className="say">{money(r.amount)}, as you entered it. Matching this fund to an index comes next.</span>
               <span className="val">{money(r.amount)}<small className="mute">you entered</small></span>
               <span className="hend"><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`}>Remove</button></span>
+            </div>
+          </div>
+        ))}
+        {v.crypto.map((c) => (
+          <div key={c.id} className="hitem">
+            <div className="hrow other">
+              <span><span className="tk">{c.symbol}</span><span className="nm">Crypto</span></span>
+              <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol}, as you entered it. Price coming soon.</span>
+              <span className="val">Price<small className="mute">coming soon</small></span>
+              <span className="hend"><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`}>Remove</button></span>
             </div>
           </div>
         ))}
