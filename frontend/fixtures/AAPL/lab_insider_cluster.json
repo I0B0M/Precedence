@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "endpoint": "GET /api/lab/AAPL/insider_cluster",
+    "as_of": "2026-09-25",
+    "generated_at": "2026-09-26T18:11:41+00:00",
+    "sources": [
+      "alpaca-iex",
+      "fred",
+      "sec"
+    ]
+  },
+  "data": {
+    "signal": "insider_cluster",
+    "lite": "Executives sold shares",
+    "pro": "Insider selling cluster: 3+ Form 4 sales in 10 days",
+    "horizon": 20,
+    "n": 3,
+    "hits": 1,
+    "hit_rate": 0.3333333333333333,
+    "normal_n": 392,
+    "normal_hits": 157,
+    "normal_rate": 0.4005102040816326,
+    "low": 0.0782657263337284,
+    "high": 0.7464661317187758,
+    "label": "WEAK",
+    "firing": null,
+    "holdout": null,
+    "cases": [
+      {
+        "known_at": "2024-10-03T18:30:40-04:00",
+        "entry_day": "2024-10-04",
+        "exit_day": "2024-10-31",
+        "ret": -0.009608634608634592,
+        "hit": true,
+        "note": "2024-10-03: 3 insider sale filings in 10 days"
+      },
+      {
+        "known_at": "2025-04-03T18:33:37-04:00",
+        "entry_day": "2025-04-04",
+        "exit_day": "2025-05-02",
+        "ret": 0.05870826350393199,
+        "hit": false,
+        "note": "2025-04-03: 3 insider sale filings in 10 days"
+      },
+      {
+        "known_at": "2025-10-03T18:33:53-04:00",
+        "entry_day": "2025-10-06",
+        "exit_day": "2025-10-31",
+        "ret": 0.0481617148283815,
+        "hit": false,
+        "note": "2025-10-03: 3 insider sale filings in 10 days"
+      }
+    ]
+  }
+}

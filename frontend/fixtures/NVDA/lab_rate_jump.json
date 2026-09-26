@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "endpoint": "GET /api/lab/NVDA/rate_jump",
+    "as_of": "2026-09-25",
+    "generated_at": "2026-09-26T18:11:41+00:00",
+    "sources": [
+      "alpaca-iex",
+      "fred",
+      "sec"
+    ]
+  },
+  "data": {
+    "signal": "rate_jump",
+    "lite": "Interest rates jumped",
+    "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+    "horizon": 5,
+    "n": 15,
+    "hits": 8,
+    "hit_rate": 0.5333333333333333,
+    "normal_n": 396,
+    "normal_hits": 176,
+    "normal_rate": 0.4444444444444444,
+    "low": 0.33315492963762094,
+    "high": 0.723324556721703,
+    "label": "NOT PROVEN",
+    "firing": {
+      "known_at": "2026-09-25T16:15:00-04:00",
+      "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+    },
+    "holdout": null,
+    "cases": [
+      {
+        "known_at": "2024-10-07T16:15:00-04:00",
+        "entry_day": "2024-10-08",
+        "exit_day": "2024-10-14",
+        "ret": 0.060313075506445823,
+        "hit": false,
+        "note": "2024-10-04: 10-year yield 3.98%, up 0.23 pt in a week"
+      },
+      {
+        "known_at": "2024-10-23T16:15:00-04:00",
+        "entry_day": "2024-10-24",
+        "exit_day": "2024-10-30",
+        "ret": -0.010790856169246132,
+        "hit": true,
+        "note": "2024-10-22: 10-year yield 4.20%, up 0.17 pt in a week"
+      },
+      {
+        "known_at": "2024-11-13T16:15:00-05:00",
+        "entry_day": "2024-11-14",
+        "exit_day": "2024-11-20",
+        "ret": -0.011652327078111369,
+        "hit": true,
+        "note": "2024-11-12: 10-year yield 4.43%, up 0.17 pt in a week"
+      },
+      {
+        "known_at": "2024-12-13T16:15:00-05:00",
+        "entry_day": "2024-12-16",
+        "exit_day": "2024-12-20",
+        "ret": 0.005589923231720917,
+        "hit": false,
+        "note": "2024-12-12: 10-year yield 4.32%, up 0.15 pt in a week"
+      },
+      {
+        "known_at": "2024-12-20T16:15:00-05:00",
+        "entry_day": "2024-12-23",
+        "exit_day": "2024-12-30",
+        "ret": 0.008365130613442906,
+        "hit": false,
+        "note": "2024-12-19: 10-year yield 4.57%, up 0.25 pt in a week"
+      },
+      {
+        "known_at": "2025-01-13T16:15:00-05:00",
+        "entry_day": "2025-01-14",
+        "exit_day": "2025-01-21",
+        "ret": 0.03491106864618554,
+        "hit": false,
+        "note": "2025-01-10: 10-year yield 4.77%, up 0.17 pt in a week"
+      },
+      {
+        "known_at": "2025-02-13T16:15:00-05:00",
+        "entry_day": "2025-02-14",
+        "exit_day": "2025-02-21",
+        "ret": -0.01517595307917885,
+        "hit": true,
+        "note": "2025-02-12: 10-year yield 4.62%, up 0.19 pt in a week"
+      },
+      {
+        "known_at": "2025-04-11T16:15:00-04:00",
+        "entry_day": "2025-04-14",
+        "exit_day": "2025-04-21",
+        "ret": -0.1522186692364974,
+        "hit": true,
+        "note": "2025-04-10: 10-year yield 4.40%, up 0.34 pt in a week"
+      },
+      {
+        "known_at": "2025-05-14T16:15:00-04:00",
+        "entry_day": "2025-05-15",
+        "exit_day": "2025-05-21",
+        "ret": -0.018540580789277783,
+        "hit": true,
+        "note": "2025-05-13: 10-year yield 4.49%, up 0.19 pt in a week"
+      },
+      {
+        "known_at": "2025-07-08T16:15:00-04:00",
+        "entry_day": "2025-07-09",
+        "exit_day": "2025-07-15",
+        "ret": 0.0585553453462766,
+        "hit": false,
+        "note": "2025-07-07: 10-year yield 4.40%, up 0.16 pt in a week"
+      },
+      {
+        "known_at": "2026-03-09T16:15:00-04:00",
+        "entry_day": "2026-03-10",
+        "exit_day": "2026-03-16",
+        "ret": 0.004001315500986591,
+        "hit": false,
+        "note": "2026-03-06: 10-year yield 4.15%, up 0.18 pt in a week"
+      },
+      {
+        "known_at": "2026-03-25T16:15:00-04:00",
+        "entry_day": "2026-03-26",
+        "exit_day": "2026-04-01",
+        "ret": -0.0018451755755527488,
+        "hit": true,
+        "note": "2026-03-24: 10-year yield 4.39%, up 0.19 pt in a week"
+      },
+      {
+        "known_at": "2026-05-18T16:15:00-04:00",
+        "entry_day": "2026-05-19",
+        "exit_day": "2026-05-26",
+        "ret": -0.022438158523541918,
+        "hit": true,
+        "note": "2026-05-15: 10-year yield 4.59%, up 0.21 pt in a week"
+      },
+      {
+        "known_at": "2026-09-02T16:15:00-04:00",
+        "entry_day": "2026-09-03",
+        "exit_day": "2026-09-10",
+        "ret": -0.03341890934844183,
+        "hit": true,
+        "note": "2026-09-01: 10-year yield 4.79%, up 0.15 pt in a week"
+      },
+      {
+        "known_at": "2026-09-11T16:15:00-04:00",
+        "entry_day": "2026-09-14",
+        "exit_day": "2026-09-18",
+        "ret": 0.051350647505859603,
+        "hit": false,
+        "note": "2026-09-10: 10-year yield 4.95%, up 0.18 pt in a week"
+      }
+    ]
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "meta": {
+    "endpoint": "POST /api/portfolio",
+    "as_of": "2026-09-25",
+    "generated_at": "2026-09-26T18:11:41+00:00",
+    "sources": [
+      "alpaca-iex",
+      "fred",
+      "sec"
+    ],
+    "note": "Share counts are illustrative (10 of each stock, 5 SPY). Prices and signals are real."
+  },
+  "data": {
+    "request": {
+      "holdings": [
+        {
+          "symbol": "BX",
+          "shares": 10
+        },
+        {
+          "symbol": "AAPL",
+          "shares": 10
+        },
+        {
+          "symbol": "NVDA",
+          "shares": 10
+        },
+        {
+          "symbol": "JPM",
+          "shares": 10
+        },
+        {
+          "symbol": "AMZN",
+          "shares": 10
+        },
+        {
+          "symbol": "SPY",
+          "shares": 5
+        }
+      ]
+    },
+    "response": {
+      "total": 16626.75,
+      "rows": [
+        {
+          "symbol": "BX",
+          "name": "Blackstone",
+          "kind": "stock",
+          "shares": 10.0,
+          "price": 118.43,
+          "value": 1184.3000000000002,
+          "change": 0.0103224705681626
+        },
+        {
+          "symbol": "AAPL",
+          "name": "Apple",
+          "kind": "stock",
+          "shares": 10.0,
+          "price": 341.02,
+          "value": 3410.2,
+          "change": 0.015303084434917125
+        },
+        {
+          "symbol": "NVDA",
+          "name": "NVIDIA",
+          "kind": "stock",
+          "shares": 10.0,
+          "price": 225.04,
+          "value": 2250.4,
+          "change": 0.002048267877816201
+        },
+        {
+          "symbol": "JPM",
+          "name": "JPMorgan Chase",
+          "kind": "stock",
+          "shares": 10.0,
+          "price": 342.88,
+          "value": 3428.8,
+          "change": 0.013223799884753529
+        },
+        {
+          "symbol": "AMZN",
+          "name": "Amazon",
+          "kind": "stock",
+          "shares": 10.0,
+          "price": 249.63,
+          "value": 2496.3,
+          "change": 0.0011630705061360658
+        },
+        {
+          "symbol": "SPY",
+          "name": "SPDR S&P 500 ETF",
+          "kind": "etf",
+          "shares": 5.0,
+          "price": 771.35,
+          "value": 3856.75,
+          "change": 0.005291350076242374
+        }
+      ],
+      "exposure": [
+        {
+          "symbol": "AMZN",
+          "name": "Amazon",
+          "sector": "Consumer",
+          "direct": 2496.3,
+          "via_etf": {},
+          "total": 2496.3,
+          "share_of_total": 0.15013757950290949,
+          "bad_day_return": -0.030351972582773556,
+          "bad_day_loss": -75.76762915837763,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "insider_cluster",
+              "lite": "Executives sold shares",
+              "pro": "Insider selling cluster: 3+ Form 4 sales in 10 days",
+              "horizon": 20,
+              "n": 12,
+              "hits": 6,
+              "hit_rate": 0.5,
+              "normal_n": 125,
+              "normal_hits": 32,
+              "normal_rate": 0.256,
+              "low": 0.2855348543775254,
+              "high": 0.7144651456224747,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-03T16:42:02-04:00",
+                "note": "2026-09-03: 7 insider sale filings in 10 days"
+              },
+              "holdout": {
+                "first": {
+                  "n": 6,
+                  "hits": 2,
+                  "hit_rate": 0.3333333333333333,
+                  "normal_rate": 0.32,
+                  "normal_n": 50,
+                  "label": "WEAK"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 3,
+                  "hit_rate": 0.6,
+                  "normal_rate": 0.313953488372093,
+                  "normal_n": 86,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            },
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 186,
+              "normal_rate": 0.4696969696969697,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "JPM",
+          "name": "JPMorgan Chase",
+          "sector": "Banks",
+          "direct": 3428.8,
+          "via_etf": {},
+          "total": 3428.8,
+          "share_of_total": 0.2062219014539823,
+          "bad_day_return": -0.02473763118440775,
+          "bad_day_loss": -84.82038980509729,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 166,
+              "normal_rate": 0.41919191919191917,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "AAPL",
+          "name": "Apple",
+          "sector": "Technology",
+          "direct": 3410.2,
+          "via_etf": {},
+          "total": 3410.2,
+          "share_of_total": 0.2051032222172102,
+          "bad_day_return": -0.02039633793023521,
+          "bad_day_loss": -69.55559160968811,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "n": 15,
+              "hits": 6,
+              "hit_rate": 0.4,
+              "normal_n": 396,
+              "normal_hits": 170,
+              "normal_rate": 0.4292929292929293,
+              "low": 0.2231679102659823,
+              "high": 0.6073936306560458,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "NVDA",
+          "name": "NVIDIA",
+          "sector": "Semiconductors",
+          "direct": 2250.4,
+          "via_etf": {},
+          "total": 2250.4,
+          "share_of_total": 0.1353481588404228,
+          "bad_day_return": -0.04057971014492756,
+          "bad_day_loss": -91.32057971014498,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "insider_cluster",
+              "lite": "Executives sold shares",
+              "pro": "Insider selling cluster: 3+ Form 4 sales in 10 days",
+              "horizon": 20,
+              "n": 13,
+              "hits": 5,
+              "hit_rate": 0.38461538461538464,
+              "normal_n": 110,
+              "normal_hits": 40,
+              "normal_rate": 0.36363636363636365,
+              "low": 0.20159260258306824,
+              "high": 0.6073920397651268,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-23T16:56:28-04:00",
+                "note": "2026-09-23: 3 insider sale filings in 10 days"
+              },
+              "holdout": null
+            },
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 176,
+              "normal_rate": 0.4444444444444444,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "BX",
+          "name": "Blackstone",
+          "sector": "Asset Management",
+          "direct": 1184.3000000000002,
+          "via_etf": {},
+          "total": 1184.3000000000002,
+          "share_of_total": 0.07122859247898719,
+          "bad_day_return": -0.04226657603658157,
+          "bad_day_loss": -50.05630600012356,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 203,
+              "normal_rate": 0.5126262626262627,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        }
+      ],
+      "unknown": []
+    }
+  }
+}

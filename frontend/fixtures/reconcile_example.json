@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "endpoint": "POST /api/import/reconcile",
+    "as_of": "2026-09-25",
+    "generated_at": "2026-09-26T18:11:41+00:00",
+    "sources": [
+      "alpaca-iex",
+      "fred",
+      "sec"
+    ],
+    "note": "Example input: a screenshot read where 55 shares was misread as 85. BX price is real."
+  },
+  "data": {
+    "request": {
+      "rows": [
+        {
+          "symbol": "BX",
+          "shares": 85,
+          "price": 118.43,
+          "value": 6513.65
+        }
+      ],
+      "printed_total": 6513.65
+    },
+    "response": {
+      "status": "fixable",
+      "rows_sum": 6513.65,
+      "printed_total": 6513.65,
+      "difference": 0.0,
+      "message": "The total checks out, but some share counts were misread. We corrected them from value / price.",
+      "rows": [
+        {
+          "symbol": "BX",
+          "shares": 85.0,
+          "price": 118.43,
+          "value": 6513.65,
+          "ok": false,
+          "problem": "85 shares x $118.43 is $10,066.55, but the row says $6,513.65",
+          "fix": {
+            "shares": 55.0
+          }
+        }
+      ]
+    }
+  }
+}
