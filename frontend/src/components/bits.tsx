@@ -28,6 +28,11 @@ export function BadgeKey() {
 }
 
 export function LabelTag({ label }: { label: Label }) {
+  // NO DATA: the source data isn't loaded, so nothing was tested. A neutral tag, never a verdict.
+  if (label === "NO DATA") {
+    return <span className="label nodata" title="Source data not loaded yet, so this wasn't tested"
+      style={{ borderColor: "var(--sep)", color: "var(--text-2)", fontWeight: 500 }}>Not loaded</span>;
+  }
   return <span className={`label ${label.toLowerCase().replace(" ", "")}`}>{label}</span>;
 }
 
