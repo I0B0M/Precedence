@@ -486,7 +486,7 @@ html[data-mode="pro"] .rail.pro-only { display: flex !important; }
 .t-sum dd { text-align: right; }
 .t-sum dt:last-of-type, .t-sum dd:last-of-type { border-top: 1px solid var(--sep); font-weight: 700; }
 .t-total { font-family: var(--head); font-size: 20px; }
-.t-go { width: 100%; min-height: 48px; border-radius: 999px; }
+.btn.t-go { width: 100%; min-height: 48px; border-radius: 999px; }
 .receipt .t-go + .t-go { margin-top: -2px; }
 .copied { display: inline-block; margin-left: 8px; font-size: 12px; line-height: 18px; padding: 0 8px; border-radius: 999px; background: var(--fill); color: var(--text-2); vertical-align: 1px; }
 
