@@ -37,6 +37,9 @@ export default function HoldingsBoard() {
 
   const watching = board.exposure.filter((e) => e.state === "WATCH").length;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);
+  // Companies you hold, directly or inside funds, in all: stock rows plus the small slices folded inside each fund.
+  const companies = board.exposure.filter((e) => board.rows.find((r) => r.symbol === e.symbol)?.kind !== "etf").length
+    + board.exposure.reduce((a, e) => a + e.children.length, 0);
   return (
     <section>
       <div className="pf-head">
@@ -47,7 +50,9 @@ export default function HoldingsBoard() {
             <span className="lite-only">
               {watching ? `${watching} thing${watching > 1 ? "s" : ""} worth a look today.` : "Nothing needs you today."}
             </span>
-            <span className="pro-only">{board.exposure.length} exposures · {watching} on WATCH</span>
+            <span className="pro-only">
+              {board.rows.length} holding{board.rows.length === 1 ? "" : "s"} · {companies} compan{companies === 1 ? "y" : "ies"} in all · {watching} on WATCH
+            </span>
           </p>
         </div>
         <p className="note" style={{ maxWidth: "34ch" }}>
@@ -77,10 +82,20 @@ export default function HoldingsBoard() {
                   <span className="pro-only">{proSummary(e.firing)}</span>
                 </span>
                 <span className="val">
-                  {money(e.total)}
-                  <small className={row?.change != null && row.change < 0 ? "down" : "up"}>
-                    {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{whole(e.share_of_total)} of total</span>}
-                  </small>
+                  {row?.kind === "etf" && e.direct - e.total >= 1 ? (
+                    // A looked-through fund: show what you own, and say how much of it appears as its stocks.
+                    <>
+                      {money(e.direct)}
+                      <small className="mute">{money(e.direct - e.total)} of it shown as its stocks on this list</small>
+                    </>
+                  ) : (
+                    <>
+                      {money(e.total)}
+                      <small className={row?.change != null && row.change < 0 ? "down" : "up"}>
+                        {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{whole(e.share_of_total)} of total</span>}
+                      </small>
+                    </>
+                  )}
                 </span>
                 <span className="hend">
                   <StateBadge state={e.state} />
@@ -186,7 +201,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
         <dl className="kv">
           <dt>You own directly</dt><dd>{money(e.direct)}</dd>
           {viaEtf > 0 && (<><dt>Inside your funds</dt><dd>{money(viaEtf)}</dd></>)}
-          {isFund && e.direct > e.total && (<><dt>Shown above and below as its stocks</dt><dd>{money(e.direct - e.total)}</dd></>)}
+          {isFund && e.direct > e.total && (<><dt>Of that, shown as its stocks on this list</dt><dd>{money(e.direct - e.total)}</dd></>)}
           <dt>Share of everything you own</dt><dd>{whole(share)}</dd>
           <dt>A bad day could cost you</dt>
           <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span></dd>
