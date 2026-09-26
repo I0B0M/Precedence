@@ -80,7 +80,7 @@ export default function HoldingsBoard() {
                   {row?.change != null ? `${pct(row.change)} today` : <span className="mute">{whole(e.share_of_total)} of total</span>}
                 </small>
               </span>
-              <StateBadge state={e.state} />
+              {e.state && <StateBadge state={e.state} />}
             </Link>
           );
         })}

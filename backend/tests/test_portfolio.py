@@ -76,3 +76,37 @@ def test_rounding_on_screen_is_not_a_misread():
     # 3.3333 shares shown, price and value rounded to the cent
     r = rc.reconcile([rc.Row("HLCN", 3.3333, 98.10, 327.00)], 327.00)
     assert r.status == rc.OK
+
+
+# ---------- the board: small fund slices fold back into the fund ----------
+
+from stone.portfolio.exposure import OWN_ROW_MIN_SHARE, board_rows  # noqa: E402
+
+
+def test_a_slice_gets_its_own_row_at_one_percent_not_below():
+    assert OWN_ROW_MIN_SHARE == 0.01
+    # $10,000 of FUND; A is 1.00% of everything, B is 0.99%
+    rows = board_rows({"FUND": 10_000.0}, {"FUND": {"A": 0.01, "B": 0.0099}})
+    assert "A" in rows and "B" not in rows
+    assert rows["FUND"].children == {"B": pytest.approx(99.0)}
+
+
+def test_fund_row_keeps_what_you_hold_directly_and_what_it_stands_for():
+    rows = board_rows({"FUND": 10_000.0}, {"FUND": {"A": 0.30, "B": 0.005}})
+    fund = rows["FUND"]
+    assert fund.direct == 10_000  # you own the whole fund directly
+    assert fund.shown == pytest.approx(7_000)  # everything not split out: 6,950 unlisted + 50 of B folded in
+    assert rows["A"].shown == pytest.approx(3_000) and rows["A"].via_etf == {"FUND": pytest.approx(3_000)}
+
+
+def test_a_small_stock_you_hold_directly_keeps_its_row():
+    rows = board_rows({"A": 10.0, "FUND": 10_000.0}, {"FUND": {"A": 0.001}})
+    assert rows["A"].direct == 10 and rows["A"].shown == pytest.approx(20)
+
+
+def test_board_rows_always_add_up_to_what_you_hold():
+    values = {"A": 500.0, "F1": 4_000.0, "F2": 2_000.0}
+    weights = {"F1": {"A": 0.2, "B": 0.004, "C": 0.5}, "F2": {"B": 0.001, "C": 0.3}}
+    rows = board_rows(values, weights)
+    assert sum(r.shown for r in rows.values()) == pytest.approx(sum(values.values()))
+    assert "B" not in rows and rows["F1"].children["B"] == pytest.approx(16) and rows["F2"].children["B"] == pytest.approx(2)

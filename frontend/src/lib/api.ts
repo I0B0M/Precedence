@@ -128,14 +128,15 @@ export interface ExposureRow {
   symbol: string;
   name: string;
   sector: string | null;
-  direct: number;
-  via_etf: Record<string, number>;
-  total: number;
+  direct: number; // dollars held directly (for a fund: the whole fund)
+  via_etf: Record<string, number>; // dollars inside your funds (stocks only)
+  total: number; // dollars this row stands for on the board; rows add up to PortfolioOut.total
   share_of_total: number | null;
   bad_day_return: number | null;
   bad_day_loss: number | null;
-  state: State;
-  firing: SignalResult[];
+  state: State | null; // null: a fund we never tested ("Not tested"), never CALM
+  firing: SignalResult[]; // for SPY: the market rate-jump result (signal "market_rate_jump")
+  children: { symbol: string; name: string; total: number }[]; // fund rows: slices under 1%, kept inside
 }
 
 export interface PortfolioOut {
