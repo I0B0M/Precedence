@@ -139,3 +139,33 @@ def test_xlsx_reader_places_cells_by_column_when_one_is_empty():
     with zipfile.ZipFile(buf, "w") as z:
         z.writestr("xl/worksheets/sheet1.xml", sheet)
     assert etfs.xlsx_rows(buf.getvalue()) == [["Name", None, "2.5"]]  # B1 is empty, so 2.5 stays in column C
+
+
+def test_gemini_defaults_to_a_current_model():
+    # Google limits the 2.5 models to past users, so a new key would fail on them (ai.google.dev/gemini-api/docs/models)
+    assert not gemini.MODEL.startswith("gemini-2.")
+
+
+def test_gemini_blocked_or_unreadable_answers_say_so():
+    blocked = {"promptFeedback": {"blockReason": "SAFETY"}}
+    with pytest.raises(gemini.ScreenshotUnreadable, match="SAFETY"):
+        gemini.parse_response(blocked)
+    not_json = {"candidates": [{"content": {"parts": [{"text": "I see a chart"}]}, "finishReason": "STOP"}]}
+    with pytest.raises(gemini.ScreenshotUnreadable):
+        gemini.parse_response(not_json)
+    no_symbol = {"candidates": [{"content": {"parts": [{"text": '{"rows": [{"shares": 3}], "printed_total": 5}'}]}}]}
+    assert gemini.parse_response(no_symbol).rows == []  # a row without a ticker can't be used
+
+
+def test_gemini_filing_summary_response_parses_and_keeps_only_known_kinds():
+    body = {"summary": "Sales grew.", "figures": [
+        {"label": "Revenue", "kind": "revenue", "text_value": "$5.0 billion", "value": 5.0e9, "period_end": "2026-02-25"},
+        {"label": "Odd", "kind": "made_up", "text_value": "7", "value": 7, "period_end": None}]}
+    import json as _json
+    doc = {"candidates": [{"content": {"parts": [{"text": _json.dumps(body)}]}}]}
+    read = gemini.parse_summary_response(doc)
+    assert read.summary == "Sales grew."
+    assert [f["kind"] for f in read.figures] == ["revenue", "other"]  # an unknown kind isn't checked as if known
+    with pytest.raises(gemini.ScreenshotUnreadable, match="SAFETY"):
+        gemini.parse_summary_response({"promptFeedback": {"blockReason": "SAFETY"}})
+    assert gemini.first_sentences("One. Two! Three? Four.", 3) == "One. Two! Three?"

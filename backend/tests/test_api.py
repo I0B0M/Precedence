@@ -1,5 +1,5 @@
 import os
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -45,6 +45,7 @@ def test_signal_lab_returns_cases(client):
     assert body["label"] == "STRONG" and len(body["cases"]) == body["n"] == 12
     h = body["holdout"]
     assert h["first"]["n"] + h["second"]["n"] == 12 and isinstance(h["held_up"], bool)
+    assert h["verdict"] == "too few cases to check" and h["held_up"] is False  # 12 cases can't fill two halves of 10
     assert client.get("/api/lab/ORCA/gap_down").json()["holdout"] is None  # only STRONG gets one
     assert client.get("/api/lab/MRDN/moon_phase").status_code == 404
     assert client.get("/api/lab/BRD500/gap_down").status_code == 400
@@ -197,3 +198,169 @@ def test_today_counts_the_last_trading_day_from_the_database(client):
 def test_today_without_holdings_has_only_the_market(client):
     body = client.get("/api/today").json()
     assert body["holdings"] is None and body["market"]["filings"]["source"] == "sample"
+
+
+class FakeGemini:
+    """Stands in for GeminiClient once a key is set, so the whole path to reconcile is tested."""
+    def __init__(self, *_):
+        pass
+
+    def read_screenshot(self, image, mime):
+        from stone.sources.gemini import ReadRow, ScreenshotRead
+        return ScreenshotRead([ReadRow("BRVE", 85, 12.5, 687.5)], 687.5)
+
+
+def test_screenshot_import_reads_then_reconciles_once_a_key_is_set(client, monkeypatch):
+    import stone.api.main as m
+    monkeypatch.setattr(m, "GeminiClient", FakeGemini)
+    r = client.post("/api/import/screenshot", files={"file": ("s.png", b"\x89PNG....", "image/png")})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "fixable" and body["rows"][0]["fix"] == {"shares": 55}
+
+
+def test_screenshot_import_errors_are_plain(client, monkeypatch):
+    import httpx
+
+    import stone.api.main as m
+    from stone.sources.gemini import ScreenshotUnreadable
+
+    class Unreadable(FakeGemini):
+        def read_screenshot(self, image, mime):
+            raise ScreenshotUnreadable("Gemini blocked the image (SAFETY)")
+
+    class Down(FakeGemini):
+        def read_screenshot(self, image, mime):
+            req = httpx.Request("POST", "https://generativelanguage.googleapis.com/x")
+            raise httpx.HTTPStatusError("quota", request=req, response=httpx.Response(429, request=req))
+
+    png = {"file": ("s.png", b"\x89PNG....", "image/png")}
+    monkeypatch.setattr(m, "GeminiClient", Unreadable)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 422 and "SAFETY" in r.json()["detail"]
+    monkeypatch.setattr(m, "GeminiClient", Down)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 502 and "429" in r.json()["detail"]
+    monkeypatch.setattr(m, "GeminiClient", FakeGemini)
+    assert client.post("/api/import/screenshot", files={"file": ("a.pdf", b"%PDF", "application/pdf")}).status_code == 415
+    big = {"file": ("s.png", b"\x89PNG" + b"0" * (m.MAX_SCREENSHOT_BYTES + 1), "image/png")}
+    assert client.post("/api/import/screenshot", files=big).status_code == 413
+
+
+def test_today_has_a_week_block_next_to_the_day(client):
+    before = client.get("/api/today?symbols=HLCN").json()  # the sample already has filings that week
+    conn = db.connect(os.environ["DATABASE_URL"])
+    rows = [("W-HLCN-8K", "HLCN", "8-K", date(2026, 9, 22), "2026-09-22 18:00-04"),
+            ("W-ORCA-8K", "ORCA", "8-K", date(2026, 9, 25), "2026-09-25 18:00-04"),
+            ("W-OLD-8K", "ORCA", "8-K", date(2026, 9, 18), "2026-09-18 18:00-04")]  # 8 days back: outside the week
+    for acc, t, form, d, at in rows:
+        conn.execute("insert into filings values (%s, %s, %s, %s, %s, null, null, 'sample')", (acc, t, form, d, at))
+    conn.commit()
+    try:
+        body = client.get("/api/today?symbols=HLCN").json()
+        w = body["week"]
+        assert (w["start"], w["end"]) == ("2026-09-19", "2026-09-25")
+        b = before["week"]["filings"]
+        assert w["filings"]["count"] == b["count"] + 2  # the 22nd and the 25th, not the 18th
+        assert w["filings"]["by_form"].get("8-K", 0) == b["by_form"].get("8-K", 0) + 2
+        assert w["filings"]["as_of"] == "2026-09-25" and w["filings"]["source"] == "sample"
+        assert body["market"]["filings"]["count"] == before["market"]["filings"]["count"] + 1  # day: only the 25th
+        r = w["rate"]
+        assert r["first_day"] >= "2026-09-19" and r["last_day"] <= "2026-09-25"
+        assert r["change"] == pytest.approx(r["last_value"] - r["first_value"])
+        assert isinstance(r["jumps"], list) and r["source"] == "sample"
+        assert body["holdings"]["week_filings"]["count"] == before["holdings"]["week_filings"]["count"] + 1
+    finally:
+        conn.execute("delete from filings where accession like 'W-%'")
+        conn.commit()
+
+
+def test_insider_signal_says_no_data_when_filings_are_not_loaded(client):
+    # sample mode loads Form 4s only for HLCN, like real data loads them only for 20 stocks
+    r = client.get("/api/lab/ORCA/insider_cluster").json()
+    assert r["label"] == "NO DATA" and r["n"] == 0 and r["firing"] is None
+    assert "ORCA" in r["note"] and "not loaded" in r["note"]
+    assert client.get("/api/lab/HLCN/insider_cluster").json()["label"] != "NO DATA"
+    page = client.get("/api/companies/ORCA").json()
+    assert next(s for s in page["signals"] if s["signal"] == "insider_cluster")["label"] == "NO DATA"
+    assert next(s for s in page["signals"] if s["signal"] == "gap_down")["label"] != "NO DATA"  # prices are loaded
+
+
+def test_fund_page_shows_whats_inside_how_its_doing_and_whats_next(client):
+    f = client.get("/api/funds/brd500").json()
+    assert f["symbol"] == "BRD500" and f["holdings_source"] == "sample" and f["holdings_as_of"] == "2026-09-25"
+    assert f["total_holdings_count"] == 4 and f["looked_through_share"] == pytest.approx(0.066)
+    weights = [h["weight"] for h in f["holdings"]]
+    assert weights == sorted(weights, reverse=True) and f["holdings"][0]["ticker"] == "HLCN"
+    hlcn = f["holdings"][0]
+    assert hlcn["in_stone"] and hlcn["state"] == "WATCH" and hlcn["firing"] and hlcn["lite_line"]
+    assert {h["ticker"] for h in f["heads_up"]} == {h["ticker"] for h in f["holdings"] if h["state"] == "WATCH"}
+    board = client.post("/api/portfolio", json={"holdings": [{"symbol": "BRD500", "shares": 1}]}).json()
+    assert f["fund_state"] == next(e for e in board["exposure"] if e["symbol"] == "BRD500")["state"]
+    assert [s["signal"] for s in f["fund_firing"]] == ["market_rate_jump"]
+    conn = db.connect(os.environ["DATABASE_URL"])
+    close = [float(r["close"]) for r in conn.execute(
+        "select close from prices_daily where ticker = 'BRD500' order by day").fetchall()]
+    last_day = conn.execute("select max(day) as d from prices_daily where ticker = 'BRD500'").fetchone()["d"]
+    assert f["price"]["last_close"] == close[-1] and f["price"]["as_of"] == last_day.isoformat()
+    assert f["price"]["prev_close"] == close[-2] and f["price"]["change_1d"] == pytest.approx(close[-1] / close[-2] - 1)
+    p = f["performance"]  # trading-day windows, the same the UI uses
+    assert p["d30"] == pytest.approx(close[-1] / close[-22] - 1)
+    assert p["d90"] == pytest.approx(close[-1] / close[-64] - 1)
+    assert p["y1"] == pytest.approx(close[-1] / close[-253] - 1)
+    assert p["as_of"] == last_day.isoformat() and "trading days" in p["basis"]
+    assert f["filings_span"] == {"start": "2026-09-19", "end": "2026-09-25"}
+    assert all(w["ticker"] in {h["ticker"] for h in f["holdings"]} for w in f["week_filings"])
+
+
+def test_fund_page_for_a_fund_without_holdings_and_for_non_funds(client):
+    conn = db.connect(os.environ["DATABASE_URL"])
+    conn.execute("insert into companies (ticker, cik, name, sector, kind, source) values "
+                 "('EMPTYF', null, 'Empty Fund', null, 'etf', 'sample') on conflict do nothing")
+    conn.commit()
+    try:
+        f = client.get("/api/funds/EMPTYF").json()
+        assert f["holdings"] == [] and f["total_holdings_count"] == 0 and "EMPTYF" in f["note"]
+        assert f["price"] is None and f["performance"]["d30"] is None and f["fund_state"] is None
+    finally:
+        conn.execute("delete from companies where ticker = 'EMPTYF'")
+        conn.commit()
+    assert client.get("/api/funds/HLCN").status_code == 400
+    assert client.get("/api/funds/NOPE").status_code == 404
+
+
+class FakeSummarizer(FakeGemini):
+    def summarize_filing(self, text, ticker, form, accession):
+        from datetime import datetime, timezone
+
+        from stone.sources.gemini import FilingRead
+        read = FilingRead(
+            "Sales grew. Profit held up. Debt went down. The company also bought back shares.",
+            [{"label": "Revenue", "kind": "revenue", "text_value": "$5.0 billion", "value": 5.0e9,
+              "period_end": "2026-02-25"},
+             {"label": "Net income", "kind": "net_income", "text_value": "$431 million", "value": 4.31e8,
+              "period_end": "2026-02-25"},
+             {"label": "Trucks", "kind": "other", "text_value": "1,204", "value": 1204, "period_end": None}])
+        return read, False, datetime(2026, 9, 26, 22, 0, tzinfo=timezone.utc)
+
+
+def test_filing_summary_checks_every_figure_against_the_filings_xbrl(client, monkeypatch):
+    import stone.api.main as m
+    monkeypatch.setattr(m, "GeminiClient", FakeSummarizer)
+    monkeypatch.setattr(m, "filing_text", lambda cik, accession, primary_doc, source: "the filing text")
+    body = client.get("/api/filings/SAMPLE-ORCA-10-Q-6/summary").json()
+    assert body["ticker"] == "ORCA" and body["form"] == "10-Q" and body["cached"] is False
+    assert body["summary_lite"] == "Sales grew. Profit held up. Debt went down."  # at most 3 sentences
+    rev, ni, other = body["figures"]
+    assert rev["match"] is True and rev["concept"] == "us-gaap:Revenues" and rev["xbrl_value"] == 5_039_780_223
+    assert ni["match"] is False and ni["xbrl_value"] == 422_401_137  # a mismatch is shown, never hidden
+    assert other["match"] is None
+    assert body["model"] and body["generated_at"].startswith("2026-09-26")
+
+
+def test_filing_summary_errors(client, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    r = client.get("/api/filings/SAMPLE-ORCA-10-Q-6/summary")
+    assert r.status_code == 503 and "GEMINI_API_KEY" in r.json()["detail"]
+    assert client.get("/api/filings/NOPE-123/summary").status_code == 404
+    assert client.get("/api/filings/SAMPLE-HLCN-4-121/summary").status_code == 400  # Form 4s aren't summarized

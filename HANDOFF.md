@@ -4,6 +4,14 @@ Written 2026-09-26 ~14:15 ET by the build session "ShellHacks (Stone build)", fo
 other Claude account to take over all coding. Everything below was checked at the time of
 writing unless marked **not verified**.
 
+**Updated 2026-09-26 ~19:30 ET** by the second build session. Two branches matter now:
+- `claude/stone-shellhacks-2026-9a6325` (worktree `.claude/worktrees/stone-shellhacks-2026-9a6325`): the **demo**,
+  at `8aef344` (market-relative rate jump, SPY holdings, fund WATCH, Form 4 issuer fix, UI redesign merged).
+- `claude/stone-build-next` (worktree `.claude/worktrees/stone-build-next`): everything after, **not merged into the
+  demo yet**: NO DATA state, fund page API, Gemini filing summary, stricter hold-out, Benjamini-Hochberg, Form 4s for
+  all 103 stocks, the 7-day week on `/api/today`, Gemini screenshot hardening.
+- `claude/crypto-wip`: paused crypto price tests only (the user said stop crypto).
+
 ---
 
 ## Paste this as the new session's first message
@@ -70,20 +78,21 @@ Build order: MUST 1 data · 2 engine + tests · 3 company screen · 4 holdings b
 
 ---
 
-## Verified state (2026-09-26 ~14:10 ET)
+## Verified state (2026-09-26 ~19:30 ET, branch `claude/stone-build-next`)
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && uv run pytest -q` | **54 passed** |
-| Engine mutation check | `cd backend && bash scripts/mutation_check.sh` | **16 killed, 0 survived** |
+| Backend tests | `cd backend && uv run pytest -q` | **109 passed** |
+| Engine mutation check | `cd backend && bash scripts/mutation_check.sh` | **26 killed, 0 survived** |
 | Typecheck | `cd frontend && npx tsc --noEmit` | **0 errors** |
 | Lint | `cd frontend && npm run lint` | **exit 0, no problems** |
-| BX company screen (Lite + Pro) on real API | browser, `/company/BX` | rendered; console clean after the Form 4 key fix |
-| Signal Lab on real API | browser, `/lab?t=BX&s=rate_jump` | rendered, 15 cases, NOT PROVEN, firing |
+| Demo pages at `8aef344` | browser, `/company/BX` Lite + Pro, `/company/AMZN`, `/lab`, import → board, `/practice` | all rendered, checked 15:37–15:42 ET |
+| Build-branch endpoints (NO DATA, funds, filing summary, week) | in-process `TestClient` on the real db | checked; **not verified in a browser** |
+| Gemini (screenshot import, filing summary) | — | **not verified live**: `GEMINI_API_KEY` is still empty |
 | Acceptance-time timezone | compared DB vs sec.gov index page for BX 10-Q `0001193125-26-340208` | match (16:01:44 ET) |
-| Holdings board, import page on real data | — | **not verified** |
 
-Local commits only; **nothing has been pushed; no GitHub repo exists yet** (target the user named: `I0B0M/Stone`).
+The command center reported creating the private GitHub repo `I0B0M/Stone` with the user's go and pushing the demo
+history as `main` (**not verified by this session**). Every push still needs the user's go, per step.
 
 ---
 
@@ -96,16 +105,18 @@ Rows by source (all real; **0 sample rows**. Sample data lives only in `stone_te
 | companies | sec / alpaca-iex (SPY, QQQ) | 103 / 2 |
 | filings | sec | 21,625 |
 | xbrl_facts | sec (10-K/10-Q facts filed in the window) | 390,827 |
-| insider_trades | sec (Form 4 lines, core 20 only) | 12,697 |
+| insider_trades | sec (Form 4 lines, all 103 stocks, only filings where the company is the issuer) | 35,797 |
 | prices_daily | alpaca-iex | 55,440 (105 tickers × 528 days, to 2026-09-25) |
 | rates | fred (DGS10) | 525 |
-| etf_holdings | — | 0 (no real ETF holdings loaded yet; ETF look-through works only with sample data) |
+| etf_holdings | ssga (SPY daily file, as of 2026-09-24) | 504; QQQ none (Invesco refuses scripted downloads) |
 
-`signal_scans` latest row (2026-09-26 14:11 ET, as of 2026-09-25): **309 tested / 111 eligible (10+ cases) /
-27 STRONG / 27 held up in both halves / 5.55 expected by chance**. Caveat: **26 of the 27 are the rate jump, which
-is one market-wide effect**. The same 15 dates apply to every stock, and SPY itself was lower after 10 of 15
-(vs 38% of normal weeks). The chance estimate assumes independent tests and the hold-out shares the same
-market drops, so neither guard catches it. That's why open item 1 exists.
+`signal_scans` latest row (2026-09-26 19:27 ET, as of 2026-09-25): **309 tested / 115 eligible (10+ cases) /
+11 STRONG / 5.75 expected by chance / 0 held up (all 11 "too few cases to check") / 0 survive Benjamini-Hochberg
+at 10% FDR** (across 114 pairs with a p-value; one eligible pair has no clean normal days).
+The 11: rate jump (judged vs SPY) for ACN, CRM, CVS, FDX, HD, INTU, META, PYPL, SBUX; insider cluster for AMZN and CSCO.
+**Honest reading: nothing Stone finds survives a correction for testing ~115 pairs at once.** The rate-jump results share
+the same 15 dates, so they aren't independent either. Say this plainly if a judge asks; it is the product's point
+(test whether news ever mattered, and say "not proven" when it hasn't).
 
 Per ticker, `filings / Form 4 sale lines / price days`:
 
@@ -169,18 +180,26 @@ Form 4 XML for the core 20 at 8 req/s.
 
 - Per stock, ~2 years of daily bars. Events timed by when the public could know (SEC acceptance; DGS10 counts as
   known 16:15 ET the next weekday); **entry = next market open strictly after**; return = entry open → close
-  `horizon` trading days later; **hit = lower**.
+  `horizon` trading days later; **hit = lower**, except the **rate jump: hit = did worse than SPY over the same days**
+  (a rate jump hits every stock at once; normal days are measured the same way).
 - Insider cluster: 3+ distinct Form 4 filings with an open-market sale (code S) within 10 days → 20 days.
   Rate jump: DGS10 up ≥ 0.15 pt vs a week earlier → 5 days. Gap down: open ≤ 5% below prior close → 20 days.
 - Overlapping events count once. **Normal days** = start days whose whole horizon touches no event window.
 - 90% Wilson range. **WEAK** if n < 10; **STRONG** only if the range's low end > normal rate; else **NOT PROVEN**.
-- **WATCH** only when a STRONG signal is firing now. STRONG results get a split-half hold-out (both halves must beat normal).
+- **WATCH** only when a STRONG signal is firing now. SPY (the market fund) takes WATCH from the rate-jump test run on
+  SPY itself; a fund never tested (QQQ) has no state. STRONG results get a split-half hold-out: "held up" needs
+  **10+ cases in each half**, each beating its own normal rate; otherwise "did not hold" or "too few cases to check".
+- **NO DATA**: a signal whose source data isn't loaded for a stock returns label NO DATA with a note, never
+  "hasn't happened". (Since the Form 4 load, every stock has insider data.)
+- The scan also reports how many STRONG survive **Benjamini-Hochberg at 10% FDR** (one-sided binomial p vs the
+  normal rate). The STRONG rule itself does not use it.
 
 Current results:
-- **BX: CALM.** Insider cluster n=2, WEAK · rate jump n=15, 7 lower (47%) vs 51% of 396 normal, range 28–67%,
+- **BX: CALM.** Insider cluster n=2, WEAK · rate jump n=15, 8 of 15 did worse than SPY vs 51% of normal weeks,
   NOT PROVEN, firing (DGS10 5.18% on 2026-09-24, up 0.24 pt) · gap down n=2, WEAK.
-- **AMZN: WATCH** from the insider cluster: n=12, 6 lower (50%) vs 26% normal, range 29–71%, held up, firing.
-  Only **125 clean normal days**, because AMZN insiders file often, so the comparison is thin. Say so if asked.
+- **AMZN: WATCH** from the insider cluster: n=12, 6 lower (50%) vs 26% normal, range 29–71%, firing; hold-out
+  "too few cases to check" (6 and 5 cases). Only **125 clean normal days**, because AMZN insiders file often.
+- **SPY: WATCH** (fund): lower after 10 of the 15 rate jumps vs 38% of normal weeks, STRONG, firing.
 
 ---
 
@@ -192,27 +211,31 @@ Current results:
 - **BK → BNY** (BNY Mellon's ticker). **BRK.B** is `BRK-B` at SEC (`sec_symbol`).
 - The S&P 100 list is from memory (2025 membership). CIKs for the extra 80 are resolved from SEC's ticker list at run time.
 - **Alpaca IEX** needs both `start` and `end` or it returns empty; we send `feed=iex`, `adjustment=split`, 25 symbols per request, and follow `next_page_token`.
-- Form 4s are loaded only for the core 20 (the user's choice). XBRL is kept only for 10-K/10-Q facts filed in the window.
+- **Form 4 issuer filter:** a company's SEC submissions also list Form 4s where the company is the *reporting owner*
+  (Blackstone funds selling Medline, BofA desks in muni funds). `parse_form4` keeps only filings whose issuer is the
+  company. Form 4s are now loaded for all 103 stocks (`scripts/load_form4s.py`). XBRL is kept only for 10-K/10-Q
+  facts filed in the window.
+- `filings` still lists the dropped Form 4s (form '4'); anything counting filings must require matching
+  `insider_trades` rows for a Form 4, as `/api/today` does.
 - The engine reads prices from IEX only (IEX is a small share of volume, so its open can differ slightly from the consolidated open). **Not verified** how much.
 
 ---
 
 ## Open work, in priority order
 
-1. **Market-relative rate jump** (the user said **yes**, 2026-09-26): hit = the stock did worse than SPY over the same
-   window, and normal days are measured the same way. Plus one market-level "rate jumps and SPY" card. Then re-run
-   `scan_signals.py`, re-export fixtures, and update the fixtures README caveat. Add tests and mutations.
-2. **Holdings board + import on real data**: with real data the board starts empty (no sample portfolio), so check the
-   flow import → save → board. The "Try the example" button only appears in sample mode. Real ETF holdings (SPY/QQQ
-   weights) aren't loaded, so ETF look-through does nothing on real data yet.
-3. **Gemini screenshot import**: `GEMINI_API_KEY` is still missing. The client is `sources/gemini.py`; the model name is **unverified**.
-4. **Alpaca paper trades + pre-trade receipt**, capped at **$10,000** practice money (the paper account holds $100k).
-5. **Five-tap start with real counts** (today's EDGAR filings + Federal Register + news).
-6. **SnapTrade** Robinhood read-only.
-7. **Deploy (DigitalOcean) + switch `DATABASE_URL` to Tiger Data** before submitting (schema makes `prices_daily` a hypertable there).
-8. Create the GitHub repo `I0B0M/Stone` and push. **Needs the user's go, per step.**
+Done since the first handoff: market-relative rate jump + SPY card; holdings board and import on real data (a fund
+no longer vanishes; slices under 1% fold into the fund); real SPY holdings; Form 4 issuer fix + all 103 stocks;
+NO DATA; `/api/today` (day + 7-day week); fund page API; Gemini filing summary checked against XBRL; screenshot
+import hardened (default model `gemini-3.8-flash`); stricter hold-out; Benjamini-Hochberg; Practice page (UI, in-app
+ledger at Friday's close).
 
-Already done: Replit A/B fixtures in `frontend/fixtures/` (BX, AAPL, NVDA, JPM, AMZN + holdings + reconcile + README).
+1. **Merge `claude/stone-build-next` into the demo** after a browser check of BX, AMZN, the Lab, the board, a fund
+   page and a filing summary (the summary will say 503 until the key is set). Needs the command center / user to agree.
+2. **Set `GEMINI_API_KEY`** in `backend/.env`, then check one screenshot import and one filing summary live.
+3. **SnapTrade** Robinhood + Binance read-only, then property (FHFA index via FRED), then 401(k). Crypto is paused.
+4. **Deploy (DigitalOcean) + switch `DATABASE_URL` to Tiger Data** before submitting (schema makes `prices_daily` a hypertable there).
+5. Re-export `frontend/fixtures/` from the build branch once it's merged (fund and filing-summary files don't exist yet).
+6. Any push: **the user's go, per step.**
 
 ---
 

@@ -46,6 +46,17 @@ def load_sales(conn: psycopg.Connection, ticker: str) -> list[tuple[str, datetim
     return [(r["accession"], r["accepted_at"]) for r in rows]
 
 
+def insider_loaded(conn: psycopg.Connection, ticker: str) -> bool:
+    """Form 4s are loaded for only some stocks. With none stored, "no insider selling" would be a guess."""
+    return conn.execute("select exists (select 1 from insider_trades where ticker = %s) as e", (ticker,)).fetchone()["e"]
+
+
+def missing_data(conn: psycopg.Connection, ticker: str, spec: engine.Spec) -> engine.Result | None:
+    if spec.key == engine.INSIDER.key and not insider_loaded(conn, ticker):
+        return engine.no_data(spec, f"Insider filings (Form 4) are not loaded for {ticker} yet, so this wasn't tested.")
+    return None
+
+
 def events_for(spec_key: str, bars: list[Bar], rates: list[tuple], sales: list) -> list[engine.Event]:
     if spec_key == engine.INSIDER.key:
         return engine.detect_insider_clusters(sales)
@@ -62,13 +73,16 @@ def run_all(conn: psycopg.Connection, ticker: str, rates: list[tuple] | None = N
     rates = load_rates(conn) if rates is None else rates
     market = load_market(conn)[1] if market is None else market
     sales = load_sales(conn, ticker)
-    return {key: engine.test_signal(spec, bars, events_for(key, bars, rates, sales), market)
+    return {key: missing_data(conn, ticker, spec)
+            or engine.test_signal(spec, bars, events_for(key, bars, rates, sales), market)
             for key, spec in engine.SPECS.items()}
 
 
 def run_one(conn: psycopg.Connection, ticker: str, spec_key: str) -> engine.Result:
     bars = load_bars(conn, ticker)
     spec = engine.SPECS[spec_key]
+    if (missing := missing_data(conn, ticker, spec)) is not None:
+        return missing
     market = load_market(conn)[1] if spec.vs_market else None
     return engine.test_signal(spec, bars, events_for(spec_key, bars, load_rates(conn), load_sales(conn, ticker)),
                               market)

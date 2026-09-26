@@ -222,3 +222,8 @@ class SecClient:
         doc = form4_xml_name(filing.primary_doc)
         raw = self.http.get(f"{ARCHIVES}/{cik}/{folder}/{doc}", f"form4_{filing.accession}.xml")
         return parse_form4(raw, issuer_ciks)
+
+    def document(self, cik: int, accession: str, primary_doc: str) -> bytes:
+        """A filing's main document (HTML), cached."""
+        folder = accession.replace("-", "")
+        return self.http.get(f"{ARCHIVES}/{cik}/{folder}/{primary_doc}", f"doc_{accession}_{primary_doc}")

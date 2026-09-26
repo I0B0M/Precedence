@@ -29,7 +29,9 @@ Z90 = 1.6448536269514722  # two-sided 90%
 MIN_CASES = 10
 
 STRONG, WEAK, NOT_PROVEN = "STRONG", "WEAK", "NOT PROVEN"
+NO_DATA = "NO DATA"  # the signal's source data isn't loaded for this stock: nothing was tested
 CALM, WATCH = "CALM", "WATCH"
+HELD_UP, DID_NOT_HOLD, TOO_FEW_TO_CHECK = "held up", "did not hold", "too few cases to check"
 
 
 class BarLike(Protocol):
@@ -93,6 +95,13 @@ class Result:
     firing: Event | None
     cases: list[Case] = field(default_factory=list)
     holdout: "Holdout | None" = None
+    note: str | None = None  # why there is no result, for NO DATA
+
+
+def no_data(spec: Spec, note: str) -> Result:
+    """Not tested because the data isn't there. Never shown as "hasn't happened"."""
+    return Result(signal=spec.key, horizon=spec.horizon, n=0, hits=0, hit_rate=None, normal_n=0, normal_hits=0,
+                  normal_rate=None, low=None, high=None, label=NO_DATA, firing=None, note=note)
 
 
 @dataclass(frozen=True)
@@ -102,9 +111,18 @@ class Holdout:
     second: "Result"
 
     @property
+    def verdict(self) -> str:
+        """Each half needs MIN_CASES of its own before it can confirm anything."""
+        halves = (self.first, self.second)
+        if any(h.n < MIN_CASES for h in halves):
+            return TOO_FEW_TO_CHECK
+        beats = all(h.hit_rate is not None and h.normal_rate is not None and h.hit_rate > h.normal_rate
+                    for h in halves)
+        return HELD_UP if beats else DID_NOT_HOLD
+
+    @property
     def held_up(self) -> bool:
-        return all(h.hit_rate is not None and h.normal_rate is not None and h.hit_rate > h.normal_rate
-                   for h in (self.first, self.second))
+        return self.verdict == HELD_UP
 
 
 # ---------- statistics ----------
@@ -117,6 +135,36 @@ def wilson(hits: int, n: int, z: float = Z90) -> tuple[float, float]:
     centre = p + z * z / (2 * n)
     margin = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
     return max(0.0, (centre - margin) / d), min(1.0, (centre + margin) / d)
+
+
+def binom_sf(k: int, n: int, p: float) -> float:
+    """P(X >= k) for X ~ Binomial(n, p)."""
+    if k <= 0:
+        return 1.0
+    if k > n:
+        return 0.0
+    return sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
+
+
+def p_value(r: "Result") -> float | None:
+    """How likely this many hits (or more) would be if the stock just followed its normal rate.
+    Only for results that were tested (10+ cases); a screen across many stocks needs this for
+    Benjamini-Hochberg. It does not change the STRONG rule."""
+    if r.n < MIN_CASES or r.normal_rate is None:
+        return None
+    return binom_sf(r.hits, r.n, r.normal_rate)
+
+
+def benjamini_hochberg(pvalues: list[float], q: float = 0.10) -> list[bool]:
+    """Which tests survive a false discovery rate of q across all of them."""
+    m = len(pvalues)
+    order = sorted(range(m), key=lambda i: pvalues[i])
+    passing = [rank for rank, i in enumerate(order, start=1) if pvalues[i] <= rank / m * q]
+    cutoff = max(passing, default=0)
+    keep = [False] * m
+    for rank, i in enumerate(order, start=1):
+        keep[i] = rank <= cutoff
+    return keep
 
 
 def label_for(n: int, low: float, normal_rate: float | None) -> str:

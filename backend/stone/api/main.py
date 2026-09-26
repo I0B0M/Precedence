@@ -4,6 +4,7 @@ screenshot import, which calls Gemini (cached by image) once it is connected."""
 from datetime import timedelta
 from functools import lru_cache
 
+import httpx
 import psycopg
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
@@ -14,10 +15,13 @@ from pydantic import BaseModel
 from stone import config
 from stone.api.views import filing_url, latest_facts, result_json
 from stone.config import NotConnected
+from stone.figures import check_figures, html_to_text
 from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
-from stone.sources.gemini import GeminiClient
+from stone.sources.gemini import MODEL as GEMINI_MODEL
+from stone.sources.gemini import GeminiClient, ScreenshotUnreadable, first_sentences
+from stone.sources.sec import SecClient
 
 app = FastAPI(title="Stone")
 
@@ -133,24 +137,38 @@ def scan(c: psycopg.Connection = Conn):
             "expected_by_chance": float(row["expected_by_chance"])}
 
 
+def filed_between(c: psycopg.Connection, start, end) -> list[dict]:
+    """Filings accepted on these ET days. A Form 4 counts only when its lines were parsed for that
+    company, so it is a trade in the company's own stock and not the company selling someone else's."""
+    return c.execute(
+        """select f.ticker, f.form, f.accession, f.accepted_at, f.primary_doc, f.source, co.cik from filings f
+           join companies co on co.ticker = f.ticker
+           where (f.accepted_at at time zone 'America/New_York')::date between %s and %s
+             and (f.form <> '4' or exists (select 1 from insider_trades i
+                                           where i.accession = f.accession and i.ticker = f.ticker))
+           order by f.accepted_at""", (start, end)).fetchall()
+
+
+def filings_block(filed: list[dict], as_of, source: str) -> dict:
+    by_form: dict[str, int] = {}
+    for f in filed:
+        by_form[f["form"]] = by_form.get(f["form"], 0) + 1
+    return {"count": len(filed), "companies": len({f["ticker"] for f in filed}), "by_form": by_form,
+            "as_of": as_of.isoformat() if as_of else None, "source": source}
+
+
+WEEK_DAYS = 7
+
+
 @app.get("/api/today")
 def today(symbols: str | None = None, c: psycopg.Connection = Conn):
     """The start screen's counts for the last trading day, from the database only.
     symbols: optional comma-separated holdings, e.g. ?symbols=BX,AMZN,SPY."""
     day = c.execute("select max(day) as d from prices_daily").fetchone()["d"]
-    # A Form 4 counts only when its lines were parsed for that company, so it is a trade in the company's
-    # own stock and not the company selling someone else's. Other forms count as filed.
-    filed = c.execute(
-        """select f.ticker, f.form, f.accession, f.accepted_at, f.primary_doc, f.source, co.cik from filings f
-           join companies co on co.ticker = f.ticker
-           where (f.accepted_at at time zone 'America/New_York')::date = %s
-             and (f.form <> '4' or exists (select 1 from insider_trades i
-                                           where i.accession = f.accession and i.ticker = f.ticker))
-           order by f.accepted_at""", (day,)).fetchall()
+    filed = filed_between(c, day, day)
+    week_start = day - timedelta(days=WEEK_DAYS - 1) if day else None
+    week_filed = filed_between(c, week_start, day)
     filing_sources = ",".join(r["source"] for r in c.execute("select distinct source from filings order by 1"))
-    by_form: dict[str, int] = {}
-    for f in filed:
-        by_form[f["form"]] = by_form.get(f["form"], 0) + 1
 
     rate = c.execute("select day, value, source from rates where series = 'DGS10' order by day desc limit 1").fetchone()
     week = rate and c.execute("select value from rates where series = 'DGS10' and day <= %s order by day desc limit 1",
@@ -158,15 +176,30 @@ def today(symbols: str | None = None, c: psycopg.Connection = Conn):
     out = {
         "day": day.isoformat() if day else None,
         "market": {
-            "filings": {"count": len(filed), "companies": len({f["ticker"] for f in filed}), "by_form": by_form,
-                        "as_of": day.isoformat() if day else None, "source": filing_sources},
+            "filings": filings_block(filed, day, filing_sources),
             "rate": {"series": "DGS10", "day": rate["day"].isoformat(), "value": float(rate["value"]),
                      "change_week": round(float(rate["value"] - week["value"]), 4) if week else None,
                      "known_at": engine.rate_known_at(rate["day"]).isoformat(), "source": rate["source"]}
                     if rate else None,
         },
+        "week": None,
         "holdings": None,
     }
+    if day:
+        readings = c.execute("select day, value, source from rates where series = 'DGS10' and day between %s and %s "
+                             "order by day", (week_start, day)).fetchall()
+        jumps = [e for e in engine.detect_rate_jumps(service.load_rates(c))
+                 if week_start <= e.known_at.date() <= day]
+        out["week"] = {
+            "start": week_start.isoformat(), "end": day.isoformat(), "days": WEEK_DAYS,
+            "filings": filings_block(week_filed, day, filing_sources),
+            "rate": {"series": "DGS10", "first_day": readings[0]["day"].isoformat(),
+                     "first_value": float(readings[0]["value"]), "last_day": readings[-1]["day"].isoformat(),
+                     "last_value": float(readings[-1]["value"]),
+                     "change": round(float(readings[-1]["value"] - readings[0]["value"]), 4),
+                     "jumps": [{"known_at": e.known_at.isoformat(), "note": e.note} for e in jumps],
+                     "source": readings[-1]["source"]} if readings else None,
+        }
     if not symbols:
         return out
 
@@ -179,16 +212,98 @@ def today(symbols: str | None = None, c: psycopg.Connection = Conn):
     firing = [{"symbol": s, "signal": r.signal, "label": r.label}
               for s in held for r in signal_results(c, s, kinds[s], market_symbol, rates, market) or [] if r.firing]
     mine = [f for f in filed if f["ticker"] in held]
+    mine_week = [f for f in week_filed if f["ticker"] in held]
     out["holdings"] = {
         "symbols": held, "unknown": [s for s in wanted if s not in kinds],
         "filings": {"count": len(mine), "as_of": out["day"], "source": filing_sources,
                     "items": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
                                "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])}
                               for f in mine]},
+        "week_filings": {"count": len(mine_week), "start": out["week"]["start"] if out["week"] else None,
+                         "as_of": out["day"], "source": filing_sources,
+                         "items": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+                                    "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])}
+                                   for f in mine_week]},
         "signals": {"firing": len(firing), "strong_firing": sum(1 for x in firing if x["label"] == engine.STRONG),
                     "items": firing, "as_of": out["day"], "source": "Stone signal engine (prices, SEC, FRED)"},
     }
     return out
+
+
+FUND_TOP = 25  # holdings listed on a fund page, largest first
+
+
+def lite_line(results: list[engine.Result] | None) -> str | None:
+    """The board's plain sentence for a holding (same words as liteSummary in frontend words.ts)."""
+    if results is None:
+        return None
+    firing = [r for r in results if r.firing]
+    strong = next((r for r in firing if r.label == engine.STRONG), None)
+    if strong:
+        return f"{engine.ALL_SPECS[strong.signal].lite}, and for this stock that has mattered before."
+    if firing:
+        return f"{engine.ALL_SPECS[firing[0].signal].lite}, but that hasn't clearly mattered here before."
+    return "Nothing important today."
+
+
+PERFORMANCE_BASIS = "trading days: 21/63/252, price only, dividends not included"
+
+
+def return_over(closes: list[tuple], bars: int) -> float | None:
+    """Last close vs the close `bars` trading days earlier (21 ~ a month); None without that much history."""
+    return closes[-1][1] / closes[-1 - bars][1] - 1 if len(closes) > bars else None
+
+
+@app.get("/api/funds/{symbol}")
+def fund(symbol: str, c: psycopg.Connection = Conn):
+    """A fund page: what's in it, how it's doing, what's next. Holdings come from the issuer's file."""
+    co = company_or_404(c, symbol)
+    if co["kind"] != "etf":
+        raise HTTPException(400, f"{co['ticker']} is a stock, not a fund")
+    t = co["ticker"]
+    closes = [(r["day"], float(r["close"])) for r in c.execute(
+        "select day, close from prices_daily where ticker = %s order by day", (t,)).fetchall()]
+    as_of = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (t,)).fetchone()["d"]
+    rows = c.execute("select holding, weight, source from etf_holdings where etf = %s and as_of = %s "
+                     "order by weight desc", (t, as_of)).fetchall() if as_of else []
+    tracked = {r["ticker"]: r for r in c.execute(
+        "select ticker, name, kind from companies where ticker = any(%s)", ([r["holding"] for r in rows],)).fetchall()}
+    market_symbol, market = service.load_market(c)
+    rates = service.load_rates(c)
+    holdings = []
+    for r in rows[:FUND_TOP]:
+        k = tracked.get(r["holding"])
+        results = signal_results(c, r["holding"], k["kind"], market_symbol, rates, market) if k else None
+        holdings.append({"ticker": r["holding"], "name": k["name"] if k else None, "weight": float(r["weight"]),
+                         "in_stone": k is not None, "state": state_of(results),
+                         "firing": [{"signal": x.signal, "label": x.label} for x in results or [] if x.firing],
+                         "lite_line": lite_line(results)})
+    fund_results = signal_results(c, t, co["kind"], market_symbol, rates, market)
+    day = c.execute("select max(day) as d from prices_daily").fetchone()["d"]
+    start = day - timedelta(days=WEEK_DAYS - 1) if day else None
+    top = {h["ticker"] for h in holdings}
+    week = [f for f in filed_between(c, start, day) if f["ticker"] in top] if day else []
+    return {
+        "symbol": t, "name": co["name"],
+        "price": {"last_close": closes[-1][1], "as_of": closes[-1][0].isoformat(),
+                  "prev_close": closes[-2][1] if len(closes) > 1 else None,
+                  "change_1d": return_over(closes, 1)} if closes else None,
+        "performance": {"d30": return_over(closes, 21), "d90": return_over(closes, 63), "y1": return_over(closes, 252),
+                        "as_of": closes[-1][0].isoformat() if closes else None, "basis": PERFORMANCE_BASIS},
+        "fund_state": state_of(fund_results),
+        "fund_firing": [result_json(r, with_cases=False) for r in fund_results or [] if r.firing],
+        "holdings_as_of": as_of.isoformat() if as_of else None,
+        "holdings_source": rows[0]["source"] if rows else None,
+        "total_holdings_count": len(rows),
+        "looked_through_share": sum(float(r["weight"]) for r in rows if r["holding"] in tracked),
+        "holdings": holdings,
+        "heads_up": [{"ticker": h["ticker"], "name": h["name"], "weight": h["weight"]}
+                     for h in holdings if h["state"] == engine.WATCH],
+        "filings_span": {"start": start.isoformat(), "end": day.isoformat()} if day else None,
+        "week_filings": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+                          "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])} for f in week],
+        "note": None if rows else f"Holdings for {t} aren't loaded yet.",
+    }
 
 
 @app.get("/api/market/rate_jump")
@@ -298,12 +413,76 @@ def reconcile_rows(body: ReconcileIn):
     return reconciled_json(rc.reconcile(rows, body.printed_total), rows)
 
 
+SUMMARY_FORMS = {"10-K", "10-Q", "8-K", "10-K/A", "10-Q/A", "8-K/A"}
+
+
+def filing_text(cik: int | None, accession: str, primary_doc: str | None, source: str) -> str:
+    """The filing's main document as plain text, from the SEC (cached after the first read)."""
+    if source != "sec" or not cik or not primary_doc:
+        raise HTTPException(400, "This filing has no SEC document to summarize.")
+    settings = config.load()
+    try:
+        sec = SecClient(settings)
+    except NotConnected:
+        sec = SecClient(settings, offline=True)  # without SEC_USER_AGENT, only an already-cached document works
+    try:
+        return html_to_text(sec.document(cik, accession, primary_doc))
+    except FileNotFoundError:
+        raise HTTPException(503, "Reading filings from the SEC needs SEC_USER_AGENT (a contact email) to be set.")
+
+
+@app.get("/api/filings/{accession}/summary")
+def filing_summary(accession: str, c: psycopg.Connection = Conn):
+    """Gemini's plain summary of a filing. Every figure it states is checked against the filing's own XBRL."""
+    f = c.execute("""select f.accession, f.ticker, f.form, f.accepted_at, f.primary_doc, f.source, co.cik
+                     from filings f join companies co on co.ticker = f.ticker where f.accession = %s""",
+                  (accession,)).fetchone()
+    if not f:
+        raise HTTPException(404, f"No filing {accession}")
+    if f["form"] not in SUMMARY_FORMS:
+        raise HTTPException(400, "Summaries cover 10-K, 10-Q and 8-K filings.")
+    try:
+        client = GeminiClient(config.load())
+    except NotConnected:
+        raise HTTPException(503, "Filing summaries aren't connected yet (GEMINI_API_KEY is not set).")
+    text = filing_text(f["cik"], accession, f["primary_doc"], f["source"])
+    try:
+        read, cached, generated = client.summarize_filing(text, f["ticker"], f["form"], accession)
+    except ScreenshotUnreadable as e:
+        raise HTTPException(422, str(e))
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"Gemini returned HTTP {e.response.status_code} (model {GEMINI_MODEL}).")
+    facts = c.execute("select concept, value, period_end from xbrl_facts where accession = %s and taxonomy = 'us-gaap'",
+                      (accession,)).fetchall()
+    return {
+        "accession": accession, "ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+        "url": filing_url(f["cik"], accession, f["primary_doc"], f["source"]),
+        "summary_lite": first_sentences(read.summary, 3),
+        "figures": check_figures(read.figures, facts),
+        "model": GEMINI_MODEL, "generated_at": generated.isoformat(), "cached": cached,
+    }
+
+
+MAX_SCREENSHOT_BYTES = 15 * 1024 * 1024  # Gemini takes inline images up to ~20 MB per request
+
+
 @app.post("/api/import/screenshot")
 async def import_screenshot(file: UploadFile = File(...)):
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(415, "That isn't an image. Add a screenshot (PNG or JPEG).")
+    image = await file.read()
+    if len(image) > MAX_SCREENSHOT_BYTES:
+        raise HTTPException(413, "That screenshot is too large (over 15 MB).")
     try:
         client = GeminiClient(config.load())
     except NotConnected:
         raise HTTPException(503, "Screenshot reading isn't connected yet (GEMINI_API_KEY is not set).")
-    read = client.read_screenshot(await file.read(), file.content_type or "image/png")
+    try:
+        read = client.read_screenshot(image, file.content_type)
+    except ScreenshotUnreadable as e:
+        raise HTTPException(422, f"{e} You can type the rows instead.")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"Gemini returned HTTP {e.response.status_code} "
+                                 f"(model {GEMINI_MODEL}). You can type the rows instead.")
     rows = [rc.Row(r.symbol, r.shares, r.price, r.value) for r in read.rows]
     return reconciled_json(rc.reconcile(rows, read.printed_total), rows)
