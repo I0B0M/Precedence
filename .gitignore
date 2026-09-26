@@ -1,0 +1,23 @@
+# secrets
+.env
+*.env.local
+
+# raw API cache (rebuildable; never commit)
+data/cache/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# node
+node_modules/
+.next/
+out/
+
+# os
+.DS_Store
+
+# local agent worktrees
+.claude/worktrees/
