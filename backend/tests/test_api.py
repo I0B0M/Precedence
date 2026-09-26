@@ -150,3 +150,16 @@ def test_portfolio_says_which_close_the_prices_are_from(client):
     body = client.post("/api/portfolio", json={"holdings": [{"symbol": "HLCN", "shares": 1}]}).json()
     assert body["price_as_of"] == "2026-09-25"
     assert client.post("/api/portfolio", json={"holdings": []}).json()["price_as_of"] is None
+
+
+def test_the_market_fund_page_carries_the_same_state_as_the_board(client, monkeypatch):
+    page = client.get("/api/companies/BRD500").json()
+    board = client.post("/api/portfolio", json={"holdings": [{"symbol": "BRD500", "shares": 10}]}).json()
+    fund = next(e for e in board["exposure"] if e["symbol"] == "BRD500")
+    assert page["state"] == fund["state"] and page["state"] in ("CALM", "WATCH")
+    assert [s["signal"] for s in page["signals"]] == ["market_rate_jump"] and page["signals"][0]["cases"]
+
+    from stone.signals import service
+    monkeypatch.setattr(service, "MARKET_TICKERS", ("HLCN",))  # BRD500 becomes a fund we never tested
+    page = client.get("/api/companies/BRD500").json()
+    assert page["state"] is None and page["signals"] == []
