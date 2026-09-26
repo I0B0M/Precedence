@@ -1,36 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { api, ApiError, type FilingSummary as FilingSummaryData } from "@/lib/api";
 import { shortDate } from "@/lib/format";
 
-// Planned GET /api/filings/{accession}/summary. Types live here until the backend adds them to api.ts.
-interface Figure {
-  label: string;
-  text_value: string; // what the summary says
-  concept: string | null; // XBRL concept it was checked against
-  xbrl_value: string | number | null; // what the SEC filing's XBRL says
-  period: string | null;
-  match: boolean | null; // true ✓, false ≠, null: nothing to check against
-}
-interface Summary { summary_lite: string; figures: Figure[]; model: string; generated_at: string }
-
-type Got = { kind: "ok"; s: Summary } | { kind: "soon" } | { kind: "none" } | { kind: "down" };
+type Got = { kind: "ok"; s: FilingSummaryData } | { kind: "soon" } | { kind: "none" } | { kind: "down" };
 
 async function fetchSummary(accession: string): Promise<Got> {
   try {
-    const r = await fetch(`/api/filings/${encodeURIComponent(accession)}/summary`, { cache: "no-store" });
-    if (r.ok) return { kind: "ok", s: (await r.json()) as Summary };
-    if (r.status === 503) return { kind: "soon" }; // no Gemini key yet
-    if (r.status === 404) return { kind: "none" };
-    return { kind: "down" };
-  } catch {
+    return { kind: "ok", s: await api.filingSummary(accession) };
+  } catch (e) {
+    const status = e instanceof ApiError ? e.status : 0;
+    if (status === 503) return { kind: "soon" }; // no Gemini key yet
+    if (status === 404) return { kind: "none" };
     return { kind: "down" };
   }
 }
 
-const bigNum = (v: string | number | null) => {
+const bigNum = (v: number | null) => {
   if (v == null) return "—";
-  if (typeof v === "string") return v;
   const a = Math.abs(v);
   const s = a >= 1e9 ? `${(a / 1e9).toFixed(2)}B` : a >= 1e6 ? `${(a / 1e6).toFixed(0)}M` : a.toLocaleString("en-US");
   return (v < 0 ? "−$" : "$") + s;
@@ -73,7 +61,7 @@ export function FilingSummary({ accession }: { accession: string }) {
                         <span>
                           <b>{f.label}</b>: {f.text_value}
                           <span className="note" style={{ display: "block" }}>
-                            SEC filing: {bigNum(f.xbrl_value)}{f.period ? `, ${f.period}` : ""}
+                            SEC filing: {bigNum(f.xbrl_value)}{f.period_end ? `, period ending ${shortDate(f.period_end)}` : ""}
                             <span className="pro-only">{f.concept ? ` · ${f.concept}` : ""}</span>
                           </span>
                         </span>

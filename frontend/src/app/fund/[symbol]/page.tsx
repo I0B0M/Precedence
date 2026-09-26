@@ -61,7 +61,7 @@ export default function FundScreen() {
           <div className="co-price">
             <div className="bignum">{money(f.price.last_close, true)}</div>
             <p>
-              {f.price_change != null && <span className={f.price_change < 0 ? "down" : "up"}>{pct(f.price_change)} · </span>}
+              {f.price.change_1d != null && <span className={f.price.change_1d < 0 ? "down" : "up"}>{pct(f.price.change_1d)} · </span>}
               <span className="mute">close {shortDate(f.price.as_of)}</span>
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function FundScreen() {
                   </div>
                 ))}
               </div>
-              <p className="note">Price change from daily closes{f.performance.as_of ? ` to ${shortDate(f.performance.as_of)}` : ""} (21, 63 and 252 trading days). Dividends not included.</p>
+              <p className="note">Price change from daily closes{f.performance.as_of ? ` to ${shortDate(f.performance.as_of)}` : ""}. Basis: {f.performance.basis}.</p>
             </div>
 
             <div className="box">

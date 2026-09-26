@@ -7,10 +7,7 @@ import { liteSummary } from "./words";
 // FundPage shape from endpoints that already exist (portfolio look-through, company prices, today's filings), so every
 // number on the page is real either way. `built_from` says which, so the page can word counts honestly.
 
-export type FundView = FundPage & {
-  built_from: "api" | "existing endpoints";
-  price_change: number | null; // last day's move, when known (the fund endpoint doesn't send it)
-};
+export type FundView = FundPage & { built_from: "api" | "existing endpoints" };
 
 const back = (closes: number[], n: number) => (closes.length > n ? closes[closes.length - 1] / closes[closes.length - 1 - n] - 1 : null);
 
@@ -47,9 +44,14 @@ async function fromExisting(symbol: string): Promise<FundView> {
   return {
     symbol,
     name: co.company.name,
-    price: co.last ? { last_close: co.last.close, as_of: co.last.day } : null,
-    price_change: co.last?.change ?? null,
-    performance: { d30: back(closes, 21), d90: back(closes, 63), y1: back(closes, 252), as_of: co.last?.day ?? null },
+    price: co.last ? {
+      last_close: co.last.close, as_of: co.last.day,
+      prev_close: closes.length > 1 ? closes[closes.length - 2] : null, change_1d: co.last.change,
+    } : null,
+    performance: {
+      d30: back(closes, 21), d90: back(closes, 63), y1: back(closes, 252), as_of: co.last?.day ?? null,
+      basis: "trading days: 21/63/252, price only, dividends not included",
+    },
     fund_state: co.state,
     fund_firing: co.signals.filter((s) => s.firing),
     holdings_as_of: fund?.as_of ?? null,
@@ -67,7 +69,7 @@ async function fromExisting(symbol: string): Promise<FundView> {
 
 export async function loadFund(symbol: string): Promise<FundView> {
   try {
-    return { ...(await api.fund(symbol)), built_from: "api", price_change: null };
+    return { ...(await api.fund(symbol)), built_from: "api" };
   } catch (e) {
     // 404 means the endpoint isn't live yet (or there's no such fund, in which case fromExisting throws the 404).
     if ((e as { status?: number }).status === 404) return fromExisting(symbol);
