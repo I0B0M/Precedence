@@ -16,12 +16,17 @@ class Exposure:
 
 def exposures(values: dict[str, float], etf_weights: dict[str, dict[str, float]]) -> dict[str, Exposure]:
     """values: dollars held directly per symbol (ETFs included).
-    etf_weights: {etf: {holding: weight 0..1}}. An ETF's dollars are spread over its holdings."""
+    etf_weights: {etf: {holding: weight 0..1}}. An ETF's dollars are spread over its holdings;
+    whatever part of the fund we have no holdings for stays as the fund itself, so the
+    exposures always add up to what you hold."""
     out: dict[str, Exposure] = {}
     for sym, dollars in values.items():
         if sym in etf_weights:
             for holding, w in etf_weights[sym].items():
                 out.setdefault(holding, Exposure(holding)).via_etf[sym] = dollars * w
+            rest = dollars * (1 - sum(etf_weights[sym].values()))
+            if rest > 0.005:  # more than half a cent left over
+                out.setdefault(sym, Exposure(sym)).direct += rest
         else:
             out.setdefault(sym, Exposure(sym)).direct += dollars
     return out
