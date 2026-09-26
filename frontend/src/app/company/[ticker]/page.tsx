@@ -238,14 +238,16 @@ export default function CompanyScreen() {
             <h3>Filings</h3>
             <div className="tscroll">
               <table>
-                <thead><tr><th>Form</th><th>Accepted (SEC)</th><th>Period</th><th>Accession</th></tr></thead>
+                <thead><tr><th>Form · accession</th><th>Accepted (SEC)</th><th>Period</th></tr></thead>
                 <tbody>
                   {d.filings.map((f) => (
                     <tr key={f.accession}>
-                      <td className="nowrap">{f.form}</td>
+                      <td className="nowrap">
+                        {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer"><b>{f.form}</b></a> : <b>{f.form}</b>}
+                        <div className="note">{f.accession}</div>
+                      </td>
                       <td className="nowrap">{dateTimeET(f.accepted_at)}</td>
                       <td className="nowrap">{f.report_date ?? "—"}</td>
-                      <td className="nowrap">{f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{f.accession}</a> : <span className="mute">{f.accession}</span>}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -14,7 +14,7 @@ interface Props {
   pins?: Pin[];
 }
 
-/** Lite: just the line, green or red for the two years. Pro: price gridlines plus numbered pins for filings and signal events.
+/** Lite: just the line, in neutral ink (colour lives on the change figure). Pro: price gridlines plus numbered pins for filings and signal events.
  *  Drawn at the container's real width so labels stay legible on a phone. */
 export function PriceChart({ prices, pins = [] }: Props) {
   const { mode } = useMode();
@@ -42,8 +42,7 @@ export function PriceChart({ prices, pins = [] }: Props) {
   const x = (i: number) => L + (i / (prices.length - 1)) * (W - L - R);
   const y = (v: number) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
   const path = prices.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.close).toFixed(1)}`).join("");
-  const rose = closes[closes.length - 1] >= closes[0];
-  const line = pro ? "var(--text)" : rose ? "var(--up)" : "var(--down)";
+  const line = "var(--text)";
 
   const index = new Map(prices.map((p, i) => [p.day, i]));
   const placed = pro
