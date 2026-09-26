@@ -27,8 +27,9 @@ XBRL, Form 4), `alpaca-iex` (daily prices, IEX feed, split-adjusted), `fred` (DG
 |---|---|---|
 | `<TICKER>/company.json` | `GET /api/companies/<T>` | Company screen |
 | `<TICKER>/lab_insider_cluster.json` | `GET /api/lab/<T>/insider_cluster` | Signal test with every case |
-| `<TICKER>/lab_rate_jump.json` | `GET /api/lab/<T>/rate_jump` | Signal test with every case |
+| `<TICKER>/lab_rate_jump.json` | `GET /api/lab/<T>/rate_jump` | Signal test with every case, judged against SPY (`vs_market: true`) |
 | `<TICKER>/lab_gap_down.json` | `GET /api/lab/<T>/gap_down` | Signal test with every case |
+| `market_rate_jump.json` | `GET /api/market/rate_jump` | The rate-jump test run on SPY itself (hit = SPY lower). Same shape as a lab file, plus `symbol`. |
 | `holdings.json` | `POST /api/portfolio` | Holdings board. `data.request` + `data.response`. Share counts are illustrative; prices and signals are real. |
 | `reconcile_example.json` | `POST /api/import/reconcile` | Screenshot check. The input is a made-up read with one misread share count; the BX price is real. |
 
@@ -56,13 +57,14 @@ With nothing firing: "Nothing important today." (`frontend/src/lib/words.ts`).
 | Field | Meaning |
 |---|---|
 | `signal, lite, pro, horizon` | Key, plain name, precise name, horizon in trading days |
-| `n, hits, hit_rate` | Past cases; how many were lower after the horizon; hits / n |
-| `normal_n, normal_hits, normal_rate` | Same measurement on normal days (whole horizon clear of any event) |
+| `vs_market` | `true` for the rate jump: a hit means the stock **did worse than SPY** over the same days, not just "was lower" |
+| `n, hits, hit_rate` | Past cases; how many came true (lower, or worse than SPY when `vs_market`); hits / n |
+| `normal_n, normal_hits, normal_rate` | Same measurement on normal days (whole horizon clear of any event), judged the same way |
 | `low, high` | 90% Wilson range for the hit rate |
 | `label` | `"WEAK"` (n < 10), `"STRONG"` (low > normal_rate), else `"NOT PROVEN"` |
 | `firing` | `{known_at, note}` if the signal is live now, else null |
 | `holdout` | Only for STRONG: `{first, second, held_up}`, the same test on each half of the history |
-| `cases[]` | `known_at` (when the public could know), `entry_day` (next open), `exit_day`, `ret`, `hit` (came true = lower) |
+| `cases[]` | `known_at` (when the public could know), `entry_day` (next open), `exit_day`, `ret` (the stock's own return), `market_ret` (SPY over the same days, only when `vs_market`, else null), `hit` (came true) |
 
 ## holdings.json → `data.response`
 
@@ -79,8 +81,11 @@ WATCH first: `symbol, name, direct` ($ held directly), `via_etf` ({ETF: $}), `to
 
 ## Known caveat in this export
 
-The rate-jump signal uses the same 15 dates for every stock, and SPY itself was lower
-after 10 of them (vs 38% of normal weeks). So a STRONG rate jump here mostly says
-"the market fell after rate jumps", not that this stock is especially sensitive. A
-market-relative version (hit = did worse than SPY) is proposed, not built. AMZN's
-insider-selling cluster is the one STRONG in this set that is specific to the stock.
+The rate jump uses the same 15 dates for every stock, and SPY itself was lower after
+10 of them (vs 38% of normal weeks; `market_rate_jump.json`). So the rate jump is judged
+against SPY: a hit = the stock did worse than SPY over the same days. Under that rule
+the full scan finds 10 STRONG of 111 testable stock-signal pairs, with about 6 expected by
+chance alone: 9 rate jumps (ACN, CRM, CVS, FDX, HD, INTU, META, PYPL, SBUX) plus AMZN's
+insider cluster. That is not far above luck, and the 9 rate-jump results share the same 15
+dates, so they are not independent. None of the five tickers exported here has a STRONG
+rate jump. AMZN's insider-selling cluster is still the one STRONG in this set.

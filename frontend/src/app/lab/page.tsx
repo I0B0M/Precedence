@@ -47,7 +47,8 @@ export default function SignalLab() {
         <p className="mute" style={{ maxWidth: "60ch" }}>
           <span className="lite-only">Pick a stock and a kind of news. We check every time it happened in the last two years and what the stock did next.</span>
           <span className="pro-only">Two years per stock. Entry at the next open after the event was public; hit = lower after the horizon.
-            Compared with the same stock&apos;s normal days; 90% Wilson range.</span>
+            A rate jump hits every stock on the same days, so there hit = did worse than SPY over the same days.
+            Compared with the same stock&apos;s normal days, measured the same way; 90% Wilson range.</span>
         </p>
       </div>
 
@@ -87,14 +88,14 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
         <LabelTag label={r.label} />
       </div>
       <p style={{ fontSize: 18 }}>{liteHistory(r, ticker)} <b>{liteVerdict(r)}</b></p>
-      <HitDots cases={cases} />
+      <HitDots cases={cases} vsMarket={r.vs_market} />
 
       {r.n > 0 && (
         <div className="stack" style={{ gap: 4 }}>
           <span className="note">
             <span className="lite-only">The black bar is where the real rate likely is. The dashed line is a normal {horizonWords(r.horizon).replace("a ", "")}.
               If the whole bar is right of the line, it&apos;s a real pattern.</span>
-            <span className="pro-only">90% Wilson interval for P(lower after {r.horizon}d) vs normal-day rate ({r.normal_hits}/{r.normal_n}).</span>
+            <span className="pro-only">90% Wilson interval for P({r.vs_market ? "worse than SPY" : "lower"} after {r.horizon}d) vs normal-day rate ({r.normal_hits}/{r.normal_n}).</span>
           </span>
           <div className="rangebar" role="img" aria-label={`Range ${whole(r.low)} to ${whole(r.high)}, normal ${whole(r.normal_rate)}`}>
             <div className="track" />
@@ -120,7 +121,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       <div className="pro-only">
         <div className="tscroll">
           <table>
-            <thead><tr><th>Event</th><th>Entry (open)</th><th>Exit (close)</th><th className="num">Return</th><th>Lower?</th></tr></thead>
+            <thead><tr><th>Event</th><th>Entry (open)</th><th>Exit (close)</th><th className="num">Return</th>{r.vs_market && <th className="num">SPY</th>}<th>{r.vs_market ? "Worse than SPY?" : "Lower?"}</th></tr></thead>
             <tbody>
               {cases.map((c) => (
                 <tr key={c.known_at}>
@@ -128,6 +129,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
                   <td>{c.entry_day}</td>
                   <td>{c.exit_day}</td>
                   <td className={`num ${c.ret < 0 ? "down" : "up"}`}>{pct(c.ret)}</td>
+                  {r.vs_market && <td className={`num ${(c.market_ret ?? 0) < 0 ? "down" : "up"}`}>{c.market_ret == null ? "—" : pct(c.market_ret)}</td>}
                   <td>{c.hit ? "yes" : "no"}</td>
                 </tr>
               ))}

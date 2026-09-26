@@ -40,7 +40,7 @@ conn.execute("insert into signal_scans values (%s, %s, %s, %s, %s, %s, %s, %s)",
              (datetime.now(timezone.utc), len(stocks), tested, eligible, len(strong), held, 0.05 * eligible, as_of))
 conn.commit()
 
-line = lambda r: (f"  {r[0]:6} {r[1]:16} n={r[2]:3} lower={r[3]:3} ({f(r[4])}) normal={f(r[5])} of {r[6]} "
+line = lambda r: (f"  {r[0]:6} {r[1]:16} n={r[2]:3} hit={r[3]:3} ({f(r[4])}) normal={f(r[5])} of {r[6]} "
                   f"range={f(r[7])}-{f(r[8])} {r[9]}{' FIRING' if r[10] else ''}")
 print(f"{len(stocks)} stocks with prices, {tested} stock-signal pairs tested: {counts}")
 print(f"{eligible} pairs had 10+ cases; {len(strong)} STRONG, about {0.05 * eligible:.0f} expected by chance; "

@@ -7,7 +7,8 @@ export interface Case {
   known_at: string;
   entry_day: string;
   exit_day: string;
-  ret: number;
+  ret: number; // the stock's own return
+  market_ret: number | null; // SPY over the same days, only for vs_market signals
   hit: boolean;
   note: string;
 }
@@ -17,6 +18,7 @@ export interface SignalResult {
   lite: string;
   pro: string;
   horizon: number;
+  vs_market: boolean; // true: a hit means "did worse than the market (SPY)", not "was lower"
   n: number;
   hits: number;
   hit_rate: number | null;
@@ -29,6 +31,11 @@ export interface SignalResult {
   firing: { known_at: string; note: string } | null;
   holdout: { first: Half; second: Half; held_up: boolean } | null;
   cases?: Case[];
+}
+
+/** GET /api/market/rate_jump: the plain "was it lower?" rate-jump test run on the market itself. */
+export interface MarketResult extends SignalResult {
+  symbol: string; // "SPY" on real data
 }
 
 export interface Half {
@@ -185,6 +192,7 @@ export const api = {
   scan: () => call<Scan | null>("/api/scan"),
   labSignals: () => call<{ key: string; lite: string; pro: string; horizon: number }[]>("/api/lab/signals"),
   lab: (t: string, s: string) => call<SignalResult>(`/api/lab/${encodeURIComponent(t)}/${s}`),
+  marketRateJump: () => call<MarketResult>("/api/market/rate_jump"),
   portfolio: (holdings: Holding[]) => call<PortfolioOut>("/api/portfolio", post({ holdings })),
   reconcile: (rows: ReadRow[], printed_total: number | null) =>
     call<Reconciled>("/api/import/reconcile", post({ rows, printed_total })),

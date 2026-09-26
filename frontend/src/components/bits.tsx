@@ -14,11 +14,12 @@ export function LabelTag({ label }: { label: Label }) {
   return <span className={`label ${label.toLowerCase().replace(" ", "")}`}>{label}</span>;
 }
 
-/** One dot per past case; filled = the stock was lower afterwards. */
-export function HitDots({ cases }: { cases: { hit: boolean }[] }) {
+/** One dot per past case; filled = the stock was lower afterwards (or, vsMarket, did worse than SPY). */
+export function HitDots({ cases, vsMarket = false }: { cases: { hit: boolean }[]; vsMarket?: boolean }) {
   if (!cases.length) return null;
+  const what = vsMarket ? "did worse than the market" : "were lower";
   return (
-    <div className="hitdots" role="img" aria-label={`${cases.filter((c) => c.hit).length} of ${cases.length} were lower`}>
+    <div className="hitdots" role="img" aria-label={`${cases.filter((c) => c.hit).length} of ${cases.length} ${what}`}>
       {cases.map((c, i) => <i key={i} className={c.hit ? "h" : undefined} />)}
     </div>
   );

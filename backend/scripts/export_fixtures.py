@@ -52,6 +52,8 @@ for t in tickers:
     for key in engine.SPECS:
         write(OUT / t / f"lab_{key}.json", f"GET /api/lab/{t}/{key}", get(f"/api/lab/{t}/{key}"))
 
+write(OUT / "market_rate_jump.json", "GET /api/market/rate_jump", get("/api/market/rate_jump"))
+
 # Example holdings: real prices and signals; the share counts are illustrative, not anyone's portfolio.
 holdings = [{"symbol": t, "shares": 10} for t in tickers] + [{"symbol": "SPY", "shares": 5}]
 resp = client.post("/api/portfolio", json={"holdings": holdings})

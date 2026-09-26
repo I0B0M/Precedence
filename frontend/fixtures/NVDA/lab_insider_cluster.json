@@ -2,7 +2,7 @@
   "meta": {
     "endpoint": "GET /api/lab/NVDA/insider_cluster",
     "as_of": "2026-09-25",
-    "generated_at": "2026-09-26T18:11:41+00:00",
+    "generated_at": "2026-09-26T18:40:27+00:00",
     "sources": [
       "alpaca-iex",
       "fred",
@@ -14,6 +14,7 @@
     "lite": "Executives sold shares",
     "pro": "Insider selling cluster: 3+ Form 4 sales in 10 days",
     "horizon": 20,
+    "vs_market": false,
     "n": 13,
     "hits": 5,
     "hit_rate": 0.38461538461538464,
@@ -34,6 +35,7 @@
         "entry_day": "2024-09-11",
         "exit_day": "2024-10-08",
         "ret": 0.21528476094707005,
+        "market_ret": null,
         "hit": false,
         "note": "2024-09-10: 3 insider sale filings in 10 days"
       },
@@ -42,6 +44,7 @@
         "entry_day": "2024-12-19",
         "exit_day": "2025-01-21",
         "ret": 0.06905060167786514,
+        "market_ret": null,
         "hit": false,
         "note": "2024-12-18: 3 insider sale filings in 10 days"
       },
@@ -50,6 +53,7 @@
         "entry_day": "2025-03-24",
         "exit_day": "2025-04-21",
         "ret": -0.19284343981983487,
+        "market_ret": null,
         "hit": true,
         "note": "2025-03-21: 3 insider sale filings in 10 days"
       },
@@ -58,6 +62,7 @@
         "entry_day": "2025-06-05",
         "exit_day": "2025-07-03",
         "ret": 0.12082307421737593,
+        "market_ret": null,
         "hit": false,
         "note": "2025-06-04: 3 insider sale filings in 10 days"
       },
@@ -66,6 +71,7 @@
         "entry_day": "2025-07-08",
         "exit_day": "2025-08-04",
         "ret": 0.12932170421032807,
+        "market_ret": null,
         "hit": false,
         "note": "2025-07-07: 3 insider sale filings in 10 days"
       },
@@ -74,6 +80,7 @@
         "entry_day": "2025-08-06",
         "exit_day": "2025-09-03",
         "ret": -0.0324684531405075,
+        "market_ret": null,
         "hit": true,
         "note": "2025-08-05: 3 insider sale filings in 10 days"
       },
@@ -82,6 +89,7 @@
         "entry_day": "2025-09-09",
         "exit_day": "2025-10-06",
         "ret": 0.09801716484166922,
+        "market_ret": null,
         "hit": false,
         "note": "2025-09-08: 3 insider sale filings in 10 days"
       },
@@ -90,6 +98,7 @@
         "entry_day": "2025-10-08",
         "exit_day": "2025-11-04",
         "ret": 0.06445129304569219,
+        "market_ret": null,
         "hit": false,
         "note": "2025-10-07: 3 insider sale filings in 10 days"
       },
@@ -98,6 +107,7 @@
         "entry_day": "2025-11-06",
         "exit_day": "2025-12-04",
         "ret": -0.0663171824104235,
+        "market_ret": null,
         "hit": true,
         "note": "2025-11-05: 3 insider sale filings in 10 days"
       },
@@ -106,6 +116,7 @@
         "entry_day": "2025-12-11",
         "exit_day": "2026-01-09",
         "ret": 0.02515461630196625,
+        "market_ret": null,
         "hit": false,
         "note": "2025-12-10: 3 insider sale filings in 10 days"
       },
@@ -114,6 +125,7 @@
         "entry_day": "2026-01-16",
         "exit_day": "2026-02-13",
         "ret": -0.03283329364764409,
+        "market_ret": null,
         "hit": true,
         "note": "2026-01-15: 3 insider sale filings in 10 days"
       },
@@ -122,6 +134,7 @@
         "entry_day": "2026-03-23",
         "exit_day": "2026-04-20",
         "ret": 0.14034246382126425,
+        "market_ret": null,
         "hit": false,
         "note": "2026-03-20: 3 insider sale filings in 10 days"
       },
@@ -130,6 +143,7 @@
         "entry_day": "2026-06-08",
         "exit_day": "2026-07-07",
         "ret": -0.06045934794533625,
+        "market_ret": null,
         "hit": true,
         "note": "2026-06-05: 3 insider sale filings in 10 days"
       }

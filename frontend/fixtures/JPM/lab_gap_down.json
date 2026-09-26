@@ -2,7 +2,7 @@
   "meta": {
     "endpoint": "GET /api/lab/JPM/gap_down",
     "as_of": "2026-09-25",
-    "generated_at": "2026-09-26T18:11:41+00:00",
+    "generated_at": "2026-09-26T18:40:27+00:00",
     "sources": [
       "alpaca-iex",
       "fred",
@@ -14,6 +14,7 @@
     "lite": "The stock dropped 5% at the open",
     "pro": "Gap down: opened 5% or more below the prior close",
     "horizon": 20,
+    "vs_market": false,
     "n": 1,
     "hits": 0,
     "hit_rate": 0.0,
@@ -31,6 +32,7 @@
         "entry_day": "2025-04-07",
         "exit_day": "2025-05-05",
         "ret": 0.2282373532343145,
+        "market_ret": null,
         "hit": false,
         "note": "2025-04-04: opened 5.7% below the prior close"
       }

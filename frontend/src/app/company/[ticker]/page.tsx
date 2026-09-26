@@ -75,7 +75,7 @@ export default function CompanyScreen() {
           {main ? (
             <>
               <p><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
-              <HitDots cases={main.cases ?? []} />
+              <HitDots cases={main.cases ?? []} vsMarket={main.vs_market} />
               <p className="note">{liteVerdict(main)}</p>
             </>
           ) : (
@@ -140,13 +140,13 @@ export default function CompanyScreen() {
             <h3>Signals tested on {co.ticker}&apos;s own history</h3>
             <div className="tscroll">
               <table>
-                <thead><tr><th>Signal</th><th className="num">Cases</th><th className="num">Lower after</th><th className="num">Normal days</th><th className="num">90% range</th><th>Verdict</th><th>Hold-out</th><th>Now</th><th /></tr></thead>
+                <thead><tr><th>Signal</th><th className="num">Cases</th><th className="num">Came true</th><th className="num">Normal days</th><th className="num">90% range</th><th>Verdict</th><th>Hold-out</th><th>Now</th><th /></tr></thead>
                 <tbody>
                   {d.signals.map((s) => (
                     <tr key={s.signal}>
                       <td>{s.pro}<div className="note">horizon {s.horizon} trading days</div></td>
                       <td className="num">{s.n}</td>
-                      <td className="num">{s.n ? `${s.hits} (${whole(s.hit_rate)})` : "—"}</td>
+                      <td className="num">{s.n ? `${s.hits} (${whole(s.hit_rate)})` : "—"}<div className="note">{s.vs_market ? "worse than SPY" : "lower"}</div></td>
                       <td className="num">{whole(s.normal_rate)}<div className="note">of {s.normal_n} days</div></td>
                       <td className="num">{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</td>
                       <td><LabelTag label={s.label} /></td>

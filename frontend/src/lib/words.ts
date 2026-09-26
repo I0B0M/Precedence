@@ -19,12 +19,19 @@ export function proSummary(firing: SignalResult[]): string {
   return `${firing.length} signal${firing.length > 1 ? "s" : ""} firing · ${proven ? `${proven} proven` : "none proven"}`;
 }
 
+/** What a hit means for this signal. A rate jump hits every stock at once, so there it is measured against the market. */
+export function hitWords(s: { vs_market: boolean }): string {
+  return s.vs_market ? "did worse than the whole market (SPY)" : "was lower";
+}
+
 /** "The last 12 times ... it was lower a month later 10 times. In a normal month, about 27%." */
 export function liteHistory(s: SignalResult, ticker: string): string {
   const h = horizonWords(s.horizon);
+  const span = h.replace("a ", "");
   if (s.n === 0) return `This hasn't happened to ${ticker} in the last two years, so there's nothing to go on.`;
-  return `The last ${s.n} time${s.n > 1 ? "s" : ""} this happened to ${ticker}, it was lower ${h} later ` +
-    `${s.hits} time${s.hits === 1 ? "" : "s"}. In a normal ${h.replace("a ", "")}, that's about ${whole(s.normal_rate)} of the time.`;
+  const what = s.vs_market ? `it ${hitWords(s)} over the next ${span}` : `it was lower ${h} later`;
+  return `The last ${s.n} time${s.n > 1 ? "s" : ""} this happened to ${ticker}, ${what} ` +
+    `${s.hits} time${s.hits === 1 ? "" : "s"}. In a normal ${span}, that's about ${whole(s.normal_rate)} of the time.`;
 }
 
 export function liteVerdict(s: SignalResult): string {
