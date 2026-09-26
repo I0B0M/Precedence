@@ -20,7 +20,7 @@ export function HitDots({ cases, vsMarket = false }: { cases: { hit: boolean }[]
   const what = vsMarket ? "did worse than the market" : "were lower";
   return (
     <div className="hitdots" role="img" aria-label={`${cases.filter((c) => c.hit).length} of ${cases.length} ${what}`}>
-      {cases.map((c, i) => <i key={i} className={c.hit ? "h" : undefined} />)}
+      {cases.map((c, i) => <i key={i} className={c.hit ? "h" : undefined} style={{ "--i": i } as React.CSSProperties} />)}
     </div>
   );
 }

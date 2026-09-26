@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMode } from "@/lib/mode";
+import { useMode, type Mode } from "@/lib/mode";
 
 const LINKS = [
   { href: "/", label: "What you own" },
@@ -10,17 +10,24 @@ const LINKS = [
   { href: "/import", label: "Bring holdings in" },
 ];
 
+const MODES: { value: Mode; label: string }[] = [
+  { value: "lite", label: "Lite" },
+  { value: "pro", label: "Pro" },
+];
+
 export function Header() {
-  const { mode, toggle } = useMode();
+  const { mode, toggle, set } = useMode();
   const path = usePathname();
   return (
     <header className="top">
       <div className="brand">
+        {/* ST◯NE: the O is the switch. Ring = Lite, filled = Pro. */}
         <span className="logo">
-          ST
-          <button className="osw" type="button" onClick={toggle} aria-pressed={mode === "pro"}
-            aria-label={mode === "pro" ? "Switch to Lite" : "Switch to Pro"} />
-          NE
+          <span className="sr-only">Stone</span>
+          <span aria-hidden>ST</span>
+          <button className="osw" type="button" role="switch" onClick={toggle} aria-checked={mode === "pro"}
+            aria-label="Pro mode" title={mode === "pro" ? "Tap the O for Lite" : "Tap the O for Pro"} />
+          <span aria-hidden>NE</span>
         </span>
         <span className="modetag">{mode === "pro" ? "Pro · tap the O for Lite" : "Lite · tap the O for Pro"}</span>
       </div>
@@ -32,6 +39,11 @@ export function Header() {
           </Link>
         ))}
       </nav>
+      <div className="seg" role="group" aria-label="Mode" data-value={mode}>
+        {MODES.map((m) => (
+          <button key={m.value} type="button" aria-pressed={mode === m.value} onClick={() => set(m.value)}>{m.label}</button>
+        ))}
+      </div>
     </header>
   );
 }

@@ -47,25 +47,25 @@ export function PriceChart({ prices, pins = [] }: Props) {
           const v = lo + ((hi - lo) * k) / 3, yy = y(v);
           return (
             <g key={k}>
-              <line x1={L} x2={W - R} y1={yy} y2={yy} stroke="var(--line)" />
-              <text x={W - R + 6} y={yy} fontSize="11" fill="var(--mute)" dominantBaseline="central">${v.toFixed(0)}</text>
+              <line x1={L} x2={W - R} y1={yy} y2={yy} stroke="var(--sep)" />
+              <text x={W - R + 6} y={yy} fontSize="11" fill="var(--text-2)" dominantBaseline="central">${v.toFixed(0)}</text>
             </g>
           );
         })}
-        <path d={path} fill="none" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
-        <circle cx={x(prices.length - 1)} cy={y(closes[closes.length - 1])} r="4" fill="var(--ink)" />
+        <path d={path} fill="none" stroke="var(--text)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={x(prices.length - 1)} cy={y(closes[closes.length - 1])} r="4" fill="var(--text)" />
         {placed.map((p, j) => (
           <g key={j}>
-            <circle cx={x(p.i)} cy={y(prices[p.i].close)} r="6" fill="var(--hl)" stroke="var(--ink)" strokeWidth="1.5">
+            <circle cx={x(p.i)} cy={y(prices[p.i].close)} r="6" fill="var(--accent)" stroke="var(--group)" strokeWidth="2">
               <title>{p.label}</title>
             </circle>
-            <text x={x(p.i)} y={y(prices[p.i].close) - 11} fontSize="10.5" textAnchor="middle" fill="var(--ink)">{j + 1}</text>
+            <text x={x(p.i)} y={y(prices[p.i].close) - 11} fontSize="11" fontWeight="600" textAnchor="middle" fill="var(--text)">{j + 1}</text>
           </g>
         ))}
         {pro && (
           <>
-            <text x={L} y={H - 6} fontSize="11" fill="var(--mute)">{shortDate(first)}</text>
-            <text x={W - R} y={H - 6} fontSize="11" fill="var(--mute)" textAnchor="end">{shortDate(last)}</text>
+            <text x={L} y={H - 6} fontSize="11" fill="var(--text-2)">{shortDate(first)}</text>
+            <text x={W - R} y={H - 6} fontSize="11" fill="var(--text-2)" textAnchor="end">{shortDate(last)}</text>
           </>
         )}
       </svg>
