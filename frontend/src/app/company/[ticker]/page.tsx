@@ -55,6 +55,8 @@ export default function CompanyScreen() {
   const isFund = co.kind === "etf";
   const myShare = mine ? (isFund ? (portfolioTotal ? mine.direct / portfolioTotal : null) : mine.share_of_total) : null;
   const myBadDay = mine ? (isFund ? (mine.bad_day_return != null ? mine.bad_day_return * mine.direct : null) : mine.bad_day_loss) : null;
+  // The Lab tests single stocks; the market's own rate-jump result has no case page there.
+  const inLab = (signal: string) => signal !== "market_rate_jump";
   const filingUrl = (accession: string) => d.filings.find((f) => f.accession === accession)?.url ?? null;
 
   return (
@@ -105,10 +107,17 @@ export default function CompanyScreen() {
             <div className="list">
               <p className="list-head">Also checked</p>
               {others.map((s) => (
-                <Link key={s.signal} className="list-row" href={`/lab?t=${co.ticker}&s=${s.signal}`}>
-                  <span>{s.lite}</span>
-                  <span className="mute">{s.firing ? "Happening now" : "Not now"} ›</span>
-                </Link>
+                inLab(s.signal) ? (
+                  <Link key={s.signal} className="list-row" href={`/lab?t=${co.ticker}&s=${s.signal}`}>
+                    <span>{s.lite}</span>
+                    <span className="mute">{s.firing ? "Happening now" : "Not now"} ›</span>
+                  </Link>
+                ) : (
+                  <div key={s.signal} className="list-row">
+                    <span>{s.lite}</span>
+                    <span className="mute">{s.firing ? "Happening now" : "Not now"}</span>
+                  </div>
+                )
               ))}
             </div>
           )}
@@ -188,7 +197,7 @@ export default function CompanyScreen() {
                       <td><LabelTag label={s.label} /></td>
                       <td><HoldoutNote s={s} /></td>
                       <td>{s.firing ? <b>firing</b> : <span className="mute">—</span>}</td>
-                      <td className="nowrap"><Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>cases ›</Link></td>
+                      <td className="nowrap">{inLab(s.signal) && <Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>cases ›</Link>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -208,7 +217,7 @@ export default function CompanyScreen() {
                     <div><dt>90% range</dt><dd>{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</dd></div>
                   </dl>
                   <p className="note">Horizon {s.horizon} trading days · {s.firing ? <b>firing now</b> : "not firing"}{s.holdout ? <> · hold-out <HoldoutNote s={s} /></> : null}</p>
-                  <Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>See the cases ›</Link>
+                  {inLab(s.signal) && <Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>See the cases ›</Link>}
                 </div>
               ))}
             </div>

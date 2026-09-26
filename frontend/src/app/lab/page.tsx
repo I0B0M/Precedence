@@ -21,6 +21,7 @@ export default function SignalLab() {
   const [signal, setSignal] = useState<string | null>(null);
   const [result, setResult] = useState<{ key: string; r: SignalResult } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState<string[]>([]);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -28,8 +29,15 @@ export default function SignalLab() {
       const st = cos.filter((c) => c.kind === "stock");
       setStocks(st);
       setSpecs(sp);
-      setTicker(q.get("t") && st.some((c) => c.ticker === q.get("t")) ? q.get("t") : st[0]?.ticker ?? null);
-      setSignal(q.get("s") && sp.some((s) => s.key === q.get("s")) ? q.get("s") : sp[0]?.key ?? null);
+      // A link can name a stock or signal the Lab doesn't have. Say so; never swap in a different one silently.
+      const t = q.get("t"), s = q.get("s");
+      const tOk = !!t && st.some((c) => c.ticker === t), sOk = !!s && sp.some((x) => x.key === s);
+      setUnavailable([
+        ...(t && !tOk ? [`${t} isn't available in the Lab, which tests single stocks we have data for.`] : []),
+        ...(s && !sOk ? [`"${s}" isn't a signal the Lab can test.`] : []),
+      ]);
+      setTicker(t ? (tOk ? t : null) : st[0]?.ticker ?? null);
+      setSignal(s ? (sOk ? s : null) : sp[0]?.key ?? null);
     }).catch((e) => setError(e.message));
   }, []);
 
@@ -62,6 +70,7 @@ export default function SignalLab() {
         <div className="stack" style={{ gap: 10 }}>
           <label className="list-head" htmlFor="lab-stock">Stock</label>
           <select id="lab-stock" className="select" value={ticker ?? ""} onChange={(e) => setTicker(e.target.value)}>
+            {!ticker && <option value="" disabled>Pick a stock</option>}
             {stocks.map((c) => <option key={c.ticker} value={c.ticker}>{c.ticker} · {c.name}</option>)}
           </select>
           {quick.length > 0 && (
@@ -95,7 +104,15 @@ export default function SignalLab() {
         </div>
       )}
 
-      {result?.key !== key ? <p className="mute">Testing…</p> : <LabResult key={key} r={result.r} ticker={ticker!} />}
+      {!ticker || !signal ? (
+        unavailable.length > 0 && (
+          <div className="card">
+            <h3>Not available</h3>
+            {unavailable.map((u) => <p key={u}>{u}</p>)}
+            <p className="mute">Pick {!ticker ? "a stock" : ""}{!ticker && !signal ? " and " : ""}{!signal ? "a kind of news" : ""} above to run a test.</p>
+          </div>
+        )
+      ) : result?.key !== key ? <p className="mute">Testing…</p> : <LabResult key={key} r={result.r} ticker={ticker} />}
     </section>
   );
 }
