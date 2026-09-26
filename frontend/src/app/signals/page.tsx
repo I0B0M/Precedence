@@ -48,7 +48,7 @@ export default function SignalLab() {
     if (!ticker || !signal) return;
     api.lab(ticker, signal).then((r) => setResult({ key: `${ticker}|${signal}`, r })).catch(setError);
     try {
-      window.history.replaceState(null, "", `/lab?t=${ticker}&s=${signal}`);
+      window.history.replaceState(null, "", `/signals?t=${ticker}&s=${signal}`);
     } catch {}
   }, [ticker, signal]);
 

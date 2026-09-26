@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Doto, Figtree } from "next/font/google";
+import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { SampleBanner } from "@/components/SampleBanner";
 import { ModeProvider } from "@/lib/mode";
@@ -30,9 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Header />
             <SampleBanner />
             <main>{children}</main>
-            <footer className="note foot">
-              Built at ShellHacks 2026. Not investment advice. No order is ever sent from this screen.
-            </footer>
+            <Footer />
           </div>
         </ModeProvider>
       </body>

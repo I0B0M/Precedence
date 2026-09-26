@@ -57,7 +57,7 @@ export default function CompanyScreen() {
 
   return (
     <section className="stack" style={{ gap: 28 }}>
-      <Link href="/" className="linkb">‹ Everything you own</Link>
+      <Link href="/portfolio" className="linkb">‹ Everything you own</Link>
 
       <StockChart
         ticker={co.ticker}
@@ -93,7 +93,7 @@ export default function CompanyScreen() {
               <p className="list-head">Also checked</p>
               {others.map((s) => (
                 inLab(s.signal) ? (
-                  <Link key={s.signal} className="list-row" href={`/lab?t=${co.ticker}&s=${s.signal}`}>
+                  <Link key={s.signal} className="list-row" href={`/signals?t=${co.ticker}&s=${s.signal}`}>
                     <span>{s.lite}</span>
                     <span className="mute">{s.label === "NO DATA" ? "Not loaded yet" : s.firing ? "Happening now" : "Not now"} ›</span>
                   </Link>
@@ -176,7 +176,7 @@ export default function CompanyScreen() {
                       <td><LabelTag label={s.label} /></td>
                       <td><HoldoutNote s={s} /></td>
                       <td>{s.firing ? <b>firing</b> : <span className="mute">—</span>}</td>
-                      <td className="nowrap">{inLab(s.signal) && <Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>cases ›</Link>}</td>
+                      <td className="nowrap">{inLab(s.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${s.signal}`}>cases ›</Link>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -196,7 +196,7 @@ export default function CompanyScreen() {
                     <div><dt>90% range</dt><dd>{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</dd></div>
                   </dl>
                   <p className="note">Horizon {s.horizon} trading days · {s.firing ? <b>firing now</b> : "not firing"}{s.holdout ? <> · hold-out <HoldoutNote s={s} /></> : null}</p>
-                  {inLab(s.signal) && <Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>See the cases ›</Link>}
+                  {inLab(s.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${s.signal}`}>See the cases ›</Link>}
                 </div>
               ))}
             </div>
