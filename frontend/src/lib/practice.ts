@@ -21,6 +21,7 @@ export interface PracticeState {
   positions: Record<string, number>; // symbol -> shares
   trades: PracticeTrade[];
   started: string;
+  seeded?: Record<string, number>; // symbol -> shares copied from the portfolio at the start (absent in older saves)
 }
 
 let memory: string | null = null;
@@ -71,7 +72,7 @@ function subscribe(cb: () => void) {
 export function freshPractice(holdings: Holding[]): PracticeState {
   const positions: Record<string, number> = {};
   for (const h of holdings) if (h.shares > 0) positions[h.symbol] = (positions[h.symbol] ?? 0) + h.shares;
-  return { cash: PRACTICE_CASH, positions, trades: [], started: new Date().toISOString() };
+  return { cash: PRACTICE_CASH, positions, trades: [], started: new Date().toISOString(), seeded: { ...positions } };
 }
 
 export function resetPractice(holdings: Holding[]) {

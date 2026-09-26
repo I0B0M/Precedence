@@ -476,6 +476,19 @@ html[data-mode="pro"] .rail.pro-only { display: flex !important; }
 .seg-choice button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
 .receipt { border: 1.5px dashed var(--edge-c); border-radius: var(--r-ctl); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .receipt .kv { font-size: 15px; }
+/* Trade ticket, from the study: label left, value right, a hairline, the total in bold, one full-width action. */
+.ticket .seg-choice { align-self: stretch; }
+.t-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: 12px; }
+.t-row label { font-size: 15px; color: var(--text); }
+.t-row .field { max-width: 140px; justify-self: end; text-align: right; }
+.t-sum { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin: 4px 0 0; font-size: 15px; }
+.t-sum dt, .t-sum dd { margin: 0; padding: 10px 0; }
+.t-sum dd { text-align: right; }
+.t-sum dt:last-of-type, .t-sum dd:last-of-type { border-top: 1px solid var(--sep); font-weight: 700; }
+.t-total { font-family: var(--head); font-size: 20px; }
+.t-go { width: 100%; min-height: 48px; border-radius: 999px; }
+.receipt .t-go + .t-go { margin-top: -2px; }
+.copied { display: inline-block; margin-left: 8px; font-size: 12px; line-height: 18px; padding: 0 8px; border-radius: 999px; background: var(--fill); color: var(--text-2); vertical-align: 1px; }
 
 /* ---------- import ---------- */
 .readtable input, .field {
