@@ -298,13 +298,16 @@ def test_fund_page_shows_whats_inside_how_its_doing_and_whats_next(client):
     assert f["fund_state"] == next(e for e in board["exposure"] if e["symbol"] == "BRD500")["state"]
     assert [s["signal"] for s in f["fund_firing"]] == ["market_rate_jump"]
     conn = db.connect(os.environ["DATABASE_URL"])
-    closes = {r["day"]: float(r["close"]) for r in conn.execute(
-        "select day, close from prices_daily where ticker = 'BRD500'").fetchall()}
-    last = max(closes)
-    back = max(d for d in closes if d <= last - timedelta(days=30))
-    assert f["price"] == {"last_close": closes[last], "as_of": last.isoformat()}
-    assert f["performance"]["d30"] == pytest.approx(closes[last] / closes[back] - 1)
-    assert f["performance"]["y1"] is not None and f["performance"]["as_of"] == last.isoformat()
+    close = [float(r["close"]) for r in conn.execute(
+        "select close from prices_daily where ticker = 'BRD500' order by day").fetchall()]
+    last_day = conn.execute("select max(day) as d from prices_daily where ticker = 'BRD500'").fetchone()["d"]
+    assert f["price"]["last_close"] == close[-1] and f["price"]["as_of"] == last_day.isoformat()
+    assert f["price"]["prev_close"] == close[-2] and f["price"]["change_1d"] == pytest.approx(close[-1] / close[-2] - 1)
+    p = f["performance"]  # trading-day windows, the same the UI uses
+    assert p["d30"] == pytest.approx(close[-1] / close[-22] - 1)
+    assert p["d90"] == pytest.approx(close[-1] / close[-64] - 1)
+    assert p["y1"] == pytest.approx(close[-1] / close[-253] - 1)
+    assert p["as_of"] == last_day.isoformat() and "trading days" in p["basis"]
     assert f["filings_span"] == {"start": "2026-09-19", "end": "2026-09-25"}
     assert all(w["ticker"] in {h["ticker"] for h in f["holdings"]} for w in f["week_filings"])
 

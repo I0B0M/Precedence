@@ -53,8 +53,9 @@ export interface FundHolding {
 export interface FundPage {
   symbol: string;
   name: string;
-  price: { last_close: number; as_of: string } | null;
-  performance: { d30: number | null; d90: number | null; y1: number | null; as_of: string | null }; // fractions
+  price: { last_close: number; as_of: string; prev_close: number | null; change_1d: number | null } | null;
+  // fractions over 21/63/252 trading days; `basis` says so in words for the page
+  performance: { d30: number | null; d90: number | null; y1: number | null; as_of: string | null; basis: string };
   fund_state: State | null; // from the fund's own tested signals (SPY: market rate jump); null if never tested
   fund_firing: SignalResult[];
   holdings_as_of: string | null;
