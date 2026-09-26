@@ -87,7 +87,12 @@ export default function ImportScreen() {
     setCheckErr(false);
     setExample(ex.asOf);
   }
-  const fillExample = () => loadExample().then(applyExample);
+  // Fill the table, then bring it into view (the button sits at the top of the page).
+  const fillAndShow = () => loadExample().then((ex) => {
+    applyExample(ex);
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    setTimeout(() => document.getElementById("check-rows")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }), 50);
+  });
 
   useEffect(() => {
     api.status().then(setStatus).catch(() => {});
@@ -180,6 +185,13 @@ export default function ImportScreen() {
         <p className="lede">Connect an account, or add a screenshot of any app. Stone only reads what you own; it can never trade or move money.</p>
       </div>
 
+      {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
+      <div className="card" style={{ borderWidth: 2 }}>
+        <h3>Try an example portfolio</h3>
+        <p>See Stone with BX, AMZN and SPY at their real closing prices. It&apos;s labelled as an example, and nothing is saved until you press Save.</p>
+        <button className="btn" type="button" onClick={fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
+      </div>
+
       {/* Connecting isn't built yet (no SnapTrade endpoint), so these stay disabled. Never fake a connection. */}
       <div className="card">
         <h3>Connect an account</h3>
@@ -195,8 +207,8 @@ export default function ImportScreen() {
 
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Your app isn&apos;t here? Add a screenshot</h2>
-        <p className="mute">We read the rows, then check they add up to the total printed on your screen. If they don&apos;t, we find the misread
-          before anything is saved.</p>
+        <p className="mute">Read by Gemini, then checked against your total. If the rows don&apos;t add up to the total on your screen, we find the
+          misread before anything is saved.</p>
       </div>
 
       <div className="drop">
@@ -213,12 +225,9 @@ export default function ImportScreen() {
         )}
       </div>
 
-      <div className="card">
+      <div className="card" id="check-rows" style={{ scrollMarginTop: 110 }}>
         <h3>Check the rows</h3>
-        <div className="row-flex" style={{ justifyContent: "space-between" }}>
-          <p className="note">No screenshot? Type your holdings here instead.</p>
-          <button className="btn light small" type="button" onClick={fillExample}>Try an example portfolio</button>
-        </div>
+        <p className="note">No screenshot? Type your holdings here instead: a ticker and shares is enough.</p>
         {example && (
           <p className="example-note"><b>Example holdings, not yours.</b> Real prices at the close on {shortDate(example)}. Nothing is saved until you press Save.</p>
         )}
