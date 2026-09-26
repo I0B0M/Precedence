@@ -84,7 +84,7 @@ WATCH first: `symbol, name, direct` ($ held directly), `via_etf` ({ETF: $}), `to
 The rate jump uses the same 15 dates for every stock, and SPY itself was lower after
 10 of them (vs 38% of normal weeks; `market_rate_jump.json`). So the rate jump is judged
 against SPY: a hit = the stock did worse than SPY over the same days. Under that rule
-the full scan finds 10 STRONG of 111 testable stock-signal pairs, with about 6 expected by
+the full scan finds 10 STRONG of 110 testable stock-signal pairs, with about 6 expected by
 chance alone: 9 rate jumps (ACN, CRM, CVS, FDX, HD, INTU, META, PYPL, SBUX) plus AMZN's
 insider cluster. That is not far above luck, and the 9 rate-jump results share the same 15
 dates, so they are not independent. None of the five tickers exported here has a STRONG

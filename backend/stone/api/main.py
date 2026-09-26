@@ -14,7 +14,7 @@ from stone import config
 from stone.api.views import filing_url, latest_facts, result_json
 from stone.config import NotConnected
 from stone.portfolio import reconcile as rc
-from stone.portfolio.exposure import bad_day_return, exposures
+from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
 from stone.sources.gemini import GeminiClient
 
@@ -161,7 +161,7 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
         value = h.shares * float(last["close"])
         values[sym] = values.get(sym, 0.0) + value
         rows.append({"symbol": sym, "name": known[sym]["name"], "kind": known[sym]["kind"], "shares": h.shares,
-                     "price": float(last["close"]), "value": value, "change": change})
+                     "price": float(last["close"]), "value": value, "change": change, "day": last["day"]})
 
     etfs = [s for s in values if known[s]["kind"] == "etf"]
     weights: dict[str, dict[str, float]] = {}
@@ -177,26 +177,33 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
                       "looked_through": sum(weights[etf].values())})
     total = sum(values.values())
     rates = service.load_rates(c)
-    market = service.load_market(c)[1]
+    market_symbol, market = service.load_market(c)
 
     exposure = []
-    for sym, ex in exposures(values, weights).items():
-        if sym not in known:
-            continue  # an ETF holding we have no data for
+    for sym, row in board_rows(values, weights).items():
         bars = service.load_bars(c, sym)
         bad = bad_day_return([b.close for b in bars])
-        results = service.run_all(c, sym, rates, market) if known[sym]["kind"] == "stock" else {}
-        firing = [result_json(r, with_cases=False) for r in results.values() if r.firing]
+        if known[sym]["kind"] == "stock":
+            results = list(service.run_all(c, sym, rates, market).values())
+            state = engine.holding_state(results)
+        elif sym == market_symbol:  # the one fund tested on its own history: rate jumps and the market
+            results = [service.run_market_rates(c)[1]]
+            state = engine.holding_state(results)
+        else:
+            results, state = [], None  # a fund we never tested: no state, never CALM
         exposure.append({
             "symbol": sym, "name": known[sym]["name"], "sector": known[sym]["sector"],
-            "direct": ex.direct, "via_etf": ex.via_etf, "total": ex.total,
-            "share_of_total": ex.total / total if total else None,
-            "bad_day_return": bad, "bad_day_loss": bad * ex.total if bad is not None else None,
-            "state": engine.holding_state(list(results.values())) if results else engine.CALM,
-            "firing": firing,
+            "direct": row.direct, "via_etf": row.via_etf, "total": row.shown,
+            "share_of_total": row.shown / total if total else None,
+            "bad_day_return": bad, "bad_day_loss": bad * row.shown if bad is not None else None,
+            "state": state, "firing": [result_json(r, with_cases=False) for r in results if r.firing],
+            "children": [{"symbol": k, "name": known[k]["name"], "total": v}
+                         for k, v in sorted(row.children.items(), key=lambda kv: -kv[1])],
         })
     exposure.sort(key=lambda e: (e["state"] != engine.WATCH, -e["total"]))
-    return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds}
+    price_as_of = max((r.pop("day") for r in rows), default=None)  # the close the values are priced at
+    return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds,
+            "price_as_of": price_as_of.isoformat() if price_as_of else None}
 
 
 class ReadRowIn(BaseModel):

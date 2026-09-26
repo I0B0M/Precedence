@@ -47,12 +47,21 @@ def test_parse_companyfacts():
 
 
 def test_parse_form4_keeps_every_line_and_reads_the_sale():
-    trades = sec.parse_form4(fixture("form4_sample.xml"))
+    trades = sec.parse_form4(fixture("form4_sample.xml"), {9999999})  # the fixture's issuer CIK
     assert [t.code for t in trades] == ["M", "S"]
     sale = trades[1]
     assert sale.owner_name == "DOE JANE" and sale.owner_title == "Chief Financial Officer"
     assert sale.shares == 4000 and sale.price == 222.91 and sale.acquired_disposed == "D"
     assert trades[0].price is None  # footnote only, no value
+
+
+def test_form4_where_the_company_is_the_seller_not_the_issuer_is_dropped():
+    # Real case: Blackstone funds file Form 4s as the REPORTING OWNER when they sell a portfolio
+    # company's shares. Those sit in Blackstone's own submissions but are not trades in BX stock.
+    xml = fixture("form4_sample.xml").replace(b"<rptOwnerCik>0001111111", b"<rptOwnerCik>0001393818")
+    assert sec.form4_issuer_cik(xml) == 9999999
+    assert sec.parse_form4(xml, {1393818}) == []  # BX is the seller here, not the issuer
+    assert len(sec.parse_form4(xml, {1393818, 9999999})) == 2  # any of a company's CIKs counts (XOM has two)
 
 
 def test_parse_alpaca_bars_uses_eastern_day_and_page_token():

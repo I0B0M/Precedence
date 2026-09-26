@@ -58,9 +58,26 @@ def test_portfolio_counts_etf_slices_and_orders_watch_first(client):
     ex = {e["symbol"]: e for e in body["exposure"]}
     brd = next(r for r in body["rows"] if r["symbol"] == "BRD500")["value"]
     assert ex["HLCN"]["via_etf"]["BRD500"] == pytest.approx(brd * 0.041)
-    assert ex["MRDN"]["direct"] == 0 and ex["MRDN"]["total"] > 0  # only via the fund
+    # MRDN is held only through the fund and is under 1% of everything, so it stays inside the fund
+    assert "MRDN" not in ex and "MRDN" in {k["symbol"] for k in ex["BRD500"]["children"]}
+    assert ex["BRD500"]["direct"] == pytest.approx(brd)  # you own the whole fund directly
+    assert sum(e["total"] for e in body["exposure"]) == pytest.approx(body["total"])
     assert body["exposure"][0]["state"] == "WATCH"
     assert ex["HLCN"]["bad_day_loss"] < 0
+
+
+def test_the_market_fund_is_tested_and_other_funds_have_no_state(client, monkeypatch):
+    body = client.post("/api/portfolio", json={"holdings": [{"symbol": "BRD500", "shares": 10}]}).json()
+    fund = next(e for e in body["exposure"] if e["symbol"] == "BRD500")
+    market = client.get("/api/market/rate_jump").json()
+    expected = "WATCH" if market["label"] == "STRONG" and market["firing"] else "CALM"
+    assert fund["state"] == expected  # sample mode: BRD500 is the market
+    assert [f["signal"] for f in fund["firing"]] == (["market_rate_jump"] if market["firing"] else [])
+
+    from stone.signals import service
+    monkeypatch.setattr(service, "MARKET_TICKERS", ("HLCN",))  # now BRD500 is just a fund we never tested
+    body = client.post("/api/portfolio", json={"holdings": [{"symbol": "BRD500", "shares": 10}]}).json()
+    assert next(e for e in body["exposure"] if e["symbol"] == "BRD500")["state"] is None
 
 
 def test_reconcile_endpoint(client):
@@ -127,3 +144,9 @@ def test_fund_holdings_we_have_no_data_for_stay_in_the_fund(client):
     finally:
         conn.execute("delete from etf_holdings where holding = 'ZZZZ'")
         conn.commit()
+
+
+def test_portfolio_says_which_close_the_prices_are_from(client):
+    body = client.post("/api/portfolio", json={"holdings": [{"symbol": "HLCN", "shares": 1}]}).json()
+    assert body["price_as_of"] == "2026-09-25"
+    assert client.post("/api/portfolio", json={"holdings": []}).json()["price_as_of"] is None
