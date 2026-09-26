@@ -2,7 +2,7 @@
   "meta": {
     "endpoint": "POST /api/portfolio",
     "as_of": "2026-09-25",
-    "generated_at": "2026-09-26T18:40:27+00:00",
+    "generated_at": "2026-09-26T19:03:56+00:00",
     "sources": [
       "alpaca-iex",
       "fred",
@@ -103,11 +103,13 @@
           "name": "Amazon",
           "sector": "Consumer",
           "direct": 2496.3,
-          "via_etf": {},
-          "total": 2496.3,
-          "share_of_total": 0.15013757950290949,
+          "via_etf": {
+            "SPY": 142.185336685
+          },
+          "total": 2638.485336685,
+          "share_of_total": 0.1586891807890899,
           "bad_day_return": -0.030351972582773556,
-          "bad_day_loss": -75.76762915837763,
+          "bad_day_loss": -80.08323459911318,
           "state": "WATCH",
           "firing": [
             {
@@ -173,16 +175,94 @@
           ]
         },
         {
-          "symbol": "JPM",
-          "name": "JPMorgan Chase",
-          "sector": "Banks",
-          "direct": 3428.8,
-          "via_etf": {},
-          "total": 3428.8,
-          "share_of_total": 0.2062219014539823,
-          "bad_day_return": -0.02473763118440775,
-          "bad_day_loss": -84.82038980509729,
-          "state": "CALM",
+          "symbol": "META",
+          "name": "Meta Platforms",
+          "sector": "Communication",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 99.5999131025
+          },
+          "total": 99.5999131025,
+          "share_of_total": 0.0059903416544123175,
+          "bad_day_return": -0.035217715680954886,
+          "bad_day_loss": -3.5076814214916583,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "insider_cluster",
+              "lite": "Executives sold shares",
+              "pro": "Insider selling cluster: 3+ Form 4 sales in 10 days",
+              "horizon": 20,
+              "vs_market": false,
+              "n": 23,
+              "hits": 10,
+              "hit_rate": 0.43478260869565216,
+              "normal_n": 0,
+              "normal_hits": 0,
+              "normal_rate": null,
+              "low": 0.2806738753056511,
+              "high": 0.6026197805800002,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-23T18:15:10-04:00",
+                "note": "2026-09-23: 4 insider sale filings in 10 days"
+              },
+              "holdout": null
+            },
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 204,
+              "normal_rate": 0.5151515151515151,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 8,
+                  "hit_rate": 0.8,
+                  "normal_rate": 0.42528735632183906,
+                  "normal_n": 174,
+                  "label": "STRONG"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 3,
+                  "hit_rate": 0.6,
+                  "normal_rate": 0.5825688073394495,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            }
+          ]
+        },
+        {
+          "symbol": "HD",
+          "name": "Home Depot, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 16.92727575
+          },
+          "total": 16.92727575,
+          "share_of_total": 0.001018074834227976,
+          "bad_day_return": -0.025475040257649018,
+          "bad_day_loss": -0.43122303118357597,
+          "state": "WATCH",
           "firing": [
             {
               "signal": "rate_jump",
@@ -191,17 +271,441 @@
               "horizon": 5,
               "vs_market": true,
               "n": 15,
-              "hits": 5,
-              "hit_rate": 0.3333333333333333,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
               "normal_n": 396,
-              "normal_hits": 188,
-              "normal_rate": 0.47474747474747475,
-              "low": 0.17277471554901871,
-              "high": 0.5448278526543612,
-              "label": "NOT PROVEN",
+              "normal_hits": 205,
+              "normal_rate": 0.5176767676767676,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "STRONG",
               "firing": {
                 "known_at": "2026-09-25T16:15:00-04:00",
                 "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 7,
+                  "hit_rate": 0.7,
+                  "normal_rate": 0.42528735632183906,
+                  "normal_n": 174,
+                  "label": "STRONG"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 4,
+                  "hit_rate": 0.8,
+                  "normal_rate": 0.5963302752293578,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            }
+          ]
+        },
+        {
+          "symbol": "CRM",
+          "name": "Salesforce, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 11.3349496825
+          },
+          "total": 11.3349496825,
+          "share_of_total": 0.0006817297236381132,
+          "bad_day_return": -0.041427069807704164,
+          "bad_day_loss": -0.4695737517637416,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 197,
+              "normal_rate": 0.49747474747474746,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 8,
+                  "hit_rate": 0.8,
+                  "normal_rate": 0.5057471264367817,
+                  "normal_n": 174,
+                  "label": "STRONG"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 3,
+                  "hit_rate": 0.6,
+                  "normal_rate": 0.481651376146789,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            }
+          ]
+        },
+        {
+          "symbol": "CVS",
+          "name": "CVS HEALTH Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.318397822500001
+          },
+          "total": 6.318397822500001,
+          "share_of_total": 0.0003800140028869142,
+          "bad_day_return": -0.026273458445040254,
+          "bad_day_loss": -0.1660061626286866,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 168,
+              "normal_rate": 0.42424242424242425,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 6,
+                  "hit_rate": 0.6,
+                  "normal_rate": 0.4482758620689655,
+                  "normal_n": 174,
+                  "label": "NOT PROVEN"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 5,
+                  "hit_rate": 1.0,
+                  "normal_rate": 0.4036697247706422,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            }
+          ]
+        },
+        {
+          "symbol": "ACN",
+          "name": "Accenture plc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.2994226125
+          },
+          "total": 6.2994226125,
+          "share_of_total": 0.0003788727570030222,
+          "bad_day_return": -0.04410773075244934,
+          "bad_day_loss": -0.277853236488041,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 12,
+              "hit_rate": 0.8,
+              "normal_n": 396,
+              "normal_hits": 208,
+              "normal_rate": 0.5252525252525253,
+              "low": 0.5912136790598029,
+              "high": 0.917101698174113,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 8,
+                  "hit_rate": 0.8,
+                  "normal_rate": 0.5114942528735632,
+                  "normal_n": 174,
+                  "label": "STRONG"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 4,
+                  "hit_rate": 0.8,
+                  "normal_rate": 0.5275229357798165,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            }
+          ]
+        },
+        {
+          "symbol": "SBUX",
+          "name": "Starbucks Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.204353725
+          },
+          "total": 6.204353725,
+          "share_of_total": 0.0003731549295562873,
+          "bad_day_return": -0.024974164657251108,
+          "bad_day_loss": -0.15494855151997924,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 12,
+              "hit_rate": 0.8,
+              "normal_n": 396,
+              "normal_hits": 197,
+              "normal_rate": 0.49747474747474746,
+              "low": 0.5912136790598029,
+              "high": 0.917101698174113,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 7,
+                  "hit_rate": 0.7,
+                  "normal_rate": 0.5344827586206896,
+                  "normal_n": 174,
+                  "label": "NOT PROVEN"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 5,
+                  "hit_rate": 1.0,
+                  "normal_rate": 0.45871559633027525,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            }
+          ]
+        },
+        {
+          "symbol": "INTU",
+          "name": "Intuit Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.3966564325
+          },
+          "total": 4.3966564325,
+          "share_of_total": 0.00026443270227194133,
+          "bad_day_return": -0.05014450976101181,
+          "bad_day_loss": -0.22046818139531166,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 205,
+              "normal_rate": 0.5176767676767676,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 6,
+                  "hit_rate": 0.6,
+                  "normal_rate": 0.4885057471264368,
+                  "normal_n": 174,
+                  "label": "NOT PROVEN"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 5,
+                  "hit_rate": 1.0,
+                  "normal_rate": 0.5321100917431193,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            }
+          ]
+        },
+        {
+          "symbol": "FDX",
+          "name": "Fedex Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 3.5742430625
+          },
+          "total": 3.5742430625,
+          "share_of_total": 0.00021496943554813778,
+          "bad_day_return": -0.027779419587446008,
+          "bad_day_loss": -0.0992903977407055,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 177,
+              "normal_rate": 0.44696969696969696,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 8,
+                  "hit_rate": 0.8,
+                  "normal_rate": 0.5057471264367817,
+                  "normal_n": 174,
+                  "label": "STRONG"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 3,
+                  "hit_rate": 0.6,
+                  "normal_rate": 0.39908256880733944,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            }
+          ]
+        },
+        {
+          "symbol": "PYPL",
+          "name": "PayPal Holdings, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 2.6063145149999998
+          },
+          "total": 2.6063145149999998,
+          "share_of_total": 0.00015675429744237447,
+          "bad_day_return": -0.0333745364647714,
+          "bad_day_loss": -0.08698453881953047,
+          "state": "WATCH",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 12,
+              "hit_rate": 0.8,
+              "normal_n": 396,
+              "normal_hits": 192,
+              "normal_rate": 0.48484848484848486,
+              "low": 0.5912136790598029,
+              "high": 0.917101698174113,
+              "label": "STRONG",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": {
+                "first": {
+                  "n": 10,
+                  "hits": 8,
+                  "hit_rate": 0.8,
+                  "normal_rate": 0.41954022988505746,
+                  "normal_n": 174,
+                  "label": "STRONG"
+                },
+                "second": {
+                  "n": 5,
+                  "hits": 4,
+                  "hit_rate": 0.8,
+                  "normal_rate": 0.5275229357798165,
+                  "normal_n": 218,
+                  "label": "WEAK"
+                },
+                "held_up": true
+              }
+            },
+            {
+              "signal": "gap_down",
+              "lite": "The stock dropped 5% at the open",
+              "pro": "Gap down: opened 5% or more below the prior close",
+              "horizon": 20,
+              "vs_market": false,
+              "n": 6,
+              "hits": 3,
+              "hit_rate": 0.5,
+              "normal_n": 256,
+              "normal_hits": 95,
+              "normal_rate": 0.37109375,
+              "low": 0.22125998614034878,
+              "high": 0.7787400138596512,
+              "label": "WEAK",
+              "firing": {
+                "known_at": "2026-08-28T09:30:00-04:00",
+                "note": "2026-08-28: opened 12.5% below the prior close"
               },
               "holdout": null
             }
@@ -212,11 +716,13 @@
           "name": "Apple",
           "sector": "Technology",
           "direct": 3410.2,
-          "via_etf": {},
-          "total": 3410.2,
-          "share_of_total": 0.2051032222172102,
+          "via_etf": {
+            "SPY": 284.76248060250003
+          },
+          "total": 3694.9624806025,
+          "share_of_total": 0.22222998966138902,
           "bad_day_return": -0.02039633793023521,
-          "bad_day_loss": -69.55559160968811,
+          "bad_day_loss": -75.36370339390875,
           "state": "CALM",
           "firing": [
             {
@@ -243,15 +749,54 @@
           ]
         },
         {
+          "symbol": "JPM",
+          "name": "JPMorgan Chase",
+          "sector": "Banks",
+          "direct": 3428.8,
+          "via_etf": {
+            "SPY": 52.2681801325
+          },
+          "total": 3481.0681801325004,
+          "share_of_total": 0.20936552123129898,
+          "bad_day_return": -0.02473763118440775,
+          "bad_day_loss": -86.11338076789528,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 5,
+              "hit_rate": 0.3333333333333333,
+              "normal_n": 396,
+              "normal_hits": 188,
+              "normal_rate": 0.47474747474747475,
+              "low": 0.17277471554901871,
+              "high": 0.5448278526543612,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
           "symbol": "NVDA",
           "name": "NVIDIA",
           "sector": "Semiconductors",
           "direct": 2250.4,
-          "via_etf": {},
-          "total": 2250.4,
-          "share_of_total": 0.1353481588404228,
+          "via_etf": {
+            "SPY": 315.68563213
+          },
+          "total": 2566.0856321300002,
+          "share_of_total": 0.15433476970123447,
           "bad_day_return": -0.04057971014492756,
-          "bad_day_loss": -91.32057971014498,
+          "bad_day_loss": -104.13101115889863,
           "state": "CALM",
           "firing": [
             {
@@ -299,15 +844,30 @@
           ]
         },
         {
+          "symbol": "SPY",
+          "name": "SPDR S&P 500 ETF",
+          "sector": "Index",
+          "direct": 1238.5793341225003,
+          "via_etf": {},
+          "total": 1238.5793341225003,
+          "share_of_total": 0.07449317119235571,
+          "bad_day_return": -0.014309323229473092,
+          "bad_day_loss": -17.72323203730441,
+          "state": "CALM",
+          "firing": []
+        },
+        {
           "symbol": "BX",
           "name": "Blackstone",
           "sector": "Asset Management",
           "direct": 1184.3000000000002,
-          "via_etf": {},
-          "total": 1184.3000000000002,
-          "share_of_total": 0.07122859247898719,
+          "via_etf": {
+            "SPY": 5.110579425
+          },
+          "total": 1189.4105794250002,
+          "share_of_total": 0.07153596339783783,
           "bad_day_return": -0.04226657603658157,
-          "bad_day_loss": -50.05630600012356,
+          "bad_day_loss": -50.27231269398131,
           "state": "CALM",
           "firing": [
             {
@@ -332,9 +892,3436 @@
               "holdout": null
             }
           ]
+        },
+        {
+          "symbol": "MSFT",
+          "name": "Microsoft",
+          "sector": "Technology",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 214.76343229
+          },
+          "total": 214.76343229,
+          "share_of_total": 0.012916741533372427,
+          "bad_day_return": -0.028329080427180853,
+          "bad_day_loss": -6.084050546160819,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 205,
+              "normal_rate": 0.5176767676767676,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "GOOGL",
+          "name": "Alphabet",
+          "sector": "Communication",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 116.6877839225
+          },
+          "total": 116.6877839225,
+          "share_of_total": 0.007018075325755184,
+          "bad_day_return": -0.02807703882034307,
+          "bad_day_loss": -3.2762474390518364,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 177,
+              "normal_rate": 0.44696969696969696,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "AVGO",
+          "name": "Broadcom Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 96.8235159125
+          },
+          "total": 96.8235159125,
+          "share_of_total": 0.005823357896913107,
+          "bad_day_return": -0.04426732999974636,
+          "bad_day_loss": -4.28611853063433,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 6,
+              "hit_rate": 0.4,
+              "normal_n": 396,
+              "normal_hits": 198,
+              "normal_rate": 0.5,
+              "low": 0.2231679102659823,
+              "high": 0.6073936306560458,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "TSLA",
+          "name": "Tesla",
+          "sector": "Consumer",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 61.862771377499996
+          },
+          "total": 61.862771377499996,
+          "share_of_total": 0.003720677304794984,
+          "bad_day_return": -0.04612180730517168,
+          "bad_day_loss": -2.853222820836945,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 200,
+              "normal_rate": 0.5050505050505051,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "AMD",
+          "name": "Advanced Micro Devices",
+          "sector": "Semiconductors",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 59.661647017499995
+          },
+          "total": 59.661647017499995,
+          "share_of_total": 0.0035882927822635208,
+          "bad_day_return": -0.05874999999999986,
+          "bad_day_loss": -3.505121762278116,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 180,
+              "normal_rate": 0.45454545454545453,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            },
+            {
+              "signal": "gap_down",
+              "lite": "The stock dropped 5% at the open",
+              "pro": "Gap down: opened 5% or more below the prior close",
+              "horizon": 20,
+              "vs_market": false,
+              "n": 10,
+              "hits": 4,
+              "hit_rate": 0.4,
+              "normal_n": 141,
+              "normal_hits": 41,
+              "normal_rate": 0.2907801418439716,
+              "low": 0.1942269918768033,
+              "high": 0.6483614021398783,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-14T09:30:00-04:00",
+                "note": "2026-09-14: opened 5.8% below the prior close"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "LLY",
+          "name": "ELI LILLY & Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 54.930841765
+          },
+          "total": 54.930841765,
+          "share_of_total": 0.0033037630183288974,
+          "bad_day_return": -0.02731276037910335,
+          "bad_day_loss": -1.5003129185498876,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 193,
+              "normal_rate": 0.48737373737373735,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "BRK.B",
+          "name": "Berkshire Hathaway Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 54.6508802825
+          },
+          "total": 54.6508802825,
+          "share_of_total": 0.0032869250023305815,
+          "bad_day_return": -0.014853039281089497,
+          "bad_day_loss": -0.8117316715820919,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 6,
+              "hit_rate": 0.4,
+              "normal_n": 396,
+              "normal_hits": 225,
+              "normal_rate": 0.5681818181818182,
+              "low": 0.2231679102659823,
+              "high": 0.6073936306560458,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "XOM",
+          "name": "Exxon Mobil",
+          "sector": "Energy",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 38.7196487875
+          },
+          "total": 38.7196487875,
+          "share_of_total": 0.0023287562985851115,
+          "bad_day_return": -0.02640740426254562,
+          "bad_day_loss": -1.0224854184352967,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 183,
+              "normal_rate": 0.4621212121212121,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "JNJ",
+          "name": "Johnson & Johnson",
+          "sector": "Healthcare",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 37.883543955
+          },
+          "total": 37.883543955,
+          "share_of_total": 0.0022784695719247597,
+          "bad_day_return": -0.017711672885899032,
+          "bad_day_loss": -0.6709809382895378,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 187,
+              "normal_rate": 0.4722222222222222,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "INTC",
+          "name": "Intel",
+          "sector": "Semiconductors",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 36.7687118
+          },
+          "total": 36.7687118,
+          "share_of_total": 0.0022114190566406545,
+          "bad_day_return": -0.06178779437832371,
+          "bad_day_loss": -2.2718576042542447,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 5,
+              "hit_rate": 0.3333333333333333,
+              "normal_n": 396,
+              "normal_hits": 197,
+              "normal_rate": 0.49747474747474746,
+              "low": 0.17277471554901871,
+              "high": 0.5448278526543612,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            },
+            {
+              "signal": "gap_down",
+              "lite": "The stock dropped 5% at the open",
+              "pro": "Gap down: opened 5% or more below the prior close",
+              "horizon": 20,
+              "vs_market": false,
+              "n": 7,
+              "hits": 4,
+              "hit_rate": 0.5714285714285714,
+              "normal_n": 262,
+              "normal_hits": 80,
+              "normal_rate": 0.3053435114503817,
+              "low": 0.28947709101359287,
+              "high": 0.813556809636044,
+              "label": "WEAK",
+              "firing": {
+                "known_at": "2026-09-14T09:30:00-04:00",
+                "note": "2026-09-14: opened 7.0% below the prior close"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "V",
+          "name": "Visa Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 36.4252682125
+          },
+          "total": 36.4252682125,
+          "share_of_total": 0.0021907629700633016,
+          "bad_day_return": -0.017918552036199076,
+          "bad_day_loss": -0.6526880638981893,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 191,
+              "normal_rate": 0.4823232323232323,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "WMT",
+          "name": "Walmart",
+          "sector": "Consumer",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 27.851481557499998
+          },
+          "total": 27.851481557499998,
+          "share_of_total": 0.0016751007597696481,
+          "bad_day_return": -0.023829189724952404,
+          "bad_day_loss": -0.6636782381546803,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 170,
+              "normal_rate": 0.4292929292929293,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "ABBV",
+          "name": "AbbVie Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 27.2059387425
+          },
+          "total": 27.2059387425,
+          "share_of_total": 0.0016362752036627724,
+          "bad_day_return": -0.02549367650321721,
+          "bad_day_loss": -0.6935794012676391,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 193,
+              "normal_rate": 0.48737373737373735,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MA",
+          "name": "Mastercard Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 26.587740285
+          },
+          "total": 26.587740285,
+          "share_of_total": 0.0015990942478235372,
+          "bad_day_return": -0.020466574490757505,
+          "bad_day_loss": -0.5441599670838667,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 198,
+              "normal_rate": 0.5,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "PLTR",
+          "name": "Palantir Technologies Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 25.7380596925
+          },
+          "total": 25.7380596925,
+          "share_of_total": 0.001547991020043003,
+          "bad_day_return": -0.06113833396155299,
+          "bad_day_loss": -1.5735820890024508,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 176,
+              "normal_rate": 0.4444444444444444,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "CSCO",
+          "name": "Cisco Systems, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 24.483111809999997
+          },
+          "total": 24.483111809999997,
+          "share_of_total": 0.0014725133781406466,
+          "bad_day_return": -0.029008288082309264,
+          "bad_day_loss": -0.7102131605358681,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 179,
+              "normal_rate": 0.45202020202020204,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "CVX",
+          "name": "Chevron",
+          "sector": "Energy",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 23.601767300000002
+          },
+          "total": 23.601767300000002,
+          "share_of_total": 0.0014195057542815044,
+          "bad_day_return": -0.024471663713632852,
+          "bad_day_loss": -0.5775745124130165,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 189,
+              "normal_rate": 0.4772727272727273,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "COST",
+          "name": "Costco Wholesale Corp /New",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 23.0854641775
+          },
+          "total": 23.0854641775,
+          "share_of_total": 0.0013884531960545506,
+          "bad_day_return": -0.02221663547398911,
+          "bad_day_loss": -0.5128813423793513,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 208,
+              "normal_rate": 0.5252525252525253,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "CAT",
+          "name": "Caterpillar Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 21.4943233975
+          },
+          "total": 21.4943233975,
+          "share_of_total": 0.001292755553400394,
+          "bad_day_return": -0.03949205504953124,
+          "bad_day_loss": -0.8488550028664973,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 178,
+              "normal_rate": 0.4494949494949495,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MRK",
+          "name": "Merck & Co., Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 21.199629129999998
+          },
+          "total": 21.199629129999998,
+          "share_of_total": 0.001275031448118243,
+          "bad_day_return": -0.023594455692259708,
+          "bad_day_loss": -0.5001937102001232,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 210,
+              "normal_rate": 0.5303030303030303,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "BAC",
+          "name": "Bank of America",
+          "sector": "Banks",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 21.15843904
+          },
+          "total": 21.15843904,
+          "share_of_total": 0.001272554109492234,
+          "bad_day_return": -0.025647451963241474,
+          "bad_day_loss": -0.5426600488955731,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 183,
+              "normal_rate": 0.4621212121212121,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "KO",
+          "name": "Coca-Cola",
+          "sector": "Consumer",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 19.8088465125
+          },
+          "total": 19.8088465125,
+          "share_of_total": 0.0011913841558031486,
+          "bad_day_return": -0.01625504032258074,
+          "bad_day_loss": -0.32199359880450035,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 213,
+              "normal_rate": 0.5378787878787878,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "PG",
+          "name": "PROCTER & GAMBLE Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 19.662097175000003
+          },
+          "total": 19.662097175000003,
+          "share_of_total": 0.0011825580570466268,
+          "bad_day_return": -0.01854651748815639,
+          "bad_day_loss": -0.3646634291099679,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 234,
+              "normal_rate": 0.5909090909090909,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "UNH",
+          "name": "Unitedhealth Group Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 19.5452762175
+          },
+          "total": 19.5452762175,
+          "share_of_total": 0.001175531972123235,
+          "bad_day_return": -0.024197702570442403,
+          "bad_day_loss": -0.4729507805682065,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 185,
+              "normal_rate": 0.4671717171717172,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "GE",
+          "name": "General Electric Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 19.2655075725
+          },
+          "total": 19.2655075725,
+          "share_of_total": 0.0011587055541521945,
+          "bad_day_return": -0.035551278526257946,
+          "bad_day_loss": -0.684913425659679,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 174,
+              "normal_rate": 0.4393939393939394,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "NFLX",
+          "name": "Netflix",
+          "sector": "Communication",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 17.3399094325
+          },
+          "total": 17.3399094325,
+          "share_of_total": 0.0010428922929917152,
+          "bad_day_return": -0.035343126507344835,
+          "bad_day_loss": -0.6128466126987495,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 210,
+              "normal_rate": 0.5303030303030303,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            },
+            {
+              "signal": "gap_down",
+              "lite": "The stock dropped 5% at the open",
+              "pro": "Gap down: opened 5% or more below the prior close",
+              "horizon": 20,
+              "vs_market": false,
+              "n": 4,
+              "hits": 3,
+              "hit_rate": 0.75,
+              "normal_n": 348,
+              "normal_hits": 136,
+              "normal_rate": 0.39080459770114945,
+              "low": 0.3561680085985064,
+              "high": 0.9420926788001412,
+              "label": "WEAK",
+              "firing": {
+                "known_at": "2026-09-18T09:30:00-04:00",
+                "note": "2026-09-18: opened 5.6% below the prior close"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "PM",
+          "name": "Philip Morris International Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 17.3301132875
+          },
+          "total": 17.3301132875,
+          "share_of_total": 0.0010423031132061288,
+          "bad_day_return": -0.029871658353415986,
+          "bad_day_loss": -0.5176792233501948,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 5,
+              "hit_rate": 0.3333333333333333,
+              "normal_n": 396,
+              "normal_hits": 189,
+              "normal_rate": 0.4772727272727273,
+              "low": 0.17277471554901871,
+              "high": 0.5448278526543612,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "GS",
+          "name": "Goldman Sachs Group Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 15.615016562500001
+          },
+          "total": 15.615016562500001,
+          "share_of_total": 0.0009391502586193935,
+          "bad_day_return": -0.03226436170789637,
+          "bad_day_loss": -0.5038085424472927,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 188,
+              "normal_rate": 0.47474747474747475,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "RTX",
+          "name": "RTX Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 14.7657602125
+          },
+          "total": 14.7657602125,
+          "share_of_total": 0.0008880725464988648,
+          "bad_day_return": -0.02674678920702256,
+          "bad_day_loss": -0.3949366758851781,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 186,
+              "normal_rate": 0.4696969696969697,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "TMO",
+          "name": "Thermo Fisher Scientific Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 14.563087999999999
+          },
+          "total": 14.563087999999999,
+          "share_of_total": 0.0008758830198324988,
+          "bad_day_return": -0.02444047493958179,
+          "bad_day_loss": -0.3559287873069243,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 208,
+              "normal_rate": 0.5252525252525253,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "WFC",
+          "name": "Wells Fargo & Company/Mn",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 14.428333155
+          },
+          "total": 14.428333155,
+          "share_of_total": 0.0008677783183725022,
+          "bad_day_return": -0.028429507503698992,
+          "bad_day_loss": -0.41019040569594145,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 5,
+              "hit_rate": 0.3333333333333333,
+              "normal_n": 396,
+              "normal_hits": 190,
+              "normal_rate": 0.4797979797979798,
+              "low": 0.17277471554901871,
+              "high": 0.5448278526543612,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "TXN",
+          "name": "Texas Instruments Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 14.357600360000001
+          },
+          "total": 14.357600360000001,
+          "share_of_total": 0.0008635241619679132,
+          "bad_day_return": -0.03280224929709474,
+          "bad_day_loss": -0.47096158631677726,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 3,
+              "hit_rate": 0.2,
+              "normal_n": 396,
+              "normal_hits": 203,
+              "normal_rate": 0.5126262626262627,
+              "low": 0.08289830182588702,
+              "high": 0.40878632094019707,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "ORCL",
+          "name": "Oracle Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 14.008564484999999
+          },
+          "total": 14.008564484999999,
+          "share_of_total": 0.0008425317325995759,
+          "bad_day_return": -0.05765692087507679,
+          "bad_day_loss": -0.8076906940850558,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 6,
+              "hit_rate": 0.4,
+              "normal_n": 396,
+              "normal_hits": 207,
+              "normal_rate": 0.5227272727272727,
+              "low": 0.2231679102659823,
+              "high": 0.6073936306560458,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            },
+            {
+              "signal": "gap_down",
+              "lite": "The stock dropped 5% at the open",
+              "pro": "Gap down: opened 5% or more below the prior close",
+              "horizon": 20,
+              "vs_market": false,
+              "n": 6,
+              "hits": 2,
+              "hit_rate": 0.3333333333333333,
+              "normal_n": 283,
+              "normal_hits": 114,
+              "normal_rate": 0.4028268551236749,
+              "low": 0.1172760941022896,
+              "high": 0.6529852329996819,
+              "label": "WEAK",
+              "firing": {
+                "known_at": "2026-09-24T09:30:00-04:00",
+                "note": "2026-09-24: opened 5.3% below the prior close"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MS",
+          "name": "Morgan Stanley",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 13.6046470575
+          },
+          "total": 13.6046470575,
+          "share_of_total": 0.0008182385046686814,
+          "bad_day_return": -0.028819562369608587,
+          "bad_day_loss": -0.39207997439013315,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 173,
+              "normal_rate": 0.43686868686868685,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "C",
+          "name": "Citigroup Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 12.86411249
+          },
+          "total": 12.86411249,
+          "share_of_total": 0.0007736997603259808,
+          "bad_day_return": -0.029843363561417924,
+          "bad_day_loss": -0.3839083859340472,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 6,
+              "hit_rate": 0.4,
+              "normal_n": 396,
+              "normal_hits": 173,
+              "normal_rate": 0.43686868686868685,
+              "low": 0.2231679102659823,
+              "high": 0.6073936306560458,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "AMGN",
+          "name": "Amgen Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 12.7528452525
+          },
+          "total": 12.7528452525,
+          "share_of_total": 0.0007670076985881186,
+          "bad_day_return": -0.02294306260311929,
+          "bad_day_loss": -0.29258932699600015,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 185,
+              "normal_rate": 0.4671717171717172,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            },
+            {
+              "signal": "gap_down",
+              "lite": "The stock dropped 5% at the open",
+              "pro": "Gap down: opened 5% or more below the prior close",
+              "horizon": 20,
+              "vs_market": false,
+              "n": 1,
+              "hits": 1,
+              "hit_rate": 1.0,
+              "normal_n": 457,
+              "normal_hits": 202,
+              "normal_rate": 0.4420131291028446,
+              "low": 0.2698659487840541,
+              "high": 0.9999999999999999,
+              "label": "WEAK",
+              "firing": {
+                "known_at": "2026-09-08T09:30:00-04:00",
+                "note": "2026-09-08: opened 6.7% below the prior close"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "LIN",
+          "name": "Linde Plc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 12.5272253775
+          },
+          "total": 12.5272253775,
+          "share_of_total": 0.000753438006675989,
+          "bad_day_return": -0.01925507397219539,
+          "bad_day_loss": -0.24121265131012584,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 210,
+              "normal_rate": 0.5303030303030303,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "IBM",
+          "name": "International Business Machines Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 12.4261013925
+          },
+          "total": 12.4261013925,
+          "share_of_total": 0.0007473560011728088,
+          "bad_day_return": -0.035738553632098435,
+          "bad_day_loss": -0.44409089105375427,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 186,
+              "normal_rate": 0.4696969696969697,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "QCOM",
+          "name": "Qualcomm Inc/De",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 12.0518423725
+          },
+          "total": 12.0518423725,
+          "share_of_total": 0.0007248465498368592,
+          "bad_day_return": -0.04908772524430882,
+          "bad_day_loss": -0.5915975270689989,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 199,
+              "normal_rate": 0.5025252525252525,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            },
+            {
+              "signal": "gap_down",
+              "lite": "The stock dropped 5% at the open",
+              "pro": "Gap down: opened 5% or more below the prior close",
+              "horizon": 20,
+              "vs_market": false,
+              "n": 4,
+              "hits": 1,
+              "hit_rate": 0.25,
+              "normal_n": 352,
+              "normal_hits": 182,
+              "normal_rate": 0.5170454545454546,
+              "low": 0.05790732119985868,
+              "high": 0.6438319914014936,
+              "label": "WEAK",
+              "firing": {
+                "known_at": "2026-09-14T09:30:00-04:00",
+                "note": "2026-09-14: opened 6.1% below the prior close"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "VZ",
+          "name": "Verizon Communications Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 11.412817465
+          },
+          "total": 11.412817465,
+          "share_of_total": 0.0006864130070518892,
+          "bad_day_return": -0.025206010664081457,
+          "bad_day_loss": -0.2876715987300051,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 201,
+              "normal_rate": 0.5075757575757576,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "GILD",
+          "name": "Gilead Sciences, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 10.7742168
+          },
+          "total": 10.7742168,
+          "share_of_total": 0.000648004979926925,
+          "bad_day_return": -0.025137587386583338,
+          "bad_day_loss": -0.2708378163319943,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 190,
+              "normal_rate": 0.4797979797979798,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "DIS",
+          "name": "Walt Disney",
+          "sector": "Communication",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 10.5800294375
+          },
+          "total": 10.5800294375,
+          "share_of_total": 0.0006363257664606733,
+          "bad_day_return": -0.024177606569010024,
+          "bad_day_loss": -0.25579978922841945,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 213,
+              "normal_rate": 0.5378787878787878,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "ABT",
+          "name": "Abbott Laboratories",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 10.158756635
+          },
+          "total": 10.158756635,
+          "share_of_total": 0.0006109887160749996,
+          "bad_day_return": -0.02361976525141296,
+          "bad_day_loss": -0.23994744696493384,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 207,
+              "normal_rate": 0.5227272727272727,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "PEP",
+          "name": "Pepsico Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 10.153010077500001
+          },
+          "total": 10.153010077500001,
+          "share_of_total": 0.000610643094862195,
+          "bad_day_return": -0.022056169229658362,
+          "bad_day_loss": -0.2239365084597668,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 236,
+              "normal_rate": 0.5959595959595959,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "DE",
+          "name": "Deere & Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 10.1260899625
+          },
+          "total": 10.1260899625,
+          "share_of_total": 0.0006090240102545597,
+          "bad_day_return": -0.024888628975386573,
+          "bad_day_loss": -0.25202449604804866,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 204,
+              "normal_rate": 0.5151515151515151,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "T",
+          "name": "At&T Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 10.122503185
+          },
+          "total": 10.122503185,
+          "share_of_total": 0.0006088082869472386,
+          "bad_day_return": -0.029387920551276925,
+          "bad_day_loss": -0.2974793193808276,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 187,
+              "normal_rate": 0.4722222222222222,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MCD",
+          "name": "Mcdonalds Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 9.7355554575
+          },
+          "total": 9.7355554575,
+          "share_of_total": 0.0005855356854165727,
+          "bad_day_return": -0.01978018497402767,
+          "bad_day_loss": -0.19257108777425458,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 216,
+              "normal_rate": 0.5454545454545454,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "UNP",
+          "name": "Union Pacific Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 9.46492731
+          },
+          "total": 9.46492731,
+          "share_of_total": 0.0005692590139383825,
+          "bad_day_return": -0.02330536689306162,
+          "bad_day_loss": -0.22058360357570878,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 200,
+              "normal_rate": 0.5050505050505051,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "PFE",
+          "name": "Pfizer",
+          "sector": "Healthcare",
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 9.4143653175
+          },
+          "total": 9.4143653175,
+          "share_of_total": 0.0005662180111867923,
+          "bad_day_return": -0.022272986864648847,
+          "bad_day_loss": -0.20968603505568317,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 217,
+              "normal_rate": 0.547979797979798,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "SCHW",
+          "name": "Schwab Charles Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 9.3873295
+          },
+          "total": 9.3873295,
+          "share_of_total": 0.0005645919677627919,
+          "bad_day_return": -0.025851878501310543,
+          "bad_day_loss": -0.24268010168576826,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 183,
+              "normal_rate": 0.4621212121212121,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "AXP",
+          "name": "American Express Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 9.3518474
+          },
+          "total": 9.3518474,
+          "share_of_total": 0.0005624579307441322,
+          "bad_day_return": -0.02753170607354527,
+          "bad_day_loss": -0.25747231386144853,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 197,
+              "normal_rate": 0.49747474747474746,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "NEE",
+          "name": "Nextera Energy Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 9.173279875
+          },
+          "total": 9.173279875,
+          "share_of_total": 0.0005517181574871818,
+          "bad_day_return": -0.021334591392776714,
+          "bad_day_loss": -0.19570817786470687,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 6,
+              "hit_rate": 0.4,
+              "normal_n": 396,
+              "normal_hits": 194,
+              "normal_rate": 0.4898989898989899,
+              "low": 0.2231679102659823,
+              "high": 0.6073936306560458,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "BA",
+          "name": "Boeing Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 9.0352467925
+          },
+          "total": 9.0352467925,
+          "share_of_total": 0.0005434162895635046,
+          "bad_day_return": -0.032326277191640496,
+          "bad_day_loss": -0.2920758923092357,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 216,
+              "normal_rate": 0.5454545454545454,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "COP",
+          "name": "Conocophillips",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 9.025489215
+          },
+          "total": 9.025489215,
+          "share_of_total": 0.0005428294293833732,
+          "bad_day_return": -0.032215210893390855,
+          "bad_day_loss": -0.2907580384772497,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 198,
+              "normal_rate": 0.5,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "BLK",
+          "name": "BlackRock, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 8.9798638625
+          },
+          "total": 8.9798638625,
+          "share_of_total": 0.0005400853361300314,
+          "bad_day_return": -0.025675120749330205,
+          "bad_day_loss": -0.23055908898223423,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 191,
+              "normal_rate": 0.4823232323232323,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "NOW",
+          "name": "ServiceNow, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 8.27427145
+          },
+          "total": 8.27427145,
+          "share_of_total": 0.0004976481543296195,
+          "bad_day_return": -0.057627787645549655,
+          "bad_day_loss": -0.47682795804223427,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 215,
+              "normal_rate": 0.5429292929292929,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "UBER",
+          "name": "Uber Technologies, Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 8.212717719999999
+          },
+          "total": 8.212717719999999,
+          "share_of_total": 0.0004939460640233358,
+          "bad_day_return": -0.03745592442285939,
+          "bad_day_loss": -0.307614934226598,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 212,
+              "normal_rate": 0.5353535353535354,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "ISRG",
+          "name": "Intuitive Surgical Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 8.198254907499999
+          },
+          "total": 8.198254907499999,
+          "share_of_total": 0.0004930762119776866,
+          "bad_day_return": -0.030270815883856272,
+          "bad_day_loss": -0.24816786487385362,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 222,
+              "normal_rate": 0.5606060606060606,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "DHR",
+          "name": "Danaher Corp /De/",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 8.132574455
+          },
+          "total": 8.132574455,
+          "share_of_total": 0.0004891259238877111,
+          "bad_day_return": -0.0258731107505763,
+          "bad_day_loss": -0.2104149995615227,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 223,
+              "normal_rate": 0.5631313131313131,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "BMY",
+          "name": "Bristol Myers Squibb Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 7.3009434525
+          },
+          "total": 7.3009434525,
+          "share_of_total": 0.00043910827146014707,
+          "bad_day_return": -0.025517573423206596,
+          "bad_day_loss": -0.18630236060784822,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 194,
+              "normal_rate": 0.4898989898989899,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "COF",
+          "name": "Capital One Financial Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.9993456025
+          },
+          "total": 6.9993456025,
+          "share_of_total": 0.0004209689568015397,
+          "bad_day_return": -0.0356409777943647,
+          "bad_day_loss": -0.24946352119378673,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 190,
+              "normal_rate": 0.4797979797979798,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "BKNG",
+          "name": "Booking Holdings Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.863240895
+          },
+          "total": 6.863240895,
+          "share_of_total": 0.0004127830691506157,
+          "bad_day_return": -0.038316513252744766,
+          "bad_day_loss": -0.26297546071004735,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 207,
+              "normal_rate": 0.5227272727272727,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MO",
+          "name": "Altria Group, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.685213315
+          },
+          "total": 6.685213315,
+          "share_of_total": 0.00040207577037003626,
+          "bad_day_return": -0.0238542318659154,
+          "bad_day_loss": -0.15947062848911492,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 209,
+              "normal_rate": 0.5277777777777778,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MDT",
+          "name": "Medtronic plc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.520568657499999
+          },
+          "total": 6.520568657499999,
+          "share_of_total": 0.00039217337468236424,
+          "bad_day_return": -0.021654835053391386,
+          "bad_day_loss": -0.1412018387324762,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 217,
+              "normal_rate": 0.547979797979798,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "LMT",
+          "name": "Lockheed Martin Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.1806347125
+          },
+          "total": 6.1806347125,
+          "share_of_total": 0.0003717283722014224,
+          "bad_day_return": -0.02784454477539222,
+          "bad_day_loss": -0.17209695999254968,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 200,
+              "normal_rate": 0.5050505050505051,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "LOW",
+          "name": "Lowes Companies Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 6.1367448975
+          },
+          "total": 6.1367448975,
+          "share_of_total": 0.00036908866119355856,
+          "bad_day_return": -0.0282718592023965,
+          "bad_day_loss": -0.17349718770314512,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 199,
+              "normal_rate": 0.5025252525252525,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "BNY",
+          "name": "Bank of New York Mellon Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 5.9119735075
+          },
+          "total": 5.9119735075,
+          "share_of_total": 0.00035557000060144043,
+          "bad_day_return": -0.021926214173464076,
+          "bad_day_loss": -0.12962719731329062,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 2,
+              "hit_rate": 0.13333333333333333,
+              "normal_n": 396,
+              "normal_hits": 173,
+              "normal_rate": 0.43686868686868685,
+              "low": 0.04515088675757843,
+              "high": 0.3335747632898577,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "SO",
+          "name": "Southern Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 5.538832945
+          },
+          "total": 5.538832945,
+          "share_of_total": 0.00033312781782368774,
+          "bad_day_return": -0.01831044527673742,
+          "bad_day_loss": -0.10141849753641287,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 4,
+              "hit_rate": 0.26666666666666666,
+              "normal_n": 396,
+              "normal_hits": 236,
+              "normal_rate": 0.5959595959595959,
+              "low": 0.12581773563548276,
+              "high": 0.47882585984924925,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "ADBE",
+          "name": "Adobe Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 5.5099458875
+          },
+          "total": 5.5099458875,
+          "share_of_total": 0.0003313904333378441,
+          "bad_day_return": -0.04521223295522869,
+          "bad_day_loss": -0.2491169570363543,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 212,
+              "normal_rate": 0.5353535353535354,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "USB",
+          "name": "Us Bancorp De",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 5.285367335
+          },
+          "total": 5.285367335,
+          "share_of_total": 0.00031788337077300136,
+          "bad_day_return": -0.023792160437556942,
+          "bad_day_loss": -0.12575030760574277,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 206,
+              "normal_rate": 0.5202020202020202,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "DUK",
+          "name": "Duke Energy CORP",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 5.129708905
+          },
+          "total": 5.129708905,
+          "share_of_total": 0.0003085214431563595,
+          "bad_day_return": -0.01716229041442585,
+          "bad_day_loss": -0.08803755396907643,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 3,
+              "hit_rate": 0.2,
+              "normal_n": 396,
+              "normal_hits": 223,
+              "normal_rate": 0.5631313131313131,
+              "low": 0.08289830182588702,
+              "high": 0.40878632094019707,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "EMR",
+          "name": "Emerson Electric Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 5.0510697725
+          },
+          "total": 5.0510697725,
+          "share_of_total": 0.0003037917676334822,
+          "bad_day_return": -0.03513160757015443,
+          "bad_day_loss": -0.17745220105693923,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 5,
+              "hit_rate": 0.3333333333333333,
+              "normal_n": 396,
+              "normal_hits": 204,
+              "normal_rate": 0.5151515151515151,
+              "low": 0.17277471554901871,
+              "high": 0.5448278526543612,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MMM",
+          "name": "3M Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 5.0108053025
+          },
+          "total": 5.0108053025,
+          "share_of_total": 0.0003013700995383944,
+          "bad_day_return": -0.023243355852504366,
+          "bad_day_loss": -0.11646793075362327,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 217,
+              "normal_rate": 0.547979797979798,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "GD",
+          "name": "General Dynamics Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.97196783
+          },
+          "total": 4.97196783,
+          "share_of_total": 0.0002990342568451441,
+          "bad_day_return": -0.02224112084870844,
+          "bad_day_loss": -0.11058213736292065,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 198,
+              "normal_rate": 0.5,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "TMUS",
+          "name": "T-Mobile US, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.636199175
+          },
+          "total": 4.636199175,
+          "share_of_total": 0.00027883977175334923,
+          "bad_day_return": -0.03094441018412475,
+          "bad_day_loss": -0.14346444896650076,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 202,
+              "normal_rate": 0.51010101010101,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "CMCSA",
+          "name": "Comcast Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.54232588
+          },
+          "total": 4.54232588,
+          "share_of_total": 0.00027319385207572137,
+          "bad_day_return": -0.032205462698736365,
+          "bad_day_loss": -0.14628770669384483,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 226,
+              "normal_rate": 0.5707070707070707,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "AMT",
+          "name": "American Tower Corp /Ma/",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.5387391025
+          },
+          "total": 4.5387391025,
+          "share_of_total": 0.00027297812876840035,
+          "bad_day_return": -0.03103417612710091,
+          "bad_day_loss": -0.1408560287019449,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 5,
+              "hit_rate": 0.3333333333333333,
+              "normal_n": 396,
+              "normal_hits": 228,
+              "normal_rate": 0.5757575757575758,
+              "low": 0.17277471554901871,
+              "high": 0.5448278526543612,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MDLZ",
+          "name": "Mondelez International, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.5047225675
+          },
+          "total": 4.5047225675,
+          "share_of_total": 0.0002709322367570331,
+          "bad_day_return": -0.02332637967001705,
+          "bad_day_loss": -0.105078868917599,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 220,
+              "normal_rate": 0.5555555555555556,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "TGT",
+          "name": "Target Corp",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.123521397499999
+          },
+          "total": 4.123521397499999,
+          "share_of_total": 0.0002480052564391718,
+          "bad_day_return": -0.031197186315260694,
+          "bad_day_loss": -0.12864226531277162,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 201,
+              "normal_rate": 0.5075757575757576,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "GM",
+          "name": "General Motors Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.09957098
+          },
+          "total": 4.09957098,
+          "share_of_total": 0.0002465647814515765,
+          "bad_day_return": -0.0322687957418496,
+          "bad_day_loss": -0.13228821858283418,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 209,
+              "normal_rate": 0.5277777777777778,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "UPS",
+          "name": "United Parcel Service Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 4.0034993375
+          },
+          "total": 4.0034993375,
+          "share_of_total": 0.0002407866442630099,
+          "bad_day_return": -0.03336029114435901,
+          "bad_day_loss": -0.13355790349524843,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 9,
+              "hit_rate": 0.6,
+              "normal_n": 396,
+              "normal_hits": 219,
+              "normal_rate": 0.553030303030303,
+              "low": 0.3926063693439542,
+              "high": 0.7768320897340177,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "CL",
+          "name": "Colgate Palmolive Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 3.9508547
+          },
+          "total": 3.9508547,
+          "share_of_total": 0.00023762038281684633,
+          "bad_day_return": -0.021826306141154883,
+          "bad_day_loss": -0.08623256420142063,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 10,
+              "hit_rate": 0.6666666666666666,
+              "normal_n": 396,
+              "normal_hits": 232,
+              "normal_rate": 0.5858585858585859,
+              "low": 0.4551721473456387,
+              "high": 0.8272252844509812,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "HON",
+          "name": "Honeywell International Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 3.9086618550000005
+          },
+          "total": 3.9086618550000005,
+          "share_of_total": 0.0002350827344490054,
+          "bad_day_return": -0.026831244340656868,
+          "bad_day_loss": -0.10487426127651014,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 5,
+              "hit_rate": 0.3333333333333333,
+              "normal_n": 396,
+              "normal_hits": 234,
+              "normal_rate": 0.5909090909090909,
+              "low": 0.17277471554901871,
+              "high": 0.5448278526543612,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "SPG",
+          "name": "Simon Property Group Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 3.8471081249999997
+          },
+          "total": 3.8471081249999997,
+          "share_of_total": 0.0002313806441427218,
+          "bad_day_return": -0.018066668551556364,
+          "bad_day_loss": -0.06950442737637447,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 199,
+              "normal_rate": 0.5025252525252525,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "MET",
+          "name": "Metlife Inc",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 3.0080721625
+          },
+          "total": 3.0080721625,
+          "share_of_total": 0.00018091762746778533,
+          "bad_day_return": -0.022395267415187825,
+          "bad_day_loss": -0.06736658048336983,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 8,
+              "hit_rate": 0.5333333333333333,
+              "normal_n": 396,
+              "normal_hits": 207,
+              "normal_rate": 0.5227272727272727,
+              "low": 0.33315492963762094,
+              "high": 0.723324556721703,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "F",
+          "name": "Ford Motor Co",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 2.8725074
+          },
+          "total": 2.8725074,
+          "share_of_total": 0.00017276421429323228,
+          "bad_day_return": -0.033657182512144335,
+          "bad_day_loss": -0.09668050582928518,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 206,
+              "normal_rate": 0.5202020202020202,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "NKE",
+          "name": "NIKE, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 2.5147938375
+          },
+          "total": 2.5147938375,
+          "share_of_total": 0.00015124987369750554,
+          "bad_day_return": -0.03152987363513693,
+          "bad_day_loss": -0.07929113191479607,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 237,
+              "normal_rate": 0.5984848484848485,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "AIG",
+          "name": "American International Group, Inc.",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 2.272474235
+          },
+          "total": 2.272474235,
+          "share_of_total": 0.00013667579262333288,
+          "bad_day_return": -0.022310421552709014,
+          "bad_day_loss": -0.05069985815051992,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 7,
+              "hit_rate": 0.4666666666666667,
+              "normal_n": 396,
+              "normal_hits": 229,
+              "normal_rate": 0.5782828282828283,
+              "low": 0.27667544327829696,
+              "high": 0.666845070362379,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
+        },
+        {
+          "symbol": "CHTR",
+          "name": "Charter Communications, Inc. /Mo/",
+          "sector": null,
+          "direct": 0.0,
+          "via_etf": {
+            "SPY": 0.76348223
+          },
+          "total": 0.76348223,
+          "share_of_total": 4.591890958846437e-05,
+          "bad_day_return": -0.04712971772914687,
+          "bad_day_loss": -0.03598270199111959,
+          "state": "CALM",
+          "firing": [
+            {
+              "signal": "rate_jump",
+              "lite": "Interest rates jumped",
+              "pro": "10-year yield (FRED DGS10) up 0.15 pt or more in a week",
+              "horizon": 5,
+              "vs_market": true,
+              "n": 15,
+              "hits": 11,
+              "hit_rate": 0.7333333333333333,
+              "normal_n": 396,
+              "normal_hits": 219,
+              "normal_rate": 0.553030303030303,
+              "low": 0.5211741401507507,
+              "high": 0.8741822643645172,
+              "label": "NOT PROVEN",
+              "firing": {
+                "known_at": "2026-09-25T16:15:00-04:00",
+                "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"
+              },
+              "holdout": null
+            }
+          ]
         }
       ],
-      "unknown": []
+      "unknown": [],
+      "funds": [
+        {
+          "symbol": "SPY",
+          "as_of": "2026-09-24",
+          "source": "ssga",
+          "looked_through": 0.67885413
+        }
+      ]
     }
   }
 }

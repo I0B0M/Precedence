@@ -2,7 +2,7 @@
   "meta": {
     "endpoint": "GET /api/companies/BX",
     "as_of": "2026-09-25",
-    "generated_at": "2026-09-26T18:40:27+00:00",
+    "generated_at": "2026-09-26T19:03:56+00:00",
     "sources": [
       "alpaca-iex",
       "fred",
@@ -2809,56 +2809,6 @@
         "seq": 1
       },
       {
-        "accepted_at": "2026-08-26T16:30:12-04:00",
-        "owner_name": "Blackstone Holdings II L.P.; Blackstone Holdings I/II GP L.L.C.; Blackstone Inc.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-25",
-        "shares": 571237.0,
-        "price": 21.85,
-        "accession": "0001193125-26-368713",
-        "seq": 1
-      },
-      {
-        "accepted_at": "2026-08-26T16:30:12-04:00",
-        "owner_name": "Blackstone Holdings II L.P.; Blackstone Holdings I/II GP L.L.C.; Blackstone Inc.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-25",
-        "shares": 2001323.0,
-        "price": 21.85,
-        "accession": "0001193125-26-368713",
-        "seq": 2
-      },
-      {
-        "accepted_at": "2026-08-13T17:09:15-04:00",
-        "owner_name": "Blackstone Holdings II L.P.; Blackstone Inc.; Blackstone Tactical Opportunities Fund - FD L.P.; Blackstone Tactical Opportunities Associates III - NQ L.P.; BTO DE GP - NQ L.L.C.; Blackstone Family Tactical Opportunities Investment Partnership III - NQ - ESC L.P.; BTO - NQ Side-by-Side GP L.L.C.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-11",
-        "shares": 2710374.0,
-        "price": 1.0405,
-        "accession": "0001193125-26-349583",
-        "seq": 0
-      },
-      {
-        "accepted_at": "2026-08-13T17:09:15-04:00",
-        "owner_name": "Blackstone Holdings II L.P.; Blackstone Inc.; Blackstone Tactical Opportunities Fund - FD L.P.; Blackstone Tactical Opportunities Associates III - NQ L.P.; BTO DE GP - NQ L.L.C.; Blackstone Family Tactical Opportunities Investment Partnership III - NQ - ESC L.P.; BTO - NQ Side-by-Side GP L.L.C.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-11",
-        "shares": 46817.0,
-        "price": 1.0405,
-        "accession": "0001193125-26-349583",
-        "seq": 1
-      },
-      {
-        "accepted_at": "2026-08-13T17:09:15-04:00",
-        "owner_name": "Blackstone Holdings II L.P.; Blackstone Inc.; Blackstone Tactical Opportunities Fund - FD L.P.; Blackstone Tactical Opportunities Associates III - NQ L.P.; BTO DE GP - NQ L.L.C.; Blackstone Family Tactical Opportunities Investment Partnership III - NQ - ESC L.P.; BTO - NQ Side-by-Side GP L.L.C.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-11",
-        "shares": 20933.0,
-        "price": 1.0405,
-        "accession": "0001193125-26-349583",
-        "seq": 2
-      },
-      {
         "accepted_at": "2026-08-12T18:04:39-04:00",
         "owner_name": "Finley John G",
         "owner_title": "Chief Legal Officer",
@@ -2889,46 +2839,6 @@
         "seq": 0
       },
       {
-        "accepted_at": "2026-08-12T16:43:47-04:00",
-        "owner_name": "Argon Holdco LLC; Blackstone Holdings II L.P.; Blackstone Holdings I/II GP L.L.C.; Blackstone Inc.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-10",
-        "shares": 14500000.0,
-        "price": 33.87,
-        "accession": "0001193125-26-347014",
-        "seq": 0
-      },
-      {
-        "accepted_at": "2026-08-06T16:30:13-04:00",
-        "owner_name": "Blackstone Holdings II L.P.; Blackstone Inc.; Blackstone Tactical Opportunities Fund - FD L.P.; Blackstone Tactical Opportunities Associates III - NQ L.P.; BTO DE GP - NQ L.L.C.; Blackstone Family Tactical Opportunities Investment Partnership III - NQ - ESC L.P.; BTO - NQ Side-by-Side GP L.L.C.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-04",
-        "shares": 1853665.0,
-        "price": 1.7,
-        "accession": "0001193125-26-338213",
-        "seq": 0
-      },
-      {
-        "accepted_at": "2026-08-06T16:30:13-04:00",
-        "owner_name": "Blackstone Holdings II L.P.; Blackstone Inc.; Blackstone Tactical Opportunities Fund - FD L.P.; Blackstone Tactical Opportunities Associates III - NQ L.P.; BTO DE GP - NQ L.L.C.; Blackstone Family Tactical Opportunities Investment Partnership III - NQ - ESC L.P.; BTO - NQ Side-by-Side GP L.L.C.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-04",
-        "shares": 32019.0,
-        "price": 1.7,
-        "accession": "0001193125-26-338213",
-        "seq": 1
-      },
-      {
-        "accepted_at": "2026-08-06T16:30:13-04:00",
-        "owner_name": "Blackstone Holdings II L.P.; Blackstone Inc.; Blackstone Tactical Opportunities Fund - FD L.P.; Blackstone Tactical Opportunities Associates III - NQ L.P.; BTO DE GP - NQ L.L.C.; Blackstone Family Tactical Opportunities Investment Partnership III - NQ - ESC L.P.; BTO - NQ Side-by-Side GP L.L.C.; Blackstone Group Management L.L.C.; SCHWARZMAN STEPHEN A",
-        "owner_title": null,
-        "transaction_date": "2026-08-04",
-        "shares": 14316.0,
-        "price": 1.7,
-        "accession": "0001193125-26-338213",
-        "seq": 2
-      },
-      {
         "accepted_at": "2026-08-05T16:15:37-04:00",
         "owner_name": "Sawhney Vikrant",
         "owner_title": "Chief Administrative Officer",
@@ -2937,6 +2847,96 @@
         "price": 135.2941,
         "accession": "0001193125-26-335160",
         "seq": 0
+      },
+      {
+        "accepted_at": "2026-08-05T16:15:37-04:00",
+        "owner_name": "Sawhney Vikrant",
+        "owner_title": "Chief Administrative Officer",
+        "transaction_date": "2026-08-04",
+        "shares": 11592.0,
+        "price": 135.9553,
+        "accession": "0001193125-26-335160",
+        "seq": 1
+      },
+      {
+        "accepted_at": "2026-05-01T16:21:55-04:00",
+        "owner_name": "Sawhney Vikrant",
+        "owner_title": "Chief Administrative Officer",
+        "transaction_date": "2026-05-01",
+        "shares": 16965.0,
+        "price": 125.55,
+        "accession": "0001193125-26-201508",
+        "seq": 0
+      },
+      {
+        "accepted_at": "2026-05-01T16:21:55-04:00",
+        "owner_name": "Sawhney Vikrant",
+        "owner_title": "Chief Administrative Officer",
+        "transaction_date": "2026-05-01",
+        "shares": 13049.0,
+        "price": 126.11,
+        "accession": "0001193125-26-201508",
+        "seq": 1
+      },
+      {
+        "accepted_at": "2025-09-26T17:22:38-04:00",
+        "owner_name": "Baratta Joseph",
+        "owner_title": "Director",
+        "transaction_date": "2025-09-25",
+        "shares": 109202.0,
+        "price": 175.67,
+        "accession": "0001193125-25-220808",
+        "seq": 0
+      },
+      {
+        "accepted_at": "2025-09-26T17:22:38-04:00",
+        "owner_name": "Baratta Joseph",
+        "owner_title": "Director",
+        "transaction_date": "2025-09-25",
+        "shares": 3798.0,
+        "price": 176.4,
+        "accession": "0001193125-25-220808",
+        "seq": 1
+      },
+      {
+        "accepted_at": "2025-09-10T18:06:30-04:00",
+        "owner_name": "Finley John G",
+        "owner_title": "Chief Legal Officer",
+        "transaction_date": "2025-09-08",
+        "shares": 21500.0,
+        "price": 171.46,
+        "accession": "0001500278-25-000005",
+        "seq": 0
+      },
+      {
+        "accepted_at": "2025-08-15T16:54:46-04:00",
+        "owner_name": "Sawhney Vikrant",
+        "owner_title": "Chief Administrative Officer",
+        "transaction_date": "2025-08-14",
+        "shares": 24362.0,
+        "price": 172.99,
+        "accession": "0000950170-25-109446",
+        "seq": 0
+      },
+      {
+        "accepted_at": "2025-08-15T16:54:46-04:00",
+        "owner_name": "Sawhney Vikrant",
+        "owner_title": "Chief Administrative Officer",
+        "transaction_date": "2025-08-14",
+        "shares": 18455.0,
+        "price": 174.04,
+        "accession": "0000950170-25-109446",
+        "seq": 1
+      },
+      {
+        "accepted_at": "2025-08-15T16:54:46-04:00",
+        "owner_name": "Sawhney Vikrant",
+        "owner_title": "Chief Administrative Officer",
+        "transaction_date": "2025-08-14",
+        "shares": 8033.0,
+        "price": 174.69,
+        "accession": "0000950170-25-109446",
+        "seq": 2
       }
     ],
     "facts": [
@@ -3013,13 +3013,13 @@
         "horizon": 20,
         "vs_market": false,
         "n": 2,
-        "hits": 0,
-        "hit_rate": 0.0,
-        "normal_n": 435,
+        "hits": 1,
+        "hit_rate": 0.5,
+        "normal_n": 439,
         "normal_hits": 202,
-        "normal_rate": 0.46436781609195404,
-        "low": 0.0,
-        "high": 0.5749693909936536,
+        "normal_rate": 0.4601366742596811,
+        "low": 0.12086631942227365,
+        "high": 0.8791336805777263,
         "label": "WEAK",
         "firing": null,
         "holdout": null,
@@ -3034,13 +3034,13 @@
             "note": "2025-08-15: 3 insider sale filings in 10 days"
           },
           {
-            "known_at": "2026-08-06T16:30:13-04:00",
-            "entry_day": "2026-08-07",
-            "exit_day": "2026-09-03",
-            "ret": 0.021791587778891452,
+            "known_at": "2026-08-12T18:04:39-04:00",
+            "entry_day": "2026-08-13",
+            "exit_day": "2026-09-10",
+            "ret": -0.14948103927820366,
             "market_ret": null,
-            "hit": false,
-            "note": "2026-08-06: 3 insider sale filings in 10 days"
+            "hit": true,
+            "note": "2026-08-12: 3 insider sale filings in 10 days"
           }
         ]
       },
