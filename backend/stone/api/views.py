@@ -20,9 +20,10 @@ KEY_FACTS = [
 
 
 def result_json(r: engine.Result, with_cases: bool = True) -> dict:
-    spec = engine.SPECS[r.signal]
+    spec = engine.ALL_SPECS[r.signal]
     out = {
         "signal": r.signal, "lite": spec.lite, "pro": spec.pro, "horizon": r.horizon,
+        "vs_market": spec.vs_market,  # true: a hit means "did worse than the market", not "was lower"
         "n": r.n, "hits": r.hits, "hit_rate": r.hit_rate,
         "normal_n": r.normal_n, "normal_hits": r.normal_hits, "normal_rate": r.normal_rate,
         "low": r.low, "high": r.high, "label": r.label,
@@ -37,7 +38,8 @@ def result_json(r: engine.Result, with_cases: bool = True) -> dict:
         out["holdout"] = None
     if with_cases:
         out["cases"] = [{"known_at": c.known_at.isoformat(), "entry_day": c.entry_day.isoformat(),
-                         "exit_day": c.exit_day.isoformat(), "ret": c.ret, "hit": c.hit, "note": c.note}
+                         "exit_day": c.exit_day.isoformat(), "ret": c.ret, "market_ret": c.market_ret,
+                         "hit": c.hit, "note": c.note}
                         for c in r.cases]
     return out
 

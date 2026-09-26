@@ -4,7 +4,8 @@ screenshot import, which calls Gemini (cached by image) once it is connected."""
 from functools import lru_cache
 
 import psycopg
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import JSONResponse
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
@@ -18,6 +19,11 @@ from stone.signals import engine, service
 from stone.sources.gemini import GeminiClient
 
 app = FastAPI(title="Stone")
+
+
+@app.exception_handler(service.NoMarketData)
+def no_market_data(_: Request, exc: service.NoMarketData):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
 
 
 @lru_cache
@@ -111,6 +117,13 @@ def scan(c: psycopg.Connection = Conn):
             "expected_by_chance": float(row["expected_by_chance"])}
 
 
+@app.get("/api/market/rate_jump")
+def market_rate_jump(c: psycopg.Connection = Conn):
+    """Rate jumps and the whole market: the plain "was it lower?" test run on SPY itself."""
+    symbol, r = service.run_market_rates(c)
+    return {"symbol": symbol, **result_json(r)}
+
+
 @app.get("/api/lab/signals")
 def lab_signals():
     return [{"key": s.key, "lite": s.lite, "pro": s.pro, "horizon": s.horizon} for s in engine.SPECS.values()]
@@ -158,6 +171,7 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
             "select holding, weight from etf_holdings where etf = %s and as_of = %s", (etf, latest)).fetchall()}
     total = sum(values.values())
     rates = service.load_rates(c)
+    market = service.load_market(c)[1]
 
     exposure = []
     for sym, ex in exposures(values, weights).items():
@@ -165,7 +179,7 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
             continue  # an ETF holding we have no data for
         bars = service.load_bars(c, sym)
         bad = bad_day_return([b.close for b in bars])
-        results = service.run_all(c, sym, rates) if known[sym]["kind"] == "stock" else {}
+        results = service.run_all(c, sym, rates, market) if known[sym]["kind"] == "stock" else {}
         firing = [result_json(r, with_cases=False) for r in results.values() if r.firing]
         exposure.append({
             "symbol": sym, "name": known[sym]["name"], "sector": known[sym]["sector"],

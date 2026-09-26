@@ -25,7 +25,7 @@ mut "WEAK cutoff 10 -> 9"              "MIN_CASES = 10"                      "MI
 mut "STRONG uses >= not >"             "low > normal_rate"                   "low >= normal_rate"
 mut "90% range -> 95%"                 "Z90 = 1.6448536269514722"            "Z90 = 1.96"
 mut "enter AT the open, not after"     "bisect.bisect_right(opens, known_at)" "bisect.bisect_left(opens, known_at)"
-mut "measure from close not open"      "bars[last].close / bars[i].open - 1" "bars[last].close / bars[i].close - 1"
+mut "measure from close not open"      "return bars[b].close / bars[a].open - 1" "return bars[b].close / bars[a].close - 1"
 mut "gap needs > 5% not >= 5%"         "if drop <= -threshold"               "if drop < -threshold"
 mut "no float rounding on rate jump"   "change = round(v - obs[j][1], 4)"    "change = v - obs[j][1]"
 mut "rate known same day"              "datetime.combine(next_weekday(obs_day)" "datetime.combine(obs_day"
@@ -39,5 +39,13 @@ mut "skipped event never firing"       "            if i + h - 1 >= len(bars):
 mut "WATCH ignores the label"          'r.firing and r.label == STRONG'      'r.firing'
 mut "held up if either half holds"     "        return all(h.hit_rate"           "        return any(h.hit_rate"
 mut "hold-out never runs"                 "if r.label == STRONG else r"            "if False else r"
+mut "rate jump not vs market"          "5, vs_market=True)"                  "5)"
+mut "case hit ignores the market"      "own(i, last), hit(i, last)"          "own(i, last), own(i, last) < 0"
+mut "normal days ignore the market"    "normal_hits += hit(k, k + h - 1)"    "normal_hits += own(k, k + h - 1) < 0"
+mut "market matched by position"       "mkt = [by_day[b.day] for b in bars]" "mkt = sorted(market, key=lambda b: b.day)"
+mut "no market: silently absolute"     "        if not market:
+            raise"                     "        if False:
+            raise"
+mut "hold-out drops the market"        "e.known_at < cut], market)"          "e.known_at < cut])"
 cmp -s "$BAK" "$F" && echo "engine.py restored, identical to original"
 rm "$BAK" "$OUT"

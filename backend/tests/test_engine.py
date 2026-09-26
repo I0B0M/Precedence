@@ -241,3 +241,64 @@ def test_only_strong_results_get_a_holdout():
     bars = flat_bars(30)
     r = e.test_signal(e.Spec("t", "", "", 5), bars, [e.Event(at(bars[5].day, 17), "x")])
     assert r.label == e.WEAK and r.holdout is None
+
+
+# ---------- market-relative (rate jump) ----------
+
+REL = e.Spec("t", "", "", 5, vs_market=True)
+
+
+def one_case(spec, stock_close: float, market_close: float, market=True):
+    """Flat bars; on the exit day the stock and the market close at the given prices."""
+    bars, mkt = flat_bars(40), flat_bars(40)
+    bars[14] = B(bars[14].day, 100, stock_close)
+    mkt[14] = B(mkt[14].day, 100, market_close)
+    [case] = e.evaluate(spec, bars, [e.Event(at(bars[9].day, 17), "x")], mkt if market else None).cases
+    return case
+
+
+def test_rate_jump_falling_less_than_the_market_is_not_a_hit():
+    case = one_case(e.RATES, 98, 95)  # stock -2%, market -5%
+    assert case.ret == pytest.approx(-0.02) and case.market_ret == pytest.approx(-0.05)
+    assert not case.hit
+
+
+def test_rising_less_than_the_market_is_a_hit():
+    case = one_case(REL, 101, 104)  # stock +1%, market +4%
+    assert case.ret > 0 and case.hit
+
+
+def test_other_signals_ignore_the_market():
+    for spec in (e.INSIDER, e.GAP):
+        assert not spec.vs_market
+    case = one_case(e.Spec("t", "", "", 5), 98, 95)  # lower, even though it beat the market
+    assert case.hit and case.market_ret is None
+
+
+def test_normal_days_are_also_judged_against_the_market():
+    days = weekdays(date(2024, 1, 1), 30)
+    bars = [B(d, 100, 101) for d in days]  # the stock rises every day...
+    mkt = [B(d, 100, 103) for d in days]  # ...but the market rises more
+    r = e.evaluate(REL, bars, [e.Event(at(days[10], 17), "x")], mkt)
+    assert r.normal_n == 17 and r.normal_rate == 1.0
+
+
+def test_market_is_matched_by_date_not_position():
+    days = weekdays(date(2024, 1, 1), 41)
+    mkt = [B(d, 100, 90 if d == days[15] else 100) for d in days]
+    bars = [B(d, 100, 100) for d in days if d != days[3]]  # the stock has no bar on day 3
+    [case] = e.evaluate(REL, bars, [e.Event(at(days[10], 17), "x")], mkt).cases
+    assert case.entry_day == days[11] and case.exit_day == days[15]
+    assert case.market_ret == pytest.approx(-0.10)
+
+
+def test_market_relative_signal_refuses_to_run_without_the_market():
+    bars = flat_bars(30)
+    with pytest.raises(ValueError):
+        e.evaluate(REL, bars, [e.Event(at(bars[5].day, 17), "x")], None)
+
+
+def test_holdout_of_a_market_relative_signal_uses_the_market():
+    bars, evs = strong_setup(fire_now=False)
+    h = e.holdout(REL, bars, evs, bars)  # measured against itself, nothing can do worse
+    assert h.first.n > 0 and h.first.hits == 0 and h.second.hits == 0

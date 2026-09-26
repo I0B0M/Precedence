@@ -4,7 +4,9 @@ Pure functions, no I/O. For each signal:
   1. find every past event, timestamped by when the public could first know it
   2. enter at the next market open after that moment
   3. measure the return over the signal's horizon (trading days, open -> close)
-  4. a "hit" = the stock was lower at the end (every signal here is a risk signal)
+  4. a "hit" = the stock was lower at the end (every signal here is a risk signal).
+     A market-wide event (rate jump) hits every stock on the same days, so there a
+     hit = the stock did worse than the market (SPY) over the same days
   5. compare the hit rate to the same stock's hit rate on normal days
      (days whose whole horizon touches no event window), with a 90% Wilson range
   6. label: WEAK if fewer than 10 cases; STRONG only if the range's low end is
@@ -42,15 +44,20 @@ class Spec:
     lite: str
     pro: str
     horizon: int  # trading days
+    vs_market: bool = False  # hit = did worse than the market over the same days, not just lower
 
 
 INSIDER = Spec("insider_cluster", "Executives sold shares",
                "Insider selling cluster: 3+ Form 4 sales in 10 days", 20)
 RATES = Spec("rate_jump", "Interest rates jumped",
-             "10-year yield (FRED DGS10) up 0.15 pt or more in a week", 5)
+             "10-year yield (FRED DGS10) up 0.15 pt or more in a week", 5, vs_market=True)
 GAP = Spec("gap_down", "The stock dropped 5% at the open",
            "Gap down: opened 5% or more below the prior close", 20)
 SPECS = {s.key: s for s in (INSIDER, RATES, GAP)}
+# The same rate jumps, tested on the market itself: was SPY lower afterwards?
+MARKET_RATES = Spec("market_rate_jump", "Interest rates jumped: the whole market",
+                    "SPY after the 10-year yield (FRED DGS10) rose 0.15 pt or more in a week", 5)
+ALL_SPECS = {**SPECS, MARKET_RATES.key: MARKET_RATES}
 
 
 @dataclass(frozen=True)
@@ -64,9 +71,10 @@ class Case:
     known_at: datetime
     entry_day: date
     exit_day: date
-    ret: float
+    ret: float  # the stock's own return
     hit: bool
     note: str
+    market_ret: float | None = None  # the market's return over the same days, for vs_market signals
 
 
 @dataclass(frozen=True)
@@ -189,8 +197,28 @@ def detect_insider_clusters(sales: list[tuple[str, datetime]], min_filings: int 
 
 # ---------- evaluation ----------
 
-def evaluate(spec: Spec, bars: list[BarLike], events: list[Event]) -> Result:
+def evaluate(spec: Spec, bars: list[BarLike], events: list[Event],
+             market: list[BarLike] | None = None) -> Result:
+    """market: the market's daily bars (SPY), required when spec.vs_market."""
     bars = sorted(bars, key=lambda b: b.day)
+    mkt: list[BarLike] | None = None
+    if spec.vs_market:
+        if not market:
+            raise ValueError(f"{spec.key} is measured against the market: pass the market's bars")
+        by_day = {b.day: b for b in market}
+        bars = [b for b in bars if b.day in by_day]  # compare the same days only
+        mkt = [by_day[b.day] for b in bars]
+
+    def own(a: int, b: int) -> float:
+        return bars[b].close / bars[a].open - 1
+
+    def market_move(a: int, b: int) -> float | None:
+        return mkt[b].close / mkt[a].open - 1 if mkt else None
+
+    def hit(a: int, b: int) -> bool:
+        m = market_move(a, b)
+        return own(a, b) - (m if m is not None else 0.0) < 0
+
     h = spec.horizon
     cases: list[Case] = []
     windows: list[tuple[int, int]] = []
@@ -210,8 +238,8 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event]) -> Result:
         windows.append((i, i + h))
         last = i + h - 1
         if last < len(bars):
-            ret = bars[last].close / bars[i].open - 1
-            cases.append(Case(ev.known_at, bars[i].day, bars[last].day, ret, ret < 0, ev.note))
+            cases.append(Case(ev.known_at, bars[i].day, bars[last].day, own(i, last), hit(i, last), ev.note,
+                              market_move(i, last)))
         else:  # the window is still open today
             firing = ev
 
@@ -227,7 +255,7 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event]) -> Result:
     for k in range(len(bars) - h + 1):
         if touched[k + h] == touched[k]:
             normal_n += 1
-            normal_hits += bars[k + h - 1].close / bars[k].open - 1 < 0
+            normal_hits += hit(k, k + h - 1)
 
     n, hits = len(cases), sum(c.hit for c in cases)
     normal_rate = normal_hits / normal_n if normal_n else None
@@ -240,19 +268,21 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event]) -> Result:
     )
 
 
-def holdout(spec: Spec, bars: list[BarLike], events: list[Event]) -> Holdout:
+def holdout(spec: Spec, bars: list[BarLike], events: list[Event],
+            market: list[BarLike] | None = None) -> Holdout:
     bars = sorted(bars, key=lambda b: b.day)
     mid = len(bars) // 2
     cut = open_at(bars[mid].day)
-    first = evaluate(spec, bars[:mid], [e for e in events if e.known_at < cut])
-    second = evaluate(spec, bars[mid:], [e for e in events if e.known_at >= cut])
+    first = evaluate(spec, bars[:mid], [e for e in events if e.known_at < cut], market)
+    second = evaluate(spec, bars[mid:], [e for e in events if e.known_at >= cut], market)
     return Holdout(first, second)
 
 
-def test_signal(spec: Spec, bars: list[BarLike], events: list[Event]) -> Result:
+def test_signal(spec: Spec, bars: list[BarLike], events: list[Event],
+                market: list[BarLike] | None = None) -> Result:
     """evaluate(), plus the split-half hold-out for anything that comes out STRONG."""
-    r = evaluate(spec, bars, events)
-    return replace(r, holdout=holdout(spec, bars, events)) if r.label == STRONG else r
+    r = evaluate(spec, bars, events, market)
+    return replace(r, holdout=holdout(spec, bars, events, market)) if r.label == STRONG else r
 
 
 def holding_state(results: list[Result]) -> str:

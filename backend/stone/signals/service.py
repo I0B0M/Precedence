@@ -7,6 +7,13 @@ import psycopg
 from stone.signals import engine
 from stone.sources.prices import Bar
 
+# The whole market, for signals judged against it: SPY on real data, the sample's index fund in sample mode.
+MARKET_TICKERS = ("SPY", "BRD500")
+
+
+class NoMarketData(LookupError):
+    """No market prices loaded, so a market-relative signal can't be measured."""
+
 
 def load_bars(conn: psycopg.Connection, ticker: str) -> list[Bar]:
     rows = conn.execute(
@@ -14,6 +21,15 @@ def load_bars(conn: psycopg.Connection, ticker: str) -> list[Bar]:
         (ticker,)).fetchall()
     return [Bar(r["day"], float(r["open"]), float(r["high"]), float(r["low"]), float(r["close"]),
                 float(r["volume"]) if r["volume"] is not None else None) for r in rows]
+
+
+def load_market(conn: psycopg.Connection) -> tuple[str, list[Bar]]:
+    for t in MARKET_TICKERS:
+        bars = load_bars(conn, t)
+        if bars:
+            return t, bars
+    raise NoMarketData(f"No market prices loaded ({' or '.join(MARKET_TICKERS)}), "
+                       "so the rate-jump signal can't be compared to the market.")
 
 
 def load_rates(conn: psycopg.Connection, series: str = "DGS10") -> list[tuple]:
@@ -40,15 +56,25 @@ def events_for(spec_key: str, bars: list[Bar], rates: list[tuple], sales: list) 
     raise KeyError(spec_key)
 
 
-def run_all(conn: psycopg.Connection, ticker: str, rates: list[tuple] | None = None) -> dict[str, engine.Result]:
+def run_all(conn: psycopg.Connection, ticker: str, rates: list[tuple] | None = None,
+            market: list[Bar] | None = None) -> dict[str, engine.Result]:
     bars = load_bars(conn, ticker)
     rates = load_rates(conn) if rates is None else rates
+    market = load_market(conn)[1] if market is None else market
     sales = load_sales(conn, ticker)
-    return {key: engine.test_signal(spec, bars, events_for(key, bars, rates, sales))
+    return {key: engine.test_signal(spec, bars, events_for(key, bars, rates, sales), market)
             for key, spec in engine.SPECS.items()}
 
 
 def run_one(conn: psycopg.Connection, ticker: str, spec_key: str) -> engine.Result:
     bars = load_bars(conn, ticker)
     spec = engine.SPECS[spec_key]
-    return engine.test_signal(spec, bars, events_for(spec_key, bars, load_rates(conn), load_sales(conn, ticker)))
+    market = load_market(conn)[1] if spec.vs_market else None
+    return engine.test_signal(spec, bars, events_for(spec_key, bars, load_rates(conn), load_sales(conn, ticker)),
+                              market)
+
+
+def run_market_rates(conn: psycopg.Connection) -> tuple[str, engine.Result]:
+    """The rate-jump test on the market itself: was SPY lower afterwards?"""
+    symbol, market = load_market(conn)
+    return symbol, engine.test_signal(engine.MARKET_RATES, market, engine.detect_rate_jumps(load_rates(conn)))

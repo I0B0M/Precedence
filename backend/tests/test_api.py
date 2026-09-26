@@ -80,3 +80,28 @@ def test_scan_is_empty_until_a_scan_runs(client):
     conn.execute("delete from signal_scans")
     conn.commit()
     assert client.get("/api/scan").json() is None
+
+
+def test_rate_jump_is_judged_against_the_market(client):
+    body = client.get("/api/lab/MRDN/rate_jump").json()
+    assert body["vs_market"] is True
+    assert all(isinstance(c["market_ret"], float) for c in body["cases"])
+    assert all(c["hit"] == (c["ret"] - c["market_ret"] < 0) for c in body["cases"])
+    gap = client.get("/api/lab/BRVE/gap_down").json()
+    assert gap["vs_market"] is False and all(c["market_ret"] is None for c in gap["cases"])
+
+
+def test_market_rate_jump_card_runs_on_the_market_itself(client):
+    body = client.get("/api/market/rate_jump").json()
+    assert body["symbol"] == "BRD500"  # sample mode: the sample index fund stands in for SPY
+    assert body["signal"] == "market_rate_jump" and body["vs_market"] is False
+    assert body["n"] == len(body["cases"]) > 0
+    assert all(c["hit"] == (c["ret"] < 0) for c in body["cases"])
+
+
+def test_no_market_prices_is_a_clear_503(client, monkeypatch):
+    from stone.signals import service
+    monkeypatch.setattr(service, "MARKET_TICKERS", ("NOPE",))
+    r = client.get("/api/lab/MRDN/rate_jump")
+    assert r.status_code == 503 and "No market prices" in r.json()["detail"]
+    assert client.get("/api/lab/BRVE/gap_down").status_code == 200  # other signals don't need the market
