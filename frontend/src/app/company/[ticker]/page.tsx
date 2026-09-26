@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
+import { MarketCard } from "@/components/MarketCard";
 import { PriceChart, type Pin } from "@/components/PriceChart";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
 import { bigMoney, dateTimeET, money, pct, shortDate, whole } from "@/lib/format";
@@ -44,29 +45,32 @@ export default function CompanyScreen() {
   const { company: co, last } = d;
   const main = headline(d.signals);
   const others = d.signals.filter((s) => s !== main);
+  const rateJump = d.signals.find((s) => s.signal === "rate_jump");
+  const factsFrom = d.facts[0];
+  const filingUrl = (accession: string) => d.filings.find((f) => f.accession === accession)?.url ?? null;
 
   return (
-    <section className="stack" style={{ gap: 20 }}>
-      <Link href="/" className="linkb">← Everything you own</Link>
+    <section className="stack" style={{ gap: 28 }}>
+      <Link href="/" className="linkb">‹ Everything you own</Link>
 
-      <div className="pf-head" style={{ margin: 0 }}>
-        <div className="stack" style={{ gap: 6 }}>
-          <span className="ticker">{co.ticker}</span>
-          <h1>{co.name}</h1>
-          <p className="mute">{co.sector}{co.kind === "etf" ? " · fund" : ""}</p>
+      <header className="co-head">
+        <div className="stack" style={{ gap: 4 }}>
+          <span className="ticker">{co.ticker}{co.sector ? ` · ${co.sector}` : ""}{co.kind === "etf" ? " · fund" : ""}</span>
+          <div className="row-flex" style={{ gap: 14, alignItems: "center" }}>
+            <h1>{co.name}</h1>
+            {d.state && <StateBadge state={d.state} />}
+          </div>
         </div>
-        <div className="stack" style={{ gap: 6, alignItems: "flex-end" }}>
-          {d.state && <StateBadge state={d.state} />}
-          {last && (
-            <>
-              <div className="bignum" style={{ fontSize: 40 }}>{money(last.close, true)}</div>
-              <span className={last.change != null && last.change < 0 ? "down" : "up"}>
-                {pct(last.change)} <span className="mute">· close {shortDate(last.day)}</span>
-              </span>
-            </>
-          )}
-        </div>
-      </div>
+        {last && (
+          <div className="co-price">
+            <div className="bignum">{money(last.close, true)}</div>
+            <p>
+              <span className={last.change != null && last.change < 0 ? "down" : "up"}>{pct(last.change)}</span>
+              <span className="mute"> · close {shortDate(last.day)}</span>
+            </p>
+          </div>
+        )}
+      </header>
 
       {/* ---------------- LITE ---------------- */}
       <div className="grid2 lite-only">
@@ -74,22 +78,32 @@ export default function CompanyScreen() {
           <h3>What&apos;s going on</h3>
           {main ? (
             <>
-              <p><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
+              <p className="say-big"><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
               <HitDots cases={main.cases ?? []} vsMarket={main.vs_market} />
-              <p className="note">{liteVerdict(main)}</p>
+              <p><b>{liteVerdict(main)}</b></p>
+              {main.signal === "rate_jump" && <MarketCard where="above" />}
             </>
           ) : (
-            <p>{co.kind === "etf" ? "Funds hold many stocks; open a stock to see its signals." : "Nothing unusual is happening. No need to do anything."}</p>
+            <p className="say-big">{co.kind === "etf" ? "Funds hold many stocks; open a stock to see its signals." : "Nothing unusual is happening. No need to do anything."}</p>
           )}
-          <PriceChart prices={d.prices} />
+          <div className="stack" style={{ gap: 6, marginTop: 6 }}>
+            <PriceChart prices={d.prices} />
+            <p className="note">Two years of daily closes, to {shortDate(d.prices[d.prices.length - 1]?.day ?? last?.day ?? "")}.</p>
+          </div>
           {others.length > 0 && (
-            <p className="note">
-              Also checked: {others.map((s) => `${s.lite.toLowerCase()} (${s.firing ? "happening now" : "not now"})`).join(" · ")}.
-            </p>
+            <div className="list">
+              <p className="list-head">Also checked</p>
+              {others.map((s) => (
+                <Link key={s.signal} className="list-row" href={`/lab?t=${co.ticker}&s=${s.signal}`}>
+                  <span>{s.lite}</span>
+                  <span className="mute">{s.firing ? "Happening now" : "Not now"} ›</span>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
 
-        <div className="stack">
+        <div className="stack" style={{ gap: 20 }}>
           <div className="box">
             <h3>What it means for you</h3>
             {mine ? (
@@ -99,31 +113,39 @@ export default function CompanyScreen() {
                 <dt>Share of everything you own</dt><dd>{whole(mine.share_of_total)}</dd>
                 <dt>A bad day could cost you</dt><dd className="down">{money(mine.bad_day_loss)}</dd>
               </dl>
-            ) : <p className="mute">You don&apos;t own this one.</p>}
-            <p className="note">&quot;A bad day&quot; is this stock&apos;s 1-in-20 worst day of the past year.</p>
+            ) : (
+              <>
+                <p className="mute">You don&apos;t own {co.ticker}. Bring in what you own and this shows it in dollars.</p>
+                <Link className="btn light small" href="/import" style={{ alignSelf: "flex-start" }}>Bring holdings in</Link>
+              </>
+            )}
+            {mine && <p className="note">&quot;A bad day&quot; is this stock&apos;s 1-in-20 worst day of the past year.</p>}
           </div>
 
-          {d.facts.length > 0 && (
+          {factsFrom && (
             <div className="box">
               <h3>The numbers</h3>
               <dl className="kv">
                 {d.facts.map((f) => (<Fragment key={f.key}><dt>{f.lite}</dt><dd>{bigMoney(f.value)}</dd></Fragment>))}
               </dl>
-              <p className="note">From the company&apos;s own filings with the SEC, period ending {shortDate(d.facts[0].period_end)}.</p>
+              <p className="note">From {co.name}&apos;s own {factsFrom.form} filed with the SEC, period ending {shortDate(factsFrom.period_end)}.</p>
             </div>
           )}
 
           <div className="box">
             <h3>What&apos;s new</h3>
-            <ul className="stack" style={{ margin: 0, paddingLeft: 18, gap: 6 }}>
+            <div className="list">
               {d.insider_sales[0] && (
-                <li>Insiders sold shares, most recently {shortDate(d.insider_sales[0].accepted_at)}.</li>
+                <div className="list-row"><span>Insiders sold shares</span><span className="mute">{shortDate(d.insider_sales[0].accepted_at)}</span></div>
               )}
               {d.filings.slice(0, 3).map((f) => (
-                <li key={f.accession}>{FORM_WORDS[f.form] ?? f.form}, {shortDate(f.accepted_at)}</li>
+                <div key={f.accession} className="list-row"><span>{FORM_WORDS[f.form] ?? f.form}</span><span className="mute">{shortDate(f.accepted_at)}</span></div>
               ))}
-              {d.rate && <li>Interest rates (10-year Treasury): {d.rate.value.toFixed(2)}% on {shortDate(d.rate.day)}</li>}
-            </ul>
+              {d.rate && (
+                <div className="list-row"><span>10-year Treasury rate {d.rate.value.toFixed(2)}%</span><span className="mute">{shortDate(d.rate.day)}</span></div>
+              )}
+            </div>
+            <p className="note">Filings from SEC EDGAR; interest rate from FRED.</p>
           </div>
         </div>
       </div>
@@ -133,12 +155,13 @@ export default function CompanyScreen() {
         <div className="card">
           <h3>Price, 2 years, with filings and live signals</h3>
           <PriceChart prices={d.prices} pins={pins} />
+          <p className="note">Daily closes to {shortDate(d.prices[d.prices.length - 1]?.day ?? "")}. Pins at SEC acceptance time; signals when the public could know.</p>
         </div>
 
         {d.signals.length > 0 && (
           <div className="card">
             <h3>Signals tested on {co.ticker}&apos;s own history</h3>
-            <div className="tscroll">
+            <div className="tscroll sig-table">
               <table>
                 <thead><tr><th>Signal</th><th className="num">Cases</th><th className="num">Came true</th><th className="num">Normal days</th><th className="num">90% range</th><th>Verdict</th><th>Hold-out</th><th>Now</th><th /></tr></thead>
                 <tbody>
@@ -148,23 +171,69 @@ export default function CompanyScreen() {
                       <td className="num">{s.n}</td>
                       <td className="num">{s.n ? `${s.hits} (${whole(s.hit_rate)})` : "—"}<div className="note">{s.vs_market ? "worse than SPY" : "lower"}</div></td>
                       <td className="num">{whole(s.normal_rate)}<div className="note">of {s.normal_n} days</div></td>
-                      <td className="num">{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</td>
+                      <td className="num nowrap">{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</td>
                       <td><LabelTag label={s.label} /></td>
                       <td><HoldoutNote s={s} /></td>
                       <td>{s.firing ? <b>firing</b> : <span className="mute">—</span>}</td>
-                      <td><Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>cases</Link></td>
+                      <td className="nowrap"><Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>cases ›</Link></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            <div className="sig-cards">
+              {d.signals.map((s) => (
+                <div key={s.signal} className="sig-card">
+                  <div className="row-flex" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "nowrap" }}>
+                    <b>{s.pro}</b>
+                    <LabelTag label={s.label} />
+                  </div>
+                  <dl className="stats">
+                    <div><dt>Cases</dt><dd>{s.n}</dd></div>
+                    <div><dt>{s.vs_market ? "Worse than SPY" : "Lower after"}</dt><dd>{s.n ? `${s.hits} (${whole(s.hit_rate)})` : "—"}</dd></div>
+                    <div><dt>Normal days</dt><dd>{whole(s.normal_rate)} <span className="note">of {s.normal_n}</span></dd></div>
+                    <div><dt>90% range</dt><dd>{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</dd></div>
+                  </dl>
+                  <p className="note">Horizon {s.horizon} trading days · {s.firing ? <b>firing now</b> : "not firing"}{s.holdout ? <> · hold-out <HoldoutNote s={s} /></> : null}</p>
+                  <Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>See the cases ›</Link>
+                </div>
+              ))}
+            </div>
             <p className="note">STRONG only when the range&apos;s low end beats the normal-day rate. Fewer than 10 cases is always WEAK.
               Timed from SEC acceptance; measured from the next market open.</p>
+            {rateJump && <MarketCard where="above" />}
             <ScanLine scan={scan} />
           </div>
         )}
 
-        <div className="grid2">
+        {factsFrom && (
+          <div className="card">
+            <h3>XBRL facts</h3>
+            <div className="tscroll">
+              <table>
+                <thead><tr><th>Fact</th><th>Concept</th><th className="num">Value</th><th>Period</th><th>Form</th><th>Accession</th></tr></thead>
+                <tbody>
+                  {d.facts.map((f) => {
+                    const url = filingUrl(f.accession);
+                    return (
+                      <tr key={f.key}>
+                        <td>{f.pro}</td>
+                        <td className="mute">{f.concept}</td>
+                        <td className="num nowrap"><b>{bigMoney(f.value)}</b></td>
+                        <td className="nowrap">{f.period_start ? `${f.period_start} → ` : "at "}{f.period_end}</td>
+                        <td className="nowrap">{f.form}</td>
+                        <td className="nowrap">{url ? <a href={url} target="_blank" rel="noopener noreferrer">{f.accession}</a> : f.accession}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="note">Values as filed, from SEC XBRL company facts.</p>
+          </div>
+        )}
+
+        <div className="grid2 even">
           <div className="card">
             <h3>Filings</h3>
             <div className="tscroll">
@@ -173,32 +242,18 @@ export default function CompanyScreen() {
                 <tbody>
                   {d.filings.map((f) => (
                     <tr key={f.accession}>
-                      <td>{f.form}</td>
-                      <td>{dateTimeET(f.accepted_at)}</td>
-                      <td>{f.report_date ?? "—"}</td>
-                      <td>{f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{f.accession}</a> : <span className="mute">{f.accession}</span>}</td>
+                      <td className="nowrap">{f.form}</td>
+                      <td className="nowrap">{dateTimeET(f.accepted_at)}</td>
+                      <td className="nowrap">{f.report_date ?? "—"}</td>
+                      <td className="nowrap">{f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{f.accession}</a> : <span className="mute">{f.accession}</span>}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            <p className="note">Filings from SEC EDGAR, timed by SEC acceptance.</p>
           </div>
-          <div className="stack">
-            {d.facts.length > 0 && (
-              <div className="card">
-                <h3>XBRL facts</h3>
-                <table>
-                  <tbody>
-                    {d.facts.map((f) => (
-                      <tr key={f.key}>
-                        <td>{f.pro}<div className="note">{f.concept}</div></td>
-                        <td className="num">{bigMoney(f.value)}<div className="note">{f.period_start ? `${f.period_start} → ` : "at "}{f.period_end} · {f.form}</div></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          <div className="stack" style={{ gap: 20 }}>
             {d.insider_sales.length > 0 && (
               <div className="card">
                 <h3>Form 4 sales</h3>
@@ -207,8 +262,8 @@ export default function CompanyScreen() {
                   <tbody>
                     {d.insider_sales.slice(0, 8).map((s) => (
                       <tr key={`${s.accession}-${s.seq}`}>
-                        <td>{dateTimeET(s.accepted_at)}</td>
-                        <td>{s.owner_name}<div className="note">{s.owner_title}</div></td>
+                        <td className="nowrap">{shortDate(s.accepted_at)}</td>
+                        <td><span className="clamp2" title={s.owner_name ?? undefined}>{s.owner_name}</span><div className="note">{s.owner_title}</div></td>
                         <td className="num">{s.shares?.toLocaleString("en-US") ?? "—"}</td>
                       </tr>
                     ))}
