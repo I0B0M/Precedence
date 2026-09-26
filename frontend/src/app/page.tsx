@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LabelTag, StateBadge } from "@/components/bits";
+import { ApiProblem, Loading } from "@/components/Problem";
 import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
@@ -15,22 +16,22 @@ const FUND_SOURCES: Record<string, string> = { ssga: "State Street (SSGA)", samp
 export default function HoldingsBoard() {
   const [status, setStatus] = useState<Status | null>(null);
   const [board, setBoard] = useState<PortfolioOut | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [holdings, setHoldings] = useHoldings(status ? (status.data === "sample" ? SAMPLE_PORTFOLIO : NO_HOLDINGS) : null);
 
   useEffect(() => {
-    api.status().then(setStatus).catch((e) => setError(e.message));
+    api.status().then(setStatus).catch(setError);
   }, []);
 
   useEffect(() => {
     if (!holdings?.length) return;
-    api.portfolio(holdings).then(setBoard).catch((e) => setError(e.message));
+    api.portfolio(holdings).then(setBoard).catch(setError);
   }, [holdings]);
 
-  if (error) return <div className="badline">Couldn&apos;t load your holdings: {error}</div>;
+  if (error) return <ApiProblem />;
   if (holdings && !holdings.length) return <StartFlow />;
-  if (!board) return <p className="mute">Loading what you own…</p>;
+  if (!board) return <Loading what="what you own" />;
 
   const watching = board.exposure.filter((e) => e.state === "WATCH").length;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);

@@ -28,6 +28,7 @@ export default function ImportScreen() {
   const [total, setTotal] = useState("");
   const [check, setCheck] = useState<Reconciled | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [checkErr, setCheckErr] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -43,9 +44,12 @@ export default function ImportScreen() {
       setTotal(r.printed_total?.toString() ?? "");
       setCheck(r);
     } catch (e) {
-      setNote(e instanceof ApiError && e.status === 503
-        ? `${e.message} You can type the rows below instead.`
-        : `Couldn't read that screenshot: ${(e as Error).message}`);
+      // The API's own detail already says what went wrong (422 unreadable, 415 not an image, 413 too big, 502/503 reader down).
+      // Only a failure to reach Stone at all gets our own wording.
+      const known = e instanceof ApiError && [413, 415, 422, 502, 503].includes(e.status);
+      setNote(known
+        ? `${(e as ApiError).message} You can type the rows below instead.`
+        : "Couldn't read that screenshot: Stone can't reach its data right now. Is the server running? You can type the rows below instead.");
     } finally {
       setBusy(false);
     }
@@ -54,7 +58,13 @@ export default function ImportScreen() {
   async function runCheck(next = rows, nextTotal = total) {
     const kept = next.filter((r) => r.symbol.trim());  // drop blank rows so check.rows[i] lines up with rows[i]
     if (kept.length !== next.length) setRows(kept.length ? kept : [blank()]);
-    setCheck(await api.reconcile(kept.map(toRead), num(nextTotal)));
+    try {
+      setCheckErr(false);
+      setCheck(await api.reconcile(kept.map(toRead), num(nextTotal)));
+    } catch {
+      setCheck(null);
+      setCheckErr(true);
+    }
   }
 
   /** Sample mode only: today's sample prices with one share count misread, like a blurry screenshot. */
@@ -178,6 +188,7 @@ export default function ImportScreen() {
           <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
 
+        {checkErr && <div className="badline">Stone can&apos;t reach its data right now, so it can&apos;t check the rows. Is the server running?</div>}
         {check && (
           <div className={check.status === "ok" ? "okline" : "badline"}>
             {check.status === "ok" ? "✓ " : ""}{check.message}

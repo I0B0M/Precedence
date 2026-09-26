@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { HitDots, HoldoutNote, LabelTag } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
+import { ApiProblem, Loading } from "@/components/Problem";
 import { api, type CompanyRow, type SignalResult } from "@/lib/api";
 import { horizonWords, pct, shortDate, whole } from "@/lib/format";
 import { hitWords, liteHistory, liteVerdict } from "@/lib/words";
@@ -21,7 +22,7 @@ export default function SignalLab() {
   const [ticker, setTicker] = useState<string | null>(null);
   const [signal, setSignal] = useState<string | null>(null);
   const [result, setResult] = useState<{ key: string; r: SignalResult } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [unavailable, setUnavailable] = useState<string[]>([]);
 
   useEffect(() => {
@@ -40,18 +41,19 @@ export default function SignalLab() {
       // With no link params, open on the demo story (BX + rate jump) when the API has both.
       setTicker(t ? (tOk ? t : null) : st.find((c) => c.ticker === DEFAULT.t)?.ticker ?? st[0]?.ticker ?? null);
       setSignal(s ? (sOk ? s : null) : sp.find((x) => x.key === DEFAULT.s)?.key ?? sp[0]?.key ?? null);
-    }).catch((e) => setError(e.message));
+    }).catch(setError);
   }, []);
 
   useEffect(() => {
     if (!ticker || !signal) return;
-    api.lab(ticker, signal).then((r) => setResult({ key: `${ticker}|${signal}`, r })).catch((e) => setError(e.message));
+    api.lab(ticker, signal).then((r) => setResult({ key: `${ticker}|${signal}`, r })).catch(setError);
     try {
       window.history.replaceState(null, "", `/lab?t=${ticker}&s=${signal}`);
     } catch {}
   }, [ticker, signal]);
 
-  if (error) return <div className="badline">{error}</div>;
+  if (error) return <ApiProblem />;
+  if (!stocks.length || !specs.length) return <Loading what="the Lab" />;
   const quick = QUICK.filter((t) => stocks.some((c) => c.ticker === t));
   const key = `${ticker}|${signal}`;
 
@@ -114,7 +116,7 @@ export default function SignalLab() {
             <p className="mute">Pick {!ticker ? "a stock" : ""}{!ticker && !signal ? " and " : ""}{!signal ? "a kind of news" : ""} above to run a test.</p>
           </div>
         )
-      ) : result?.key !== key ? <p className="mute">Testing…</p> : <LabResult key={key} r={result.r} ticker={ticker} />}
+      ) : result?.key !== key ? <Loading what={`${ticker} and that news`} /> : <LabResult key={key} r={result.r} ticker={ticker} />}
     </section>
   );
 }

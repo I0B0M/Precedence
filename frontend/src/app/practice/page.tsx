@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { StateBadge } from "@/components/bits";
+import { ApiProblem, Loading } from "@/components/Problem";
 import { api, type CompanyRow, type PortfolioOut } from "@/lib/api";
 import { money, shortDate } from "@/lib/format";
 import { readHoldings } from "@/lib/holdings";
@@ -27,7 +28,7 @@ function priceNote(day: string): string {
 export default function PracticeScreen() {
   const stored = usePractice();
   const [cos, setCos] = useState<CompanyRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [boardFor, setBoardFor] = useState<{ key: string; data: PortfolioOut } | null>(null);
   const [side, setSide] = useState<Side>("buy");
   const [symbol, setSymbol] = useState("");
@@ -37,7 +38,7 @@ export default function PracticeScreen() {
   const [done, setDone] = useState<string | null>(null);
 
   useEffect(() => {
-    api.companies().then(setCos).catch((e) => setError(e.message));
+    api.companies().then(setCos).catch(setError);
   }, []);
 
   // First visit: start from what the board holds, plus practice cash.
@@ -60,8 +61,8 @@ export default function PracticeScreen() {
   }, [posKey]);
   const board = boardFor?.key === posKey ? boardFor.data : null;
 
-  if (error) return <div className="badline">{error}</div>;
-  if (!s || !cos) return <p className="mute">Loading practice…</p>;
+  if (error) return <ApiProblem />;
+  if (!s || !cos) return <Loading what="practice" />;
 
   const pick = price.get(symbol);
   const shares = Number(qty);

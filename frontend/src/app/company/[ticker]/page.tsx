@@ -5,9 +5,10 @@ import { useParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
+import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { PriceChart, type Pin } from "@/components/PriceChart";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
-import { bigMoney, dateTimeET, money, pct, shortDate, timeET, whole } from "@/lib/format";
+import { bigMoney, money, pct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
 
@@ -17,7 +18,7 @@ export default function CompanyScreen() {
   const [d, setD] = useState<CompanyDetail | null>(null);
   const [mine, setMine] = useState<ExposureRow | null>(null);
   const [portfolioTotal, setPortfolioTotal] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [scan, setScan] = useState<Scan | null>(null);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function CompanyScreen() {
           setPortfolioTotal(p.total);
         });
       }
-    }).catch((e) => setError(e.message));
+    }).catch(setError);
   }, [ticker]);
 
   const pins = useMemo<Pin[]>(() => {
@@ -43,8 +44,8 @@ export default function CompanyScreen() {
     return [...fromFilings, ...fromSignals].sort((a, b) => a.day.localeCompare(b.day));
   }, [d]);
 
-  if (error) return <div className="badline">{error}</div>;
-  if (!d) return <p className="mute">Loading {ticker.toUpperCase()}…</p>;
+  if (error) return isNotFound(error) ? <NotFollowed ticker={decodeURIComponent(ticker).toUpperCase()} /> : <ApiProblem />;
+  if (!d) return <Loading what={decodeURIComponent(ticker).toUpperCase()} />;
 
   const { company: co, last } = d;
   const main = headline(d.signals);
