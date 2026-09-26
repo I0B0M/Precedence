@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import { Bricolage_Grotesque, Doto, Figtree } from "next/font/google";
 import { Header } from "@/components/Header";
 import { SampleBanner } from "@/components/SampleBanner";
 import { ModeProvider } from "@/lib/mode";
 import "./globals.css";
+
+const doto = Doto({ subsets: ["latin"], weight: ["900"], variable: "--font-doto" });
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-bricolage" });
+const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-figtree" });
 
 export const metadata: Metadata = {
   title: "Stone",
@@ -15,7 +20,7 @@ const MODE_BEFORE_PAINT =
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-mode="lite" suppressHydrationWarning>
+    <html lang="en" data-mode="lite" className={`${doto.variable} ${bricolage.variable} ${figtree.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: MODE_BEFORE_PAINT }} />
       </head>
