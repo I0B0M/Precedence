@@ -69,13 +69,13 @@ export default function HoldingsBoard() {
                   <span className="nm">{e.name}</span>
                 </span>
                 <span className="say">
-                  <span className="lite-only">{row?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
+                  <span className="lite-only">{row?.kind === "crypto" ? "Crypto: Stone has no signals for it yet." : row?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
                   <span className="pro-only">{proSummary(e.firing)}</span>
                 </span>
                 <span className="val">
                   {money(e.total)}
                   <small className={row?.change != null && row.change < 0 ? "down" : "up"}>
-                    {row?.change != null ? `${pct(row.change)} today` : <span className="mute">{whole(e.share_of_total)} of total</span>}
+                    {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{whole(e.share_of_total)} of total</span>}
                   </small>
                 </span>
                 <span className="hend">
@@ -127,6 +127,7 @@ function FundLine({ f }: { f: FundInfo }) {
 function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fund?: FundInfo; portfolio: number }) {
   const viaEtf = Object.values(e.via_etf).reduce((a, b) => a + b, 0);
   const isFund = kind === "etf";
+  const isCrypto = kind === "crypto"; // state null ("Not tested"); no company page, no signals
   // A fund row stands for only part of the fund (the rest shows as its stocks), so judge the whole fund from `direct`.
   const share = isFund ? (portfolio ? e.direct / portfolio : null) : e.share_of_total;
   const badDay = isFund ? (e.bad_day_return != null ? e.bad_day_return * e.direct : null) : e.bad_day_loss;
@@ -139,7 +140,8 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
         {isFund && (
           <p>{fund?.as_of ? `A fund. Its holdings are from ${shortDate(fund.as_of)}.` : "A fund. Its holdings aren't loaded yet, so it's shown as one line."}</p>
         )}
-        {(!isFund || e.firing.length > 0) && (
+        {isCrypto && <p>Crypto isn&apos;t covered by Stone&apos;s signals yet, so there&apos;s nothing tested to report.</p>}
+        {!isCrypto && (!isFund || e.firing.length > 0) && (
           <>
             {e.firing.length > 0 ? (
               <div className="list">
@@ -184,7 +186,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
           <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span></dd>
         </dl>
         <p className="note">&quot;A bad day&quot; is the 1-in-20 worst day of the past year{isFund ? ", for the whole fund" : ""}.</p>
-        {kind !== "etf" && <Link className="linkb" href={`/company/${e.symbol}`}>Open {e.symbol} ›</Link>}
+        {kind !== "etf" && !isCrypto && <Link className="linkb" href={`/company/${e.symbol}`}>Open {e.symbol} ›</Link>}
       </div>
     </div>
   );
