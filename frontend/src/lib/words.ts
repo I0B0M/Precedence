@@ -27,6 +27,7 @@ export function hitWords(s: { vs_market: boolean }): string {
 
 /** "The last 12 times ... it was lower a month later 10 times. In a normal month, about 27%." */
 export function liteHistory(s: SignalResult, ticker: string): string {
+  if (s.label === "NO DATA") return s.note ?? "We haven't loaded the data for this yet, so it wasn't tested.";
   const h = horizonWords(s.horizon);
   const span = h.replace("a ", "");
   if (s.n === 0) return `This hasn't happened to ${ticker} in the last two years, so there's nothing to go on.`;
@@ -44,6 +45,7 @@ export function liteMarket(m: MarketResult): string {
 
 export function liteVerdict(s: SignalResult): string {
   if (s.label === "STRONG") return s.signal === "market_rate_jump" ? "That's a real pattern for the whole market." : "That's a real pattern for this stock.";
+  if (s.label === "NO DATA") return "";
   if (s.label === "WEAK") return "That's too few times to be sure.";
   return "That's not clearly different from normal.";
 }

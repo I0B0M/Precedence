@@ -1,6 +1,6 @@
 // Shapes returned by the FastAPI backend (backend/stone/api). Keep in step with views.py.
 
-export type Label = "STRONG" | "WEAK" | "NOT PROVEN";
+export type Label = "STRONG" | "WEAK" | "NOT PROVEN" | "NO DATA"; // NO DATA: source data not loaded, nothing tested
 export type State = "CALM" | "WATCH";
 
 export interface Case {
@@ -29,6 +29,7 @@ export interface SignalResult {
   high: number | null;
   label: Label;
   firing: { known_at: string; note: string } | null;
+  note?: string | null; // why there is no result, for label "NO DATA"
   holdout: { first: Half; second: Half; held_up: boolean } | null;
   cases?: Case[];
 }
