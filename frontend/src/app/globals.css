@@ -236,7 +236,8 @@ td a { color: var(--text); text-underline-offset: 3px; text-decoration-color: va
 }
 .list-head + .list-row, .list > .list-row:first-child { border-top: 0; }
 a.list-row:hover span:first-child { text-decoration: underline; text-underline-offset: 3px; }
-.list-row span:last-child { white-space: nowrap; flex: none; }
+.list-row > span:first-child { flex: 1; min-width: 0; }
+.list-row > span:last-child { white-space: nowrap; flex: none; }
 .market { background: var(--raised); border-radius: var(--r-ctl); padding: 14px 16px; font-size: 16px; }
 .market .kv { font-size: 15px; margin-top: 6px; }
 .pins { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 20px; font-size: 14px; color: var(--text-2); }
@@ -267,17 +268,28 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 /* ---------- holdings board ---------- */
 .pf-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 0 0 20px; }
 .rows { background: var(--group); border-radius: var(--r-card); overflow: hidden; }
+.hitem { position: relative; }
+.hitem + .hitem::before { content: ""; position: absolute; top: 0; left: 20px; right: 0; border-top: 1px solid var(--sep); z-index: 1; }
 .hrow {
+  width: 100%; border: 0; background: none; text-align: left; cursor: pointer;
   display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr) auto auto; gap: 16px; align-items: center;
-  padding: 14px 20px; position: relative; text-decoration: none; transition: background-color 0.15s var(--ease);
+  padding: 14px 20px; transition: background-color 0.15s var(--ease);
 }
-.hrow + .hrow::before { content: ""; position: absolute; top: 0; left: 20px; right: 0; border-top: 1px solid var(--sep); }
 .hrow:hover { background: var(--fill); }
 .hrow .tk { font-weight: 600; font-size: 17px; }
 .hrow .nm { font-size: 13px; color: var(--text-2); display: block; }
 .hrow .say { font-size: 15px; color: var(--text); }
 .hrow .val { text-align: right; font-weight: 600; }
 .hrow .val small { display: block; font-weight: 400; font-size: 13px; }
+.hend { display: inline-flex; align-items: center; gap: 10px; }
+.chev { color: var(--mark); font-size: 22px; line-height: 1; transition: transform 0.25s var(--ease); display: inline-block; }
+.hitem.open .chev { transform: rotate(90deg); }
+/* the panel opens by animating its row from 0fr to 1fr */
+.hpanel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s var(--ease); }
+.hpanel > div { overflow: hidden; }
+.hitem.open .hpanel { grid-template-rows: 1fr; }
+.hdetail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 32px; padding: 4px 20px 20px; }
+.hdetail h3 { font-size: 17px; }
 
 /* ---------- chart ---------- */
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
@@ -345,9 +357,10 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 @media (max-width: 900px) {
   .grid2, .grid2.even, .grid3 { grid-template-columns: minmax(0, 1fr); }
   .hrow { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 13px 16px; }
-  .hrow + .hrow::before { left: 16px; }
+  .hitem + .hitem::before { left: 16px; }
   .hrow .say { grid-column: 1 / -1; grid-row: 2; }
   .hrow .val { display: none; }
+  .hdetail { grid-template-columns: minmax(0, 1fr); padding: 4px 16px 18px; }
 }
 @media (max-width: 640px) {
   .top { grid-template-columns: 1fr auto; }
