@@ -39,6 +39,35 @@ export interface MarketResult extends SignalResult {
   symbol: string; // "SPY" on real data
 }
 
+/** GET /api/funds/{symbol}: what's in a fund, how it's doing, what's next. */
+export interface FundHolding {
+  ticker: string;
+  name: string | null; // null when Stone doesn't track the stock
+  weight: number; // share of the fund, 0..1
+  in_stone: boolean; // Stone has prices and signals for it
+  state: State | null; // null when not tracked
+  firing: { signal: string; label: Label }[];
+  lite_line: string | null; // e.g. "Executives sold shares, and for this stock that has mattered before."
+}
+
+export interface FundPage {
+  symbol: string;
+  name: string;
+  price: { last_close: number; as_of: string } | null;
+  performance: { d30: number | null; d90: number | null; y1: number | null; as_of: string | null }; // fractions
+  fund_state: State | null; // from the fund's own tested signals (SPY: market rate jump); null if never tested
+  fund_firing: SignalResult[];
+  holdings_as_of: string | null;
+  holdings_source: string | null; // "ssga"
+  total_holdings_count: number; // 504 for SPY
+  looked_through_share: number; // weight in stocks Stone tracks, 0..1
+  holdings: FundHolding[]; // top 25 by weight
+  heads_up: { ticker: string; name: string; weight: number }[]; // holdings on WATCH
+  filings_span: { start: string; end: string } | null;
+  week_filings: { ticker: string; form: string; accepted_at: string; url: string | null }[]; // top 25 holdings
+  note: string | null; // e.g. "Holdings for QQQ aren't loaded yet."
+}
+
 export interface Half {
   n: number;
   hits: number;
@@ -231,6 +260,7 @@ export const api = {
   labSignals: () => call<{ key: string; lite: string; pro: string; horizon: number }[]>("/api/lab/signals"),
   lab: (t: string, s: string) => call<SignalResult>(`/api/lab/${encodeURIComponent(t)}/${s}`),
   marketRateJump: () => call<MarketResult>("/api/market/rate_jump"),
+  fund: (symbol: string) => call<FundPage>(`/api/funds/${encodeURIComponent(symbol)}`),
   today: (symbols: string[] = []) =>
     call<Today>(`/api/today${symbols.length ? `?symbols=${encodeURIComponent(symbols.join(","))}` : ""}`),
   portfolio: (holdings: Holding[]) => call<PortfolioOut>("/api/portfolio", post({ holdings })),
