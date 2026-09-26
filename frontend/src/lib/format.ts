@@ -1,0 +1,48 @@
+export function money(v: number | null | undefined, cents = false): string {
+  if (v == null || Number.isNaN(v)) return "—";
+  const abs = Math.abs(v).toLocaleString("en-US", {
+    minimumFractionDigits: cents ? 2 : 0,
+    maximumFractionDigits: cents ? 2 : 0,
+  });
+  return (v < 0 ? "−$" : "$") + abs;
+}
+
+/** Big dollar figures from filings: $4.21B, $612M. */
+export function bigMoney(v: number | null | undefined): string {
+  if (v == null) return "—";
+  const a = Math.abs(v);
+  const s = a >= 1e12 ? `${(a / 1e12).toFixed(2)}T` : a >= 1e9 ? `${(a / 1e9).toFixed(2)}B`
+    : a >= 1e6 ? `${(a / 1e6).toFixed(0)}M` : a.toLocaleString("en-US");
+  return (v < 0 ? "−$" : "$") + s;
+}
+
+export function pct(v: number | null | undefined, signed = true, digits = 1): string {
+  if (v == null || Number.isNaN(v)) return "—";
+  const s = Math.abs(v * 100).toFixed(digits) + "%";
+  if (!signed) return s;
+  return (v > 0 ? "+" : v < 0 ? "−" : "") + s;
+}
+
+export function whole(v: number | null | undefined): string {
+  return v == null ? "—" : Math.round(v * 100) + "%";
+}
+
+/** Trading-day horizon in plain words. */
+export function horizonWords(days: number): string {
+  if (days === 5) return "a week";
+  if (days === 20) return "a month";
+  return `${days} trading days`;
+}
+
+export function shortDate(iso: string): string {
+  return new Date(iso.length === 10 ? iso + "T12:00:00" : iso).toLocaleDateString("en-US", {
+    month: "short", day: "numeric", year: "numeric",
+  });
+}
+
+export function dateTimeET(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit",
+  }) + " ET";
+}

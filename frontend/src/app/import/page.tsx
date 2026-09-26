@@ -1,0 +1,172 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib/api";
+import { money } from "@/lib/format";
+import { saveHoldings } from "@/lib/holdings";
+
+type EditRow = { symbol: string; shares: string; price: string; value: string };
+
+const toEdit = (r: ReadRow): EditRow => ({
+  symbol: r.symbol, shares: r.shares?.toString() ?? "", price: r.price?.toString() ?? "", value: r.value?.toString() ?? "",
+});
+const num = (s: string) => (s.trim() === "" || Number.isNaN(Number(s.replace(/[$,]/g, ""))) ? null : Number(s.replace(/[$,]/g, "")));
+const toRead = (r: EditRow): ReadRow => ({ symbol: r.symbol.trim().toUpperCase(), shares: num(r.shares), price: num(r.price), value: num(r.value) });
+const blank = (): EditRow => ({ symbol: "", shares: "", price: "", value: "" });
+
+// Brief: "spread across different sources" · "understanding what they own"
+export default function ImportScreen() {
+  const router = useRouter();
+  const [status, setStatus] = useState<Status | null>(null);
+  const [rows, setRows] = useState<EditRow[]>([blank()]);
+  const [total, setTotal] = useState("");
+  const [check, setCheck] = useState<Reconciled | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api.status().then(setStatus).catch(() => {});
+  }, []);
+
+  async function upload(file: File) {
+    setBusy(true);
+    setNote(null);
+    try {
+      const r = await api.screenshot(file);
+      setRows(r.rows.map(toEdit));
+      setTotal(r.printed_total?.toString() ?? "");
+      setCheck(r);
+    } catch (e) {
+      setNote(e instanceof ApiError && e.status === 503
+        ? `${e.message} You can type the rows below instead.`
+        : `Couldn't read that screenshot: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runCheck(next = rows, nextTotal = total) {
+    const kept = next.filter((r) => r.symbol.trim());  // drop blank rows so check.rows[i] lines up with rows[i]
+    if (kept.length !== next.length) setRows(kept.length ? kept : [blank()]);
+    setCheck(await api.reconcile(kept.map(toRead), num(nextTotal)));
+  }
+
+  /** Sample mode only: today's sample prices with one share count misread, like a blurry screenshot. */
+  async function tryExample() {
+    const cos = await api.companies();
+    const price = (t: string) => cos.find((c) => c.ticker === t)?.last_close ?? 0;
+    const truth: [string, number][] = [["HLCN", 62], ["MRDN", 140], ["ORCA", 30], ["BRVE", 55]];
+    const read = truth.map(([t, sh]) => ({
+      symbol: t, shares: (t === "BRVE" ? 85 : sh).toString(), price: price(t).toFixed(2), value: (sh * price(t)).toFixed(2),
+    }));
+    const printed = truth.reduce((a, [t, sh]) => a + Number((sh * price(t)).toFixed(2)), 0).toFixed(2);
+    setRows(read);
+    setTotal(printed);
+    await runCheck(read, printed);
+  }
+
+  function applyFix(i: number) {
+    const fix = check?.rows[i]?.fix;
+    if (!fix) return;
+    const next = rows.map((r, j) => (j !== i ? r : {
+      ...r, ...(fix.shares != null ? { shares: String(fix.shares) } : {}), ...(fix.value != null ? { value: String(fix.value) } : {}),
+    }));
+    setRows(next);
+    runCheck(next);
+  }
+
+  function save() {
+    const holdings = rows.map(toRead).filter((r) => r.symbol).map((r) => ({
+      symbol: r.symbol, shares: r.shares ?? (r.value != null && r.price ? r.value / r.price : 0),
+    })).filter((h) => h.shares > 0);
+    saveHoldings(holdings);
+    router.push("/");
+  }
+
+  const edit = (i: number, k: keyof EditRow, v: string) => {
+    setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
+    setCheck(null);
+  };
+
+  return (
+    <section className="stack" style={{ gap: 22 }}>
+      <div className="stack" style={{ gap: 8 }}>
+        <span className="ticker">Bring holdings in</span>
+        <h1>Snap a screenshot of any app</h1>
+        <p className="mute" style={{ maxWidth: "60ch" }}>
+          We read the rows, then check they add up to the total printed on your screen. If they don&apos;t, we find the misread
+          before anything is saved.
+        </p>
+      </div>
+
+      <div className="drop">
+        <b>Screenshot from Robinhood, Cash App, Webull, anything</b>
+        <input type="file" accept="image/*" disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+        {busy && <span className="note">Reading your screenshot…</span>}
+        {note && <span className="badline">{note}</span>}
+        {status?.data === "sample" && (
+          <button className="linkb" type="button" onClick={tryExample}>Try the example (sample data, one blurry number)</button>
+        )}
+      </div>
+
+      <div className="card">
+        <h3>What we read</h3>
+        <div className="tscroll">
+          <table className="readtable">
+            <thead><tr><th>Ticker</th><th>Shares</th><th>Price</th><th>Value</th><th /></tr></thead>
+            <tbody>
+              {rows.map((r, i) => {
+                const c = check?.rows[i];
+                return (
+                  <tr key={i} className={c && !c.ok ? "bad" : undefined}>
+                    {(["symbol", "shares", "price", "value"] as const).map((k) => (
+                      <td key={k}>
+                        <input aria-label={`${k} row ${i + 1}`} value={r[k]} onChange={(e) => edit(i, k, e.target.value)}
+                          inputMode={k === "symbol" ? "text" : "decimal"} />
+                      </td>
+                    ))}
+                    <td>
+                      {c?.fix && Object.keys(c.fix).length > 0 && (
+                        <button className="btn small hl" type="button" onClick={() => applyFix(i)}>
+                          Use {c.fix.shares != null ? `${c.fix.shares} shares` : money(c.fix.value, true)}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {check?.rows.filter((c) => c.problem).map((c, i) => (
+          <p key={i} className="note"><b>{c.symbol}:</b> {c.problem}</p>
+        ))}
+        <div className="row-flex">
+          <button className="linkb" type="button" onClick={() => setRows([...rows, blank()])}>Add a row</button>
+        </div>
+        <div className="row-flex">
+          <label htmlFor="total"><b>Total shown on your screen</b></label>
+          <input id="total" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); }} inputMode="decimal"
+            style={{ border: "var(--soft)", background: "var(--bg)", borderRadius: 8, padding: "6px 8px", width: 160 }} />
+          <button className="btn" type="button" onClick={() => runCheck()}>Check it adds up</button>
+        </div>
+
+        {check && (
+          <div className={check.status === "ok" ? "okline" : "badline"}>
+            {check.status === "ok" ? "✓ " : ""}{check.message}
+          </div>
+        )}
+        <div className="row-flex">
+          <button className="btn hl" type="button" disabled={check?.status !== "ok"} onClick={save}>Save as my holdings</button>
+          {check && check.status !== "ok" && <span className="note">Saving unlocks once the rows add up to the total.</span>}
+        </div>
+      </div>
+
+      <div className="card">
+        <h3>Robinhood, read-only</h3>
+        <p className="mute">Connecting Robinhood directly (through SnapTrade, read-only) is coming next. We will never be able to trade or move money.</p>
+      </div>
+    </section>
+  );
+}
