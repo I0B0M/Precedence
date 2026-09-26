@@ -110,10 +110,10 @@ export default function FundScreen() {
           <div className="stack" style={{ gap: 20 }}>
             <div className="box">
               <h3>How it&apos;s done</h3>
-              <div className="versus perf">
+              <div className="versus perf" style={{ gap: 10 }}>
                 {([["1 month", f.performance.d30], ["3 months", f.performance.d90], ["1 year", f.performance.y1]] as const).map(([label, v]) => (
                   <div key={label}>
-                    <div className={`bignum ${v != null && v < 0 ? "down" : "up"}`}>{v == null ? "—" : pct(v, true, 1)}</div>
+                    <div className={`bignum ${v != null && v < 0 ? "down" : "up"}`} style={{ fontSize: "clamp(24px, 2.6vw, 34px)" }}>{v == null ? "—" : pct(v, true, 1)}</div>
                     <p className="note">{label}</p>
                   </div>
                 ))}
