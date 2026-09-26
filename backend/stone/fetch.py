@@ -57,3 +57,16 @@ class CachedFetcher:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(resp.content)
         return resp.content
+
+    def post_json(self, url: str, key: str, body: dict) -> bytes:
+        path = self.path_for(key)
+        if path.exists():
+            return path.read_bytes()
+        if self.offline:
+            raise FileNotFoundError(f"offline and not cached: {path}")
+        self.limiter.wait()
+        resp = httpx.post(url, json=body, headers=self.headers, timeout=60)
+        resp.raise_for_status()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(resp.content)
+        return resp.content

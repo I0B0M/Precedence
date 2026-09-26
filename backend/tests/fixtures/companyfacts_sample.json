@@ -1,0 +1,26 @@
+{
+  "cik": 9999999,
+  "entityName": "SAMPLE CO",
+  "facts": {
+    "us-gaap": {
+      "Revenues": {
+        "label": "Revenues",
+        "units": {
+          "USD": [
+            {"start": "2023-10-01", "end": "2024-09-28", "val": 391035000000, "accn": "0000999999-24-000002", "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2024-11-01", "frame": "CY2024"},
+            {"start": "2024-07-01", "end": "2024-09-28", "val": 94930000000, "accn": "0000999999-24-000002", "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2024-11-01"}
+          ]
+        }
+      },
+      "Assets": {
+        "label": "Assets",
+        "units": {"USD": [{"end": "2024-09-28", "val": 364980000000, "accn": "0000999999-24-000002", "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2024-11-01", "frame": "CY2024Q3I"}]}
+      }
+    },
+    "dei": {
+      "EntityCommonStockSharesOutstanding": {
+        "units": {"shares": [{"end": "2024-10-18", "val": 15115823000, "accn": "0000999999-24-000002", "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2024-11-01"}]}
+      }
+    }
+  }
+}
