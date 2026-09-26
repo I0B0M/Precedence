@@ -15,7 +15,7 @@ export default function SignalLab() {
   const [specs, setSpecs] = useState<Spec[]>([]);
   const [ticker, setTicker] = useState<string | null>(null);
   const [signal, setSignal] = useState<string | null>(null);
-  const [result, setResult] = useState<SignalResult | null>(null);
+  const [result, setResult] = useState<{ key: string; r: SignalResult } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,8 +31,7 @@ export default function SignalLab() {
 
   useEffect(() => {
     if (!ticker || !signal) return;
-    setResult(null);
-    api.lab(ticker, signal).then(setResult).catch((e) => setError(e.message));
+    api.lab(ticker, signal).then((r) => setResult({ key: `${ticker}|${signal}`, r })).catch((e) => setError(e.message));
     try {
       window.history.replaceState(null, "", `/lab?t=${ticker}&s=${signal}`);
     } catch {}
@@ -74,7 +73,7 @@ export default function SignalLab() {
         </div>
       </div>
 
-      {!result ? <p className="mute">Testing…</p> : <LabResult r={result} ticker={ticker!} />}
+      {result?.key !== `${ticker}|${signal}` ? <p className="mute">Testing…</p> : <LabResult r={result.r} ticker={ticker!} />}
     </section>
   );
 }

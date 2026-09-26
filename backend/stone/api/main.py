@@ -79,8 +79,8 @@ def company(ticker: str, c: psycopg.Connection = Conn):
         """select accession, form, filed_date, accepted_at, report_date, primary_doc, source from filings
            where ticker = %s and form <> '4' order by accepted_at desc limit 12""", (t,)).fetchall()
     sales = c.execute(
-        """select accepted_at, owner_name, owner_title, transaction_date, shares, price, accession
-           from insider_trades where ticker = %s and code = 'S' order by accepted_at desc limit 15""", (t,)).fetchall()
+        """select accepted_at, owner_name, owner_title, transaction_date, shares, price, accession, seq
+           from insider_trades where ticker = %s and code = 'S' order by accepted_at desc, seq limit 15""", (t,)).fetchall()
     rate = c.execute("select day, value from rates where series = 'DGS10' order by day desc limit 1").fetchone()
     results = service.run_all(c, t) if co["kind"] == "stock" else {}
     return {

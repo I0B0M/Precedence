@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 
+import httpx
+
 from stone.config import NotConnected, Settings
 from stone.fetch import CachedFetcher, RateLimiter
 
@@ -178,9 +180,10 @@ class SecClient:
             offline=offline,
         )
 
-    def ticker_map(self) -> dict[str, int]:
+    def ticker_map(self) -> dict[str, tuple[int, str]]:
+        """ticker -> (CIK, company name as SEC lists it)."""
         doc = json.loads(self.http.get(TICKER_MAP, "company_tickers.json"))
-        return {row["ticker"]: int(row["cik_str"]) for row in doc.values()}
+        return {row["ticker"]: (int(row["cik_str"]), row["title"]) for row in doc.values()}
 
     def filings(self, cik: int, since: date) -> list[Filing]:
         key = f"CIK{cik:010d}"
@@ -195,7 +198,12 @@ class SecClient:
 
     def companyfacts(self, cik: int) -> list[Fact]:
         key = f"CIK{cik:010d}"
-        raw = self.http.get(f"{DATA}/api/xbrl/companyfacts/{key}.json", f"companyfacts_{key}.json")
+        try:
+            raw = self.http.get(f"{DATA}/api/xbrl/companyfacts/{key}.json", f"companyfacts_{key}.json")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:  # a new registrant with no XBRL yet
+                return []
+            raise
         return parse_companyfacts(json.loads(raw))
 
     def form4(self, cik: int, filing: Filing) -> list[InsiderTrade]:

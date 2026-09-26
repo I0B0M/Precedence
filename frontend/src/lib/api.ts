@@ -76,6 +76,7 @@ export interface InsiderSale {
   shares: number | null;
   price: number | null;
   accession: string;
+  seq: number;
 }
 
 export interface CompanyDetail {

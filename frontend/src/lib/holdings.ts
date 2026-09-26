@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import type { Holding } from "./api";
 
 // Holdings live in this browser until sign-in exists. Sample mode starts with the
@@ -15,29 +15,52 @@ export const SAMPLE_PORTFOLIO: Holding[] = [
   { symbol: "BRD500", shares: 12 },
 ];
 
-export function readHoldings(): Holding[] | null {
+let memory: string | null = null;
+let cachedRaw: string | null | undefined;
+let cached: Holding[] | null = null;
+const listeners = new Set<() => void>();
+
+function raw(): string | null {
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Holding[]) : null;
+    return localStorage.getItem(KEY) ?? memory;
   } catch {
-    return null;
+    return memory;
   }
 }
 
-export function saveHoldings(h: Holding[]) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(h));
-  } catch {}
+/** Same array back until the stored text changes, as useSyncExternalStore requires. */
+export function readHoldings(): Holding[] | null {
+  const r = raw();
+  if (r !== cachedRaw) {
+    cachedRaw = r;
+    try {
+      cached = r ? (JSON.parse(r) as Holding[]) : null;
+    } catch {
+      cached = null;
+    }
+  }
+  return cached;
 }
 
+export function saveHoldings(h: Holding[]) {
+  memory = JSON.stringify(h);
+  try {
+    localStorage.setItem(KEY, memory);
+  } catch {}
+  listeners.forEach((l) => l());
+}
+
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  window.addEventListener("storage", cb);
+  return () => {
+    listeners.delete(cb);
+    window.removeEventListener("storage", cb);
+  };
+}
+
+/** Saved holdings, else `fallback` (null while the caller doesn't know yet). */
 export function useHoldings(fallback: Holding[] | null) {
-  const [holdings, setHoldings] = useState<Holding[] | null>(null);
-  useEffect(() => {
-    setHoldings(readHoldings() ?? fallback);
-  }, [fallback]);
-  const set = useCallback((h: Holding[]) => {
-    saveHoldings(h);
-    setHoldings(h);
-  }, []);
-  return [holdings, set] as const;
+  const stored = useSyncExternalStore(subscribe, readHoldings, () => null);
+  return [stored ?? fallback, saveHoldings] as const;
 }

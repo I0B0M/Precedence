@@ -1,5 +1,9 @@
-"""The real tickers Stone loads. CIKs are checked against SEC's company_tickers.json
-on every real ingest run (ingest.pipeline.check_ciks), so a typo here fails loudly."""
+"""The real tickers Stone loads.
+
+CORE: 20 stocks with hand-entered CIKs (checked against SEC on every real run) and
+full Form 4 insider history. SP100: the rest of the S&P 100, CIK and name looked up
+from SEC's company_tickers.json at run time; filings, XBRL and prices, no Form 4s.
+The S&P 100 list is from memory (2025 membership) and may be slightly out of date."""
 
 from dataclasses import dataclass
 
@@ -9,8 +13,11 @@ class Ticker:
     symbol: str
     cik: int | None
     name: str
-    sector: str
+    sector: str | None
     kind: str = "stock"
+    form4: bool = True
+    sec_symbol: str | None = None  # SEC writes BRK-B where exchanges write BRK.B
+    also_ciks: tuple[int, ...] = ()  # older/newer registrants for the same stock
 
 
 TICKERS: list[Ticker] = [
@@ -30,7 +37,8 @@ TICKERS: list[Ticker] = [
     Ticker("JPM", 19617, "JPMorgan Chase", "Banks"),
     Ticker("BAC", 70858, "Bank of America", "Banks"),
     Ticker("BX", 1393818, "Blackstone", "Asset Management"),
-    Ticker("XOM", 34088, "Exxon Mobil", "Energy"),
+    # 2026: XOM moved to a new holding company (CIK 2115436); the 2-year history is under 34088.
+    Ticker("XOM", 34088, "Exxon Mobil", "Energy", also_ciks=(2115436,)),
     Ticker("CVX", 93410, "Chevron", "Energy"),
     Ticker("JNJ", 200406, "Johnson & Johnson", "Healthcare"),
     Ticker("PFE", 78003, "Pfizer", "Healthcare"),
@@ -38,5 +46,13 @@ TICKERS: list[Ticker] = [
     Ticker("SPY", None, "SPDR S&P 500 ETF", "Index", kind="etf"),
     Ticker("QQQ", None, "Invesco QQQ", "Index", kind="etf"),
 ]
+
+SP100_EXTRA = """ABBV ABT ACN ADBE AIG AMGN AMT AVGO AXP BA BNY BKNG BLK BMY C CAT CHTR CL CMCSA COF COP COST
+CRM CSCO CVS DE DHR DUK EMR F FDX GD GE GILD GM GS HD HON IBM INTU ISRG LIN LLY LMT LOW MA MCD MDLZ MDT
+MET MMM MO MRK MS NEE NKE NOW ORCL PEP PG PLTR PM PYPL QCOM RTX SBUX SCHW SO SPG T TGT TMO TMUS TXN UBER
+UNH UNP UPS USB V VZ WFC""".split()
+
+TICKERS += [Ticker(sym, None, sym, None, form4=False) for sym in SP100_EXTRA]
+TICKERS.append(Ticker("BRK.B", None, "BRK.B", None, form4=False, sec_symbol="BRK-B"))
 
 STOCKS = [t for t in TICKERS if t.kind == "stock"]

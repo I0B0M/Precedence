@@ -202,7 +202,7 @@ export default function CompanyScreen() {
                   <thead><tr><th>Accepted</th><th>Who</th><th className="num">Shares</th></tr></thead>
                   <tbody>
                     {d.insider_sales.slice(0, 8).map((s) => (
-                      <tr key={s.accession + s.accepted_at}>
+                      <tr key={`${s.accession}-${s.seq}`}>
                         <td>{dateTimeET(s.accepted_at)}</td>
                         <td>{s.owner_name}<div className="note">{s.owner_title}</div></td>
                         <td className="num">{s.shares?.toLocaleString("en-US") ?? "—"}</td>
