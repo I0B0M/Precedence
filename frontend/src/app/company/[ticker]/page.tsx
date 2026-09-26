@@ -7,7 +7,7 @@ import { HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/componen
 import { MarketCard } from "@/components/MarketCard";
 import { PriceChart, type Pin } from "@/components/PriceChart";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
-import { bigMoney, dateTimeET, money, pct, shortDate, whole } from "@/lib/format";
+import { bigMoney, dateTimeET, money, pct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
 
@@ -268,7 +268,7 @@ export default function CompanyScreen() {
                         {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer"><b>{f.form}</b></a> : <b>{f.form}</b>}
                         <div className="note">{f.accession}</div>
                       </td>
-                      <td className="nowrap">{dateTimeET(f.accepted_at)}</td>
+                      <td className="nowrap">{shortDate(f.accepted_at)}<div className="note">{timeET(f.accepted_at)}</div></td>
                       <td className="nowrap">{f.report_date ?? "—"}</td>
                     </tr>
                   ))}
