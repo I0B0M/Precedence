@@ -244,13 +244,12 @@ def lite_line(results: list[engine.Result] | None) -> str | None:
     return "Nothing important today."
 
 
-def return_since(closes: list[tuple], days: int) -> float | None:
-    """Last close vs the last close at least `days` calendar days earlier; None without that much history."""
-    if not closes:
-        return None
-    last_day, last = closes[-1]
-    back = [close for day, close in closes if day <= last_day - timedelta(days=days)]
-    return last / back[-1] - 1 if back else None
+PERFORMANCE_BASIS = "trading days: 21/63/252, price only, dividends not included"
+
+
+def return_over(closes: list[tuple], bars: int) -> float | None:
+    """Last close vs the close `bars` trading days earlier (21 ~ a month); None without that much history."""
+    return closes[-1][1] / closes[-1 - bars][1] - 1 if len(closes) > bars else None
 
 
 @app.get("/api/funds/{symbol}")
@@ -284,9 +283,11 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
     week = [f for f in filed_between(c, start, day) if f["ticker"] in top] if day else []
     return {
         "symbol": t, "name": co["name"],
-        "price": {"last_close": closes[-1][1], "as_of": closes[-1][0].isoformat()} if closes else None,
-        "performance": {"d30": return_since(closes, 30), "d90": return_since(closes, 90),
-                        "y1": return_since(closes, 365), "as_of": closes[-1][0].isoformat() if closes else None},
+        "price": {"last_close": closes[-1][1], "as_of": closes[-1][0].isoformat(),
+                  "prev_close": closes[-2][1] if len(closes) > 1 else None,
+                  "change_1d": return_over(closes, 1)} if closes else None,
+        "performance": {"d30": return_over(closes, 21), "d90": return_over(closes, 63), "y1": return_over(closes, 252),
+                        "as_of": closes[-1][0].isoformat() if closes else None, "basis": PERFORMANCE_BASIS},
         "fund_state": state_of(fund_results),
         "fund_firing": [result_json(r, with_cases=False) for r in fund_results or [] if r.firing],
         "holdings_as_of": as_of.isoformat() if as_of else None,
