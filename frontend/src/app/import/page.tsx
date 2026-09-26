@@ -94,7 +94,7 @@ export default function ImportScreen() {
       <div className="stack" style={{ gap: 8 }}>
         <span className="ticker">Bring holdings in</span>
         <h1>Snap a screenshot of any app</h1>
-        <p className="mute" style={{ maxWidth: "60ch" }}>
+        <p className="lede">
           We read the rows, then check they add up to the total printed on your screen. If they don&apos;t, we find the misread
           before anything is saved.
         </p>
@@ -102,7 +102,11 @@ export default function ImportScreen() {
 
       <div className="drop">
         <b>Screenshot from Robinhood, Cash App, Webull, anything</b>
-        <input type="file" accept="image/*" disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+        <label className={`btn${busy ? " is-busy" : ""}`}>
+          <input className="sr-only" type="file" accept="image/*" disabled={busy}
+            onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+          {busy ? "Reading…" : "Choose a screenshot"}
+        </label>
         {busy && <span className="note">Reading your screenshot…</span>}
         {note && <span className="badline">{note}</span>}
         {status?.data === "sample" && (
@@ -147,9 +151,9 @@ export default function ImportScreen() {
         </div>
         <div className="row-flex">
           <label htmlFor="total"><b>Total shown on your screen</b></label>
-          <input id="total" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); }} inputMode="decimal"
-            style={{ border: "var(--soft)", background: "var(--bg)", borderRadius: 8, padding: "6px 8px", width: 160 }} />
-          <button className="btn" type="button" onClick={() => runCheck()}>Check it adds up</button>
+          <input id="total" className="field" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); }} inputMode="decimal"
+            style={{ width: 160 }} />
+          <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
 
         {check && (
@@ -158,7 +162,7 @@ export default function ImportScreen() {
           </div>
         )}
         <div className="row-flex">
-          <button className="btn hl" type="button" disabled={check?.status !== "ok"} onClick={save}>Save as my holdings</button>
+          <button className="btn" type="button" disabled={check?.status !== "ok"} onClick={save}>Save as my holdings</button>
           {check && check.status !== "ok" && <span className="note">Saving unlocks once the rows add up to the total.</span>}
         </div>
       </div>
