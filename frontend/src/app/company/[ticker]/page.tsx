@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { BadgeKey, HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
 import { FilingSummary } from "@/components/FilingSummary";
 import { MarketCard } from "@/components/MarketCard";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
-import { PriceChart, type Pin } from "@/components/PriceChart";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
 import { bigMoney, money, pct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
+import { StockChart } from "./StockChart";
 
 // Filings that get a plain-words summary (Gemini, figures checked against XBRL).
 const SUMMARY_FORMS = new Set(["8-K", "10-Q", "10-K"]);
@@ -39,19 +39,10 @@ export default function CompanyScreen() {
     }).catch(setError);
   }, [ticker]);
 
-  const pins = useMemo<Pin[]>(() => {
-    if (!d) return [];
-    const fromFilings = d.filings.filter((f) => ["10-K", "10-Q", "8-K"].includes(f.form)).slice(0, 6)
-      .map((f) => ({ day: f.accepted_at.slice(0, 10), label: `${shortDate(f.accepted_at)} · ${FORM_WORDS[f.form] ?? f.form}` }));
-    const fromSignals = d.signals.filter((s) => s.firing)
-      .map((s) => ({ day: s.firing!.known_at.slice(0, 10), label: `${shortDate(s.firing!.known_at)} · ${s.lite} (firing)` }));
-    return [...fromFilings, ...fromSignals].sort((a, b) => a.day.localeCompare(b.day));
-  }, [d]);
-
   if (error) return isNotFound(error) ? <NotFollowed ticker={decodeURIComponent(ticker).toUpperCase()} /> : <ApiProblem />;
   if (!d) return <Loading what={decodeURIComponent(ticker).toUpperCase()} />;
 
-  const { company: co, last } = d;
+  const { company: co } = d;
   const main = headline(d.signals);
   const others = d.signals.filter((s) => s !== main);
   const rateJump = d.signals.find((s) => s.signal === "rate_jump");
@@ -68,24 +59,15 @@ export default function CompanyScreen() {
     <section className="stack" style={{ gap: 28 }}>
       <Link href="/" className="linkb">‹ Everything you own</Link>
 
-      <header className="co-head">
-        <div className="stack" style={{ gap: 4 }}>
-          <span className="ticker">{co.ticker}{co.sector ? ` · ${co.sector}` : ""}{co.kind === "etf" ? " · fund" : ""}</span>
-          <div className="row-flex" style={{ gap: 14, alignItems: "center" }}>
-            <h1>{co.name}</h1>
-            {d.state && <StateBadge state={d.state} />}
-          </div>
-        </div>
-        {last && (
-          <div className="co-price">
-            <div className="bignum">{money(last.close, true)}</div>
-            <p>
-              <span className={last.change != null && last.change < 0 ? "down" : "up"}>{pct(last.change)}</span>
-              <span className="mute"> · close {shortDate(last.day)}</span>
-            </p>
-          </div>
-        )}
-      </header>
+      <StockChart
+        ticker={co.ticker}
+        name={co.name}
+        kicker={`${co.ticker}${co.sector ? ` · ${co.sector}` : ""}${co.kind === "etf" ? " · fund" : ""}`}
+        badge={d.state ? <StateBadge state={d.state} /> : null}
+        prices={d.prices}
+        signals={d.signals}
+        initialSignal={main?.signal}
+      />
       {d.state === "WATCH" && <BadgeKey />}
 
       {/* ---------------- LITE ---------------- */}
@@ -106,10 +88,6 @@ export default function CompanyScreen() {
               {isFund && <Link className="linkb" href={`/fund/${co.ticker}`}>See what&apos;s inside {co.ticker} ›</Link>}
             </>
           )}
-          <div className="stack" style={{ gap: 6, marginTop: 6 }}>
-            <PriceChart prices={d.prices} />
-            <p className="note">Two years of daily closes, to {shortDate(d.prices[d.prices.length - 1]?.day ?? last?.day ?? "")}.</p>
-          </div>
           {others.length > 0 && (
             <div className="list">
               <p className="list-head">Also checked</p>
@@ -181,12 +159,6 @@ export default function CompanyScreen() {
 
       {/* ---------------- PRO ---------------- */}
       <div className="stack pro-only" style={{ gap: 20 }}>
-        <div className="card">
-          <h3>Price, 2 years, with filings and live signals</h3>
-          <PriceChart prices={d.prices} pins={pins} />
-          <p className="note">Daily closes to {shortDate(d.prices[d.prices.length - 1]?.day ?? "")}. Pins at SEC acceptance time; signals when the public could know.</p>
-        </div>
-
         {d.signals.length > 0 && (
           <div className="card">
             <h3>Signals tested on {co.ticker}&apos;s own history</h3>

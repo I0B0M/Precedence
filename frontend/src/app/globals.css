@@ -25,6 +25,7 @@
   --r-card: 14px;
   --r-ctl: 10px;
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);   /* short ease-out for reveals: 200ms colour, 300ms opacity/translate */
   --font: var(--font-figtree), -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --head: var(--font-bricolage), "Arial Black", var(--font);
   --dot: var(--font-doto), "Courier New", monospace;
@@ -309,6 +310,49 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 
 /* ---------- chart ---------- */
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Small uppercase label line: the one place Doto appears outside card titles. */
+.kicker { font-family: var(--dot); font-weight: 900; font-size: 13px; line-height: 20px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); }
+
+/* ---------- company: chart-first header ----------
+   Proportions from the design study: title 32/40, price one step up, change 15/24 in the direction colour,
+   a bare 2px line with one dotted baseline, text range tabs 13/700 tracked 2px with an underline. */
+.sc { display: flex; flex-direction: column; gap: 0; }
+.sc-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+.sc-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sc-title h1 { font-size: 32px; line-height: 40px; font-weight: 700; letter-spacing: -0.01em; }
+.sc-price { font-family: var(--head); font-weight: 700; font-size: 40px; line-height: 48px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.sc-change { font-size: 15px; line-height: 24px; font-weight: 600; }
+.sc-change .mute { font-weight: 400; }
+.sc-plot { touch-action: pan-y; cursor: crosshair; margin: 0; }
+.sc-svg { display: block; width: 100%; height: auto; overflow: visible; animation: fadein 0.3s var(--ease-out) both; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.sc-ranges { display: flex; gap: 8px; border-bottom: 1px solid var(--sep); margin-top: 8px; }
+.sc-ranges button {
+  min-height: 44px; min-width: 44px; padding: 0 8px; border: 0; background: none; cursor: pointer;
+  font-size: 13px; font-weight: 700; line-height: 20px; letter-spacing: 2px; color: var(--text-2);
+  box-shadow: inset 0 -2px 0 transparent; transition: color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+}
+.sc-ranges button:hover { color: var(--text); }
+.sc-ranges button[aria-selected="true"] { color: var(--accent-text); box-shadow: inset 0 -2px 0 var(--accent); }
+.sc-events { display: flex; flex-direction: column; gap: 8px; padding: 16px 0 8px; }
+.sc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sc-chips button {
+  min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--sep); background: var(--bg);
+  font-size: 15px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  transition: border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+}
+.sc-chips button:hover { border-color: var(--edge-c); }
+.sc-chips button[aria-checked="true"] { background: var(--text); border-color: var(--text); color: var(--bg); }
+.sc-chips button[aria-checked="true"] .mute { color: var(--bg); opacity: 0.7; }
+.dotmark { display: inline-block; width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--accent); vertical-align: 0; }
+.dotmark.h { background: var(--accent); }
+.dotmark.now { box-shadow: inset 0 0 0 2px var(--accent); width: 11px; height: 11px; }
+@media (max-width: 640px) {
+  .sc-title h1 { font-size: 28px; line-height: 34px; }
+  .sc-price { font-size: 36px; line-height: 44px; }
+  .sc-ranges { justify-content: space-between; gap: 0; }
+}
 
 /* ---------- range bar (Signal Lab) ---------- */
 .rangebar { position: relative; height: 34px; margin: 8px 0 22px; }
