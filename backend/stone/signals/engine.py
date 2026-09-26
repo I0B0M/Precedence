@@ -137,6 +137,36 @@ def wilson(hits: int, n: int, z: float = Z90) -> tuple[float, float]:
     return max(0.0, (centre - margin) / d), min(1.0, (centre + margin) / d)
 
 
+def binom_sf(k: int, n: int, p: float) -> float:
+    """P(X >= k) for X ~ Binomial(n, p)."""
+    if k <= 0:
+        return 1.0
+    if k > n:
+        return 0.0
+    return sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
+
+
+def p_value(r: "Result") -> float | None:
+    """How likely this many hits (or more) would be if the stock just followed its normal rate.
+    Only for results that were tested (10+ cases); a screen across many stocks needs this for
+    Benjamini-Hochberg. It does not change the STRONG rule."""
+    if r.n < MIN_CASES or r.normal_rate is None:
+        return None
+    return binom_sf(r.hits, r.n, r.normal_rate)
+
+
+def benjamini_hochberg(pvalues: list[float], q: float = 0.10) -> list[bool]:
+    """Which tests survive a false discovery rate of q across all of them."""
+    m = len(pvalues)
+    order = sorted(range(m), key=lambda i: pvalues[i])
+    passing = [rank for rank, i in enumerate(order, start=1) if pvalues[i] <= rank / m * q]
+    cutoff = max(passing, default=0)
+    keep = [False] * m
+    for rank, i in enumerate(order, start=1):
+        keep[i] = rank <= cutoff
+    return keep
+
+
 def label_for(n: int, low: float, normal_rate: float | None) -> str:
     if n < MIN_CASES:
         return WEAK

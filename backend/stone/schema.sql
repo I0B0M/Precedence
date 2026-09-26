@@ -110,6 +110,9 @@ create table if not exists signal_scans (
     expected_by_chance numeric not null,
     as_of              date not null
 );
+-- STRONG results that also survive Benjamini-Hochberg at a 10% false discovery rate
+-- across every tested pair in that scan (null for scans run before this was added).
+alter table signal_scans add column if not exists strong_fdr10 integer;
 
 -- Tiger Data runs TimescaleDB: make prices a hypertable there. Plain Postgres
 -- (local fallback) has no extension, so this block does nothing.

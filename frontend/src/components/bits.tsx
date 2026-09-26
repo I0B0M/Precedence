@@ -54,6 +54,8 @@ export function ScanLine({ scan }: { scan: Scan | null }) {
       Latest scan ({scan.as_of}): tested {scan.tested} stock-signal pairs across {scan.stocks} stocks;
       {" "}{scan.eligible} had 10+ cases; {scan.strong} came out STRONG, about {Math.round(scan.expected_by_chance)} expected
       by chance alone; {scan.strong_held_up} of those held up in both halves of the history (10+ cases in each).
+      {scan.strong_fdr10 != null && <> Corrected for testing {scan.eligible} pairs at once (Benjamini–Hochberg, 10% false
+        discovery rate), {scan.strong_fdr10} still stand.</>}
     </p>
   );
 }

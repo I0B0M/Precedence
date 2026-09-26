@@ -39,6 +39,9 @@ mut "skipped event never firing"       "            if i + h - 1 >= len(bars):
 mut "WATCH ignores the label"          'r.firing and r.label == STRONG'      'r.firing'
 mut "held up if either half holds"     "        beats = all(h.hit_rate"          "        beats = any(h.hit_rate"
 mut "hold-out ignores the case count"  "if any(h.n < MIN_CASES for h in halves):" "if False:"
+mut "binomial tail leaves out k"       "for i in range(k, n + 1))"            "for i in range(k + 1, n + 1))"
+mut "BH without the step-up"           "keep[i] = rank <= cutoff"             "keep[i] = pvalues[i] <= rank / m * q"
+mut "BH ignores the rank"              "if pvalues[i] <= rank / m * q]"       "if pvalues[i] <= q]"
 mut "hold-out never runs"                 "if r.label == STRONG else r"            "if False else r"
 mut "rate jump not vs market"          "5, vs_market=True)"                  "5)"
 mut "case hit ignores the market"      "own(i, last), hit(i, last)"          "own(i, last), own(i, last) < 0"

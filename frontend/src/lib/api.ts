@@ -112,6 +112,7 @@ export interface Scan {
   eligible: number;
   strong: number;
   strong_held_up: number;
+  strong_fdr10: number | null; // STRONG that survive Benjamini-Hochberg at 10% FDR; null for older scans
   expected_by_chance: number;
   as_of: string;
 }

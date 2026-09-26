@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 
 import pytest
@@ -310,3 +310,30 @@ def test_holdout_of_a_market_relative_signal_uses_the_market():
     bars, evs = strong_setup(fire_now=False)
     h = e.holdout(REL, bars, evs, bars)  # measured against itself, nothing can do worse
     assert h.first.n > 0 and h.first.hits == 0 and h.second.hits == 0
+
+
+# ---------- many tests at once (Benjamini-Hochberg) ----------
+
+def test_binomial_tail_matches_reference_values():
+    assert e.binom_sf(12, 15, 0.5) == pytest.approx(0.017578125)  # P(X >= 12), X ~ Bin(15, 0.5)
+    assert e.binom_sf(0, 15, 0.3) == pytest.approx(1.0)
+    assert e.binom_sf(16, 15, 0.3) == 0.0
+
+
+def test_p_value_asks_how_likely_this_many_hits_are_at_the_normal_rate():
+    r = e.Result(signal="t", horizon=5, n=15, hits=12, hit_rate=0.8, normal_n=400, normal_hits=200, normal_rate=0.5,
+                 low=0.6, high=0.9, label=e.STRONG, firing=None)
+    assert e.p_value(r) == pytest.approx(0.017578125)
+    assert e.p_value(replace(r, n=9)) is None  # fewer than 10 cases isn't tested at all
+    assert e.p_value(replace(r, normal_rate=None)) is None
+
+
+def test_benjamini_hochberg_keeps_the_ones_that_survive_the_false_discovery_rate():
+    # sorted: .01 .03 .04 .20 against .025 .05 .075 .10 -> the largest passing rank is 3
+    assert e.benjamini_hochberg([0.01, 0.04, 0.03, 0.20], q=0.10) == [True, True, True, False]
+    assert e.benjamini_hochberg([0.2, 0.3], q=0.10) == [False, False]
+    # a later rank passing rescues an earlier one that missed its own threshold
+    assert e.benjamini_hochberg([0.06, 0.07], q=0.10) == [True, True]
+    assert e.benjamini_hochberg([], q=0.10) == []
+    # 0.09 is under 10%, but the smallest of 4 p-values must clear 10% / 4 = 2.5%
+    assert e.benjamini_hochberg([0.09, 0.5, 0.6, 0.7], q=0.10) == [False, False, False, False]
