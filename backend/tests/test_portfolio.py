@@ -9,7 +9,21 @@ def test_exposure_adds_etf_slices_to_direct_holdings():
     assert ex["HLCN"].direct == 1000 and ex["HLCN"].via_etf == {"BRD500": pytest.approx(80)}
     assert ex["HLCN"].total == pytest.approx(1080)
     assert ex["MRDN"].direct == 0 and ex["MRDN"].total == pytest.approx(20)
-    assert "BRD500" not in ex
+    # the 95% of the fund we can't see into stays on the board as the fund itself
+    assert ex["BRD500"].total == pytest.approx(1900)
+
+
+def test_a_fund_with_no_loaded_holdings_stays_whole():
+    ex = exposures({"BX": 1184.3, "SPY": 2314.05}, {"SPY": {}})
+    assert ex["SPY"].total == pytest.approx(2314.05) and ex["BX"].total == pytest.approx(1184.3)
+
+
+def test_exposures_always_add_up_to_what_you_hold():
+    values = {"HLCN": 1000.0, "BRD500": 2000.0, "SPY": 500.0}
+    weights = {"BRD500": {"HLCN": 0.04, "MRDN": 0.01}, "SPY": {"HLCN": 0.6, "MRDN": 0.4000001}}
+    ex = exposures(values, weights)
+    assert sum(e.total for e in ex.values()) == pytest.approx(sum(values.values()))
+    assert "SPY" not in ex  # fully looked through (weights that round past 100% leave nothing behind)
 
 
 def test_bad_day_is_the_one_in_twenty_worst_move():
