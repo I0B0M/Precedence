@@ -9,13 +9,27 @@ import { FORM_WORDS } from "@/lib/words";
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
 const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
 
-/** "3 SEC filings (2 company news, 1 insider trade) and 1 interest-rate move". Only what /api/today counted. */
-function marketWords(t: Today, detail = true): string {
-  const f = t.market.filings;
+type Filings = { count: number; by_form: Record<string, number> };
+
+/** "21 SEC filings (14 company news (8-K), 6 insider trades, 1 quarterly report)". Form names keep their case ("8-K"). */
+function filingWords(f: Filings, detail = true): string {
   const lower = (w: string) => w.charAt(0).toLowerCase() + w.slice(1); // "Company news (8-K)" -> "company news (8-K)"
-  const parts = Object.entries(f.by_form).map(([form, n]) => `${n} ${lower(FORM_WORDS[form] ?? form)}`);
-  const filings = `${plural(f.count, "SEC filing")}${detail && parts.length ? ` (${parts.join(", ")})` : ""}`;
+  const many = (w: string, n: number) => (n > 1 && !/news|\)$/.test(w) ? w + "s" : w); // "insider trade" -> "insider trades"
+  const parts = Object.entries(f.by_form).sort((a, b) => b[1] - a[1]).map(([form, n]) => `${n} ${many(lower(FORM_WORDS[form] ?? form), n)}`);
+  return `${plural(f.count, "SEC filing")}${detail && parts.length ? ` (${parts.join(", ")})` : ""}`;
+}
+
+/** The day: "3 SEC filings (…) and 1 interest-rate move". Only what /api/today counted. */
+function marketWords(t: Today, detail = true): string {
+  const filings = filingWords(t.market.filings, detail);
   return t.market.rate ? `${filings} and 1 interest-rate move` : filings;
+}
+
+/** "Sep 19–25" (or "Sep 29 – Oct 3" across months). */
+function span(start: string, end: string): string {
+  const a = new Date(start + "T12:00:00"), b = new Date(end + "T12:00:00");
+  const m = (d: Date) => d.toLocaleDateString("en-US", { month: "short" });
+  return m(a) === m(b) ? `${m(a)} ${a.getDate()}–${b.getDate()}` : `${m(a)} ${a.getDate()} – ${m(b)} ${b.getDate()}`;
 }
 
 export function useToday(symbols: string[]) {
@@ -32,6 +46,26 @@ export function TodayMarket({ t }: { t: Today }) {
   const f = t.market.filings, r = t.market.rate;
   const n = f.count + (r ? 1 : 0);
   if (!t.day) return null;
+  const w = t.week;
+  if (w) {
+    const jumps = w.rate?.jumps.length ?? 0;
+    const wn = w.filings.count + jumps;
+    return (
+      <div className="stack" style={{ gap: 6 }}>
+        <span className="ticker">This week in the market</span>
+        <div className="bignum count-in">{wn.toLocaleString("en-US")}</div>
+        <p className="lede" style={{ color: "var(--text)" }}>
+          new {wn === 1 ? "thing" : "things"} this week ({span(w.start, w.end)}) across the companies Stone follows:{" "}
+          {filingWords(w.filings)}{jumps ? ` and ${plural(jumps, "interest-rate jump")}` : ""}.
+        </p>
+        <p>On {shortDate(t.day)} alone: {marketWords(t, false)}.</p>
+        <p className="note">
+          Filings from {SOURCES[w.filings.source] ?? w.filings.source}, {w.filings.companies} companies
+          {w.rate ? `; 10-year Treasury rate ${w.rate.first_value.toFixed(2)}% → ${w.rate.last_value.toFixed(2)}% (${w.rate.change >= 0 ? "+" : ""}${w.rate.change.toFixed(2)} pt), from ${SOURCES[w.rate.source] ?? w.rate.source}` : ""}.
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="stack" style={{ gap: 6 }}>
       <span className="ticker">Today in the market</span>
@@ -52,20 +86,32 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
   const t = useToday(symbols);
   if (!t?.day || !t.holdings) return null;
   const h = t.holdings;
-  const all = t.market.filings.count + (t.market.rate ? 1 : 0);
+  const w = t.week;
+  const all = w ? w.filings.count + (w.rate?.jumps.length ?? 0) : t.market.filings.count + (t.market.rate ? 1 : 0);
+  const mine = w && h.week_filings ? h.week_filings : h.filings;
   const steps: [number, string][] = [
-    [all, `new in Stone's data for ${shortDate(t.day)}: ${marketWords(t, false)}`],
-    [h.filings.count, `SEC ${h.filings.count === 1 ? "filing" : "filings"} about what you own`],
+    [all, w ? `new this week (${span(w.start, w.end)}) across the companies Stone follows` : `new in Stone's data for ${shortDate(t.day)}: ${marketWords(t, false)}`],
+    [mine.count, `SEC ${mine.count === 1 ? "filing" : "filings"} about what you own${w ? " this week" : ""}`],
     [h.signals.firing, `${h.signals.firing === 1 ? "signal" : "signals"} firing on what you own`],
   ];
   return (
     <div className="today">
-      <span className="ticker">Today</span>
+      <span className="ticker">{w ? "This week" : "Today"}</span>
       <ol className="funnel">
         {steps.map(([n, label]) => (
           <li key={label}><b>{n}</b> <span>{label}</span></li>
         ))}
       </ol>
+      {mine.items.length > 0 && (
+        <ul className="funnel-items">
+          {mine.items.map((i) => (
+            <li key={`${i.ticker}-${i.accepted_at}-${i.form}`}>
+              <b>{i.ticker}</b> {FORM_WORDS[i.form] ?? i.form}, {shortDate(i.accepted_at)}
+              {i.url && <> · <a href={i.url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="funnel-end">
         <span className="bignum">{h.signals.strong_firing}</span>
         <span>{h.signals.strong_firing === 1 ? "has" : "have"} mattered before for {h.signals.strong_firing === 1 ? "that holding" : "those holdings"}.</span>

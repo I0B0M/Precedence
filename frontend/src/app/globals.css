@@ -366,6 +366,8 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 .funnel li { display: inline-flex; align-items: baseline; gap: 6px; }
 .funnel li + li::before { content: "→"; color: var(--mark); margin-right: 4px; }
 .funnel b { color: var(--text); font-family: var(--head); font-size: 20px; }
+.funnel-items { margin: 0; padding-left: 18px; font-size: 15px; display: flex; flex-direction: column; gap: 4px; }
+.funnel-items a { color: var(--accent-text); }
 .funnel-end { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 18px; }
 .funnel-end .bignum { font-size: clamp(40px, 6vw, 56px); color: var(--accent-text); }
 .count-in { animation: rise 0.5s var(--ease) both; }
