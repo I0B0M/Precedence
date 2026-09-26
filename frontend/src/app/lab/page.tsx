@@ -12,6 +12,7 @@ type Spec = { key: string; lite: string; pro: string; horizon: number };
 
 // Shortcuts only; each is shown only if the API lists it.
 const QUICK = ["BX", "AMZN", "AAPL", "NVDA", "JPM"];
+const DEFAULT = { t: "BX", s: "rate_jump" };
 
 // Brief: "discover trends and risks" · "turn information into meaningful insight" · "engaging"
 export default function SignalLab() {
@@ -36,8 +37,9 @@ export default function SignalLab() {
         ...(t && !tOk ? [`${t} isn't available in the Lab, which tests single stocks we have data for.`] : []),
         ...(s && !sOk ? [`"${s}" isn't a signal the Lab can test.`] : []),
       ]);
-      setTicker(t ? (tOk ? t : null) : st[0]?.ticker ?? null);
-      setSignal(s ? (sOk ? s : null) : sp[0]?.key ?? null);
+      // With no link params, open on the demo story (BX + rate jump) when the API has both.
+      setTicker(t ? (tOk ? t : null) : st.find((c) => c.ticker === DEFAULT.t)?.ticker ?? st[0]?.ticker ?? null);
+      setSignal(s ? (sOk ? s : null) : sp.find((x) => x.key === DEFAULT.s)?.key ?? sp[0]?.key ?? null);
     }).catch((e) => setError(e.message));
   }, []);
 
@@ -56,7 +58,7 @@ export default function SignalLab() {
   return (
     <section className="stack" style={{ gap: 28 }}>
       <div className="stack" style={{ gap: 8 }}>
-        <span className="ticker">Test it</span>
+        <span className="ticker">Does it matter?</span>
         <h1>Has this ever mattered?</h1>
         <p className="lede">
           <span className="lite-only">Pick a stock and a kind of news. We check every time it happened in the last two years and what the stock did next.</span>
