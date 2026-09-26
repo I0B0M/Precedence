@@ -6,18 +6,22 @@ import { useEffect, useState } from "react";
 import { BadgeKey, StateBadge } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
-import { loadFund, type FundDetail } from "@/lib/fund";
+import { loadFund, type FundView } from "@/lib/fund";
 import { money, pct, shortDate } from "@/lib/format";
-import { FORM_WORDS, liteSummary } from "@/lib/words";
+import { FORM_WORDS, liteSummary, SIGNAL_WORDS } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { ssga: "State Street (SSGA)", sample: "sample data" };
 /** "this week (Sep 19–25)" or "on Sep 25, 2026" when only one day is covered. */
-function spanWords(span: FundDetail["filings_span"], fallback: string): string {
+function spanWords(span: FundView["filings_span"], fallback: string): string {
   if (!span) return fallback;
   if (span.start === span.end) return `on ${shortDate(span.end)}`;
   const a = new Date(span.start + "T12:00:00"), b = new Date(span.end + "T12:00:00");
   const m = (d: Date) => d.toLocaleDateString("en-US", { month: "short" });
   return `this week (${m(a)} ${a.getDate()}–${m(a) === m(b) ? "" : m(b) + " "}${b.getDate()})`;
+}
+/** A holding row: a link when Stone has a company page for it, plain otherwise. */
+function WeightRow({ href, children }: { href: string | null; children: React.ReactNode }) {
+  return href ? <Link href={href} className="list-row weight-row">{children}</Link> : <div className="list-row weight-row">{children}</div>;
 }
 const w = (x: number) => `${(x * 100).toFixed(x >= 0.1 ? 1 : 2)}%`;
 
@@ -25,7 +29,7 @@ const w = (x: number) => `${(x * 100).toFixed(x >= 0.1 ? 1 : 2)}%`;
 export default function FundScreen() {
   const { symbol: raw } = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(raw).toUpperCase();
-  const [f, setF] = useState<FundDetail | null>(null);
+  const [f, setF] = useState<FundView | null>(null);
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function FundScreen() {
 
   const top = f.holdings.slice(0, 10);
   const max = Math.max(...top.map((h) => h.weight), 0.0001);
-  const more = f.holdings_count - top.length;
+  const more = f.total_holdings_count - top.length;
   const unseen = Math.max(0, 1 - f.looked_through_share);
   const source = f.holdings_source ? SOURCES[f.holdings_source] ?? f.holdings_source : null;
 
@@ -55,10 +59,10 @@ export default function FundScreen() {
         </div>
         {f.price && (
           <div className="co-price">
-            <div className="bignum">{money(f.price.close, true)}</div>
+            <div className="bignum">{money(f.price.last_close, true)}</div>
             <p>
-              <span className={f.price.change != null && f.price.change < 0 ? "down" : "up"}>{pct(f.price.change)}</span>
-              <span className="mute"> · close {shortDate(f.price.day)}</span>
+              {f.price_change != null && <span className={f.price_change < 0 ? "down" : "up"}>{pct(f.price_change)} · </span>}
+              <span className="mute">close {shortDate(f.price.as_of)}</span>
             </p>
           </div>
         )}
@@ -74,7 +78,7 @@ export default function FundScreen() {
       {f.holdings.length === 0 ? (
         <div className="box">
           <h3>What&apos;s inside</h3>
-          <p className="say-big">What&apos;s inside {f.symbol} isn&apos;t loaded yet.</p>
+          <p className="say-big">{f.note ?? `What's inside ${f.symbol} isn't loaded yet.`}</p>
           <p className="mute">Stone shows this fund as one line until it has a holdings file for it. Nothing here is estimated.</p>
         </div>
       ) : (
@@ -83,20 +87,20 @@ export default function FundScreen() {
             <h3>What&apos;s inside</h3>
             <div className="list">
               {top.map((h) => (
-                <Link key={h.ticker} href={`/company/${h.ticker}`} className="list-row weight-row">
+                <WeightRow key={h.ticker} href={h.in_stone ? `/company/${h.ticker}` : null}>
                   <span>
-                    <b>{h.ticker}</b> <span className="mute">{h.name}</span>
+                    <b>{h.ticker}</b> <span className="mute">{h.name ?? ""}</span>
                     <span className="wbar" aria-hidden><i style={{ width: `${(h.weight / max) * 100}%` }} /></span>
                   </span>
                   <span className="row-flex" style={{ gap: 8, flexWrap: "nowrap" }}>
                     <span>{w(h.weight)}</span>
                     {h.state === "WATCH" && <StateBadge state="WATCH" />}
                   </span>
-                </Link>
+                </WeightRow>
               ))}
             </div>
             <p className="note">
-              {more > 0 ? `And ${more} more that Stone can see. ` : ""}
+              {more > 0 ? (f.built_from === "api" ? `And ${more} more. ` : `And ${more} more that Stone can see. `) : ""}
               {unseen > 0.005 ? `The other ${w(unseen)} of the fund is in companies Stone doesn't track yet. ` : ""}
               {f.holdings_as_of ? `Holdings as of ${shortDate(f.holdings_as_of)}${source ? `, ${source}` : ""}.` : ""}
             </p>
@@ -151,10 +155,10 @@ export default function FundScreen() {
                 {f.holdings.map((h, i) => (
                   <tr key={h.ticker}>
                     <td className="num">{i + 1}</td>
-                    <td><Link href={`/company/${h.ticker}`}><b>{h.ticker}</b></Link><div className="note">{h.name}</div></td>
+                    <td>{h.in_stone ? <Link href={`/company/${h.ticker}`}><b>{h.ticker}</b></Link> : <b>{h.ticker}</b>}<div className="note">{h.name ?? "Not tracked by Stone"}</div></td>
                     <td className="num nowrap">{w(h.weight)}</td>
                     <td><StateBadge state={h.state} /></td>
-                    <td>{h.firing.length ? h.firing.map((s) => `${s.pro} (${s.label})`).join("; ") : <span className="mute">—</span>}</td>
+                    <td>{h.firing.length ? h.firing.map((s) => `${SIGNAL_WORDS[s.signal] ?? s.signal} (${s.label === "NO DATA" ? "not loaded" : s.label})`).join("; ") : <span className="mute">—</span>}</td>
                   </tr>
                 ))}
               </tbody>

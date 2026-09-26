@@ -1,41 +1,20 @@
 "use client";
 
-import { api, ApiError, type SignalResult, type State } from "./api";
+import { api, type FundHolding, type FundPage } from "./api";
+import { liteSummary } from "./words";
 
-// The fund page's shape, as planned for GET /api/funds/{symbol}. Until the backend ships that endpoint, loadFund()
-// builds the same shape from endpoints that already exist (portfolio look-through, company prices, today's filings),
-// so every number on the page is real. Once /api/funds answers, it is used as-is.
+// The fund page reads GET /api/funds/{symbol} (api.fund). Until that endpoint is live, loadFund() builds the same
+// FundPage shape from endpoints that already exist (portfolio look-through, company prices, today's filings), so every
+// number on the page is real either way. `built_from` says which, so the page can word counts honestly.
 
-export interface FundHolding {
-  ticker: string;
-  name: string;
-  weight: number; // share of the fund, 0..1
-  state: State | null; // null: not tested (small slices)
-  firing: SignalResult[];
-  lite_line: string | null;
-}
-
-export interface FundDetail {
-  symbol: string;
-  name: string;
-  holdings_as_of: string | null;
-  holdings_source: string | null;
-  looked_through_share: number; // share of the fund split into stocks Stone has data for, 0..1
-  holdings: FundHolding[]; // largest first, top 25
-  holdings_count: number; // how many holdings Stone could see
-  heads_up: FundHolding[];
-  performance: { d30: number | null; d90: number | null; y1: number | null; as_of: string | null };
-  week_filings: { ticker: string; form: string; accepted_at: string; url: string | null }[];
-  filings_span: { start: string; end: string } | null; // the days week_filings covers (one day when only the day block exists)
-  fund_state: State | null;
-  fund_firing: SignalResult[];
-  price: { close: number; day: string; change: number | null } | null;
+export type FundView = FundPage & {
   built_from: "api" | "existing endpoints";
-}
+  price_change: number | null; // last day's move, when known (the fund endpoint doesn't send it)
+};
 
 const back = (closes: number[], n: number) => (closes.length > n ? closes[closes.length - 1] / closes[closes.length - 1 - n] - 1 : null);
 
-async function fromExisting(symbol: string): Promise<FundDetail> {
+async function fromExisting(symbol: string): Promise<FundView> {
   const co = await api.company(symbol); // throws ApiError 404 for a fund Stone doesn't have
   const p = await api.portfolio([{ symbol, shares: 1 }]);
   const price = p.rows.find((r) => r.symbol === symbol)?.price ?? co.last?.close ?? 0;
@@ -45,13 +24,16 @@ async function fromExisting(symbol: string): Promise<FundDetail> {
   // One share of the fund: each stock's dollars inside it, divided by the share price, is its weight in the fund.
   const inside: FundHolding[] = price > 0 ? [
     ...p.exposure.filter((e) => e.symbol !== symbol).map((e) => ({
-      ticker: e.symbol, name: e.name, weight: (e.via_etf[symbol] ?? 0) / price, state: e.state, firing: e.firing, lite_line: null,
+      ticker: e.symbol, name: e.name, weight: (e.via_etf[symbol] ?? 0) / price, in_stone: true, state: e.state,
+      firing: e.firing.map((s) => ({ signal: s.signal, label: s.label })), lite_line: e.firing.length ? liteSummary(e.firing) : null,
     })),
-    ...(self?.children ?? []).map((c) => ({ ticker: c.symbol, name: c.name, weight: c.total / price, state: null, firing: [], lite_line: null })),
+    ...(self?.children ?? []).map((c) => ({
+      ticker: c.symbol, name: c.name, weight: c.total / price, in_stone: true, state: null, firing: [], lite_line: null,
+    })),
   ].filter((h) => h.weight > 0).sort((a, b) => b.weight - a.weight) : [];
 
-  let week: FundDetail["week_filings"] = [];
-  let span: FundDetail["filings_span"] = null;
+  let week: FundPage["week_filings"] = [];
+  let span: FundPage["filings_span"] = null;
   if (inside.length) {
     try {
       const t = await api.today(inside.slice(0, 10).map((h) => h.ticker));
@@ -65,25 +47,30 @@ async function fromExisting(symbol: string): Promise<FundDetail> {
   return {
     symbol,
     name: co.company.name,
-    holdings_as_of: fund?.as_of ?? null,
-    holdings_source: fund?.source ?? null,
-    looked_through_share: fund?.looked_through ?? 0,
-    holdings: inside.slice(0, 25),
-    holdings_count: inside.length,
-    heads_up: inside.filter((h) => h.state === "WATCH"),
+    price: co.last ? { last_close: co.last.close, as_of: co.last.day } : null,
+    price_change: co.last?.change ?? null,
     performance: { d30: back(closes, 21), d90: back(closes, 63), y1: back(closes, 252), as_of: co.last?.day ?? null },
-    week_filings: week,
-    filings_span: span,
     fund_state: co.state,
     fund_firing: co.signals.filter((s) => s.firing),
-    price: co.last,
+    holdings_as_of: fund?.as_of ?? null,
+    holdings_source: fund?.source ?? null,
+    total_holdings_count: inside.length, // only what Stone can see; the page words it that way
+    looked_through_share: fund?.looked_through ?? 0,
+    holdings: inside.slice(0, 25),
+    heads_up: inside.filter((h) => h.state === "WATCH").map((h) => ({ ticker: h.ticker, name: h.name ?? h.ticker, weight: h.weight })),
+    filings_span: span,
+    week_filings: week,
+    note: inside.length ? null : `Holdings for ${symbol} aren't loaded yet.`,
     built_from: "existing endpoints",
   };
 }
 
-export async function loadFund(symbol: string): Promise<FundDetail> {
-  const res = await fetch(`/api/funds/${encodeURIComponent(symbol)}`, { cache: "no-store" });
-  if (res.ok) return { ...(await res.json()), built_from: "api" } as FundDetail;
-  if (res.status !== 404) throw new ApiError(res.status, res.statusText);
-  return fromExisting(symbol); // endpoint not there yet (or no such fund: fromExisting then throws the 404)
+export async function loadFund(symbol: string): Promise<FundView> {
+  try {
+    return { ...(await api.fund(symbol)), built_from: "api", price_change: null };
+  } catch (e) {
+    // 404 means the endpoint isn't live yet (or there's no such fund, in which case fromExisting throws the 404).
+    if ((e as { status?: number }).status === 404) return fromExisting(symbol);
+    throw e;
+  }
 }

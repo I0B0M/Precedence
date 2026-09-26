@@ -50,6 +50,14 @@ export function liteVerdict(s: SignalResult): string {
   return "That's not clearly different from normal.";
 }
 
+/** Signal keys in plain words, for places that get only the key (e.g. fund holdings). */
+export const SIGNAL_WORDS: Record<string, string> = {
+  insider_cluster: "Insider selling",
+  rate_jump: "Rate jump",
+  gap_down: "5% drop at the open",
+  market_rate_jump: "Rate jump (whole market)",
+};
+
 export const FORM_WORDS: Record<string, string> = {
   "10-K": "Annual report",
   "10-Q": "Quarterly report",
