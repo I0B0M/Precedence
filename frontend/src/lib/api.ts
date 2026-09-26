@@ -156,6 +156,23 @@ export interface FundInfo {
   looked_through: number; // share of the fund split out into stocks we have data for, 0..1
 }
 
+/** GET /api/today: real counts for the last trading day, from Stone's database only. */
+export interface Today {
+  day: string | null; // the last trading day in the price data
+  market: {
+    filings: { count: number; companies: number; by_form: Record<string, number>; as_of: string | null; source: string };
+    rate: { series: "DGS10"; day: string; value: number; change_week: number | null; known_at: string; source: string } | null;
+  };
+  holdings: {
+    symbols: string[];
+    unknown: string[];
+    filings: { count: number; as_of: string | null; source: string;
+      items: { ticker: string; form: string; accepted_at: string; url: string | null }[] };
+    signals: { firing: number; strong_firing: number; as_of: string | null; source: string;
+      items: { symbol: string; signal: string; label: Label }[] };
+  } | null; // null when no symbols were passed
+}
+
 export interface ReadRow {
   symbol: string;
   shares: number | null;
@@ -204,6 +221,8 @@ export const api = {
   labSignals: () => call<{ key: string; lite: string; pro: string; horizon: number }[]>("/api/lab/signals"),
   lab: (t: string, s: string) => call<SignalResult>(`/api/lab/${encodeURIComponent(t)}/${s}`),
   marketRateJump: () => call<MarketResult>("/api/market/rate_jump"),
+  today: (symbols: string[] = []) =>
+    call<Today>(`/api/today${symbols.length ? `?symbols=${encodeURIComponent(symbols.join(","))}` : ""}`),
   portfolio: (holdings: Holding[]) => call<PortfolioOut>("/api/portfolio", post({ holdings })),
   reconcile: (rows: ReadRow[], printed_total: number | null) =>
     call<Reconciled>("/api/import/reconcile", post({ rows, printed_total })),
