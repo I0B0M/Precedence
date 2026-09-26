@@ -62,10 +62,35 @@ export interface FundPage {
   total_holdings_count: number; // 504 for SPY
   looked_through_share: number; // weight in stocks Stone tracks, 0..1
   holdings: FundHolding[]; // top 25 by weight
-  heads_up: { ticker: string; name: string; weight: number }[]; // holdings on WATCH
+  heads_up: { ticker: string; name: string; weight: number }[]; // WATCH among the top 25 holdings
   filings_span: { start: string; end: string } | null;
   week_filings: { ticker: string; form: string; accepted_at: string; url: string | null }[]; // top 25 holdings
   note: string | null; // e.g. "Holdings for QQQ aren't loaded yet."
+}
+
+/** GET /api/filings/{accession}/summary: Gemini's plain summary, every figure checked against XBRL. */
+export interface FilingFigure {
+  label: string; // e.g. "Revenue"
+  kind: string; // revenue | net_income | eps_diluted | operating_income | total_assets | total_liabilities | long_term_debt | cash | equity | other
+  text_value: string; // exactly as the filing prints it, e.g. "$5.0 billion"
+  value: number | null; // Gemini's number in full units (USD, or USD per share)
+  period_end: string | null;
+  concept: string | null; // the XBRL concept it was checked against, e.g. "us-gaap:Revenues"
+  xbrl_value: number | null; // the filing's own XBRL number for that concept and date
+  match: boolean | null; // true ✓, false ≠ (never hidden), null = nothing in XBRL to check against
+}
+
+export interface FilingSummary {
+  accession: string;
+  ticker: string;
+  form: string;
+  accepted_at: string;
+  url: string | null;
+  summary_lite: string; // at most 3 sentences, plain words
+  figures: FilingFigure[];
+  model: string;
+  generated_at: string;
+  cached: boolean;
 }
 
 export interface Half {
@@ -261,6 +286,7 @@ export const api = {
   lab: (t: string, s: string) => call<SignalResult>(`/api/lab/${encodeURIComponent(t)}/${s}`),
   marketRateJump: () => call<MarketResult>("/api/market/rate_jump"),
   fund: (symbol: string) => call<FundPage>(`/api/funds/${encodeURIComponent(symbol)}`),
+  filingSummary: (accession: string) => call<FilingSummary>(`/api/filings/${encodeURIComponent(accession)}/summary`),
   today: (symbols: string[] = []) =>
     call<Today>(`/api/today${symbols.length ? `?symbols=${encodeURIComponent(symbols.join(","))}` : ""}`),
   portfolio: (holdings: Holding[]) => call<PortfolioOut>("/api/portfolio", post({ holdings })),

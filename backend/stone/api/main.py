@@ -228,6 +228,81 @@ def today(symbols: str | None = None, c: psycopg.Connection = Conn):
     return out
 
 
+FUND_TOP = 25  # holdings listed on a fund page, largest first
+
+
+def lite_line(results: list[engine.Result] | None) -> str | None:
+    """The board's plain sentence for a holding (same words as liteSummary in frontend words.ts)."""
+    if results is None:
+        return None
+    firing = [r for r in results if r.firing]
+    strong = next((r for r in firing if r.label == engine.STRONG), None)
+    if strong:
+        return f"{engine.ALL_SPECS[strong.signal].lite}, and for this stock that has mattered before."
+    if firing:
+        return f"{engine.ALL_SPECS[firing[0].signal].lite}, but that hasn't clearly mattered here before."
+    return "Nothing important today."
+
+
+def return_since(closes: list[tuple], days: int) -> float | None:
+    """Last close vs the last close at least `days` calendar days earlier; None without that much history."""
+    if not closes:
+        return None
+    last_day, last = closes[-1]
+    back = [close for day, close in closes if day <= last_day - timedelta(days=days)]
+    return last / back[-1] - 1 if back else None
+
+
+@app.get("/api/funds/{symbol}")
+def fund(symbol: str, c: psycopg.Connection = Conn):
+    """A fund page: what's in it, how it's doing, what's next. Holdings come from the issuer's file."""
+    co = company_or_404(c, symbol)
+    if co["kind"] != "etf":
+        raise HTTPException(400, f"{co['ticker']} is a stock, not a fund")
+    t = co["ticker"]
+    closes = [(r["day"], float(r["close"])) for r in c.execute(
+        "select day, close from prices_daily where ticker = %s order by day", (t,)).fetchall()]
+    as_of = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (t,)).fetchone()["d"]
+    rows = c.execute("select holding, weight, source from etf_holdings where etf = %s and as_of = %s "
+                     "order by weight desc", (t, as_of)).fetchall() if as_of else []
+    tracked = {r["ticker"]: r for r in c.execute(
+        "select ticker, name, kind from companies where ticker = any(%s)", ([r["holding"] for r in rows],)).fetchall()}
+    market_symbol, market = service.load_market(c)
+    rates = service.load_rates(c)
+    holdings = []
+    for r in rows[:FUND_TOP]:
+        k = tracked.get(r["holding"])
+        results = signal_results(c, r["holding"], k["kind"], market_symbol, rates, market) if k else None
+        holdings.append({"ticker": r["holding"], "name": k["name"] if k else None, "weight": float(r["weight"]),
+                         "in_stone": k is not None, "state": state_of(results),
+                         "firing": [{"signal": x.signal, "label": x.label} for x in results or [] if x.firing],
+                         "lite_line": lite_line(results)})
+    fund_results = signal_results(c, t, co["kind"], market_symbol, rates, market)
+    day = c.execute("select max(day) as d from prices_daily").fetchone()["d"]
+    start = day - timedelta(days=WEEK_DAYS - 1) if day else None
+    top = {h["ticker"] for h in holdings}
+    week = [f for f in filed_between(c, start, day) if f["ticker"] in top] if day else []
+    return {
+        "symbol": t, "name": co["name"],
+        "price": {"last_close": closes[-1][1], "as_of": closes[-1][0].isoformat()} if closes else None,
+        "performance": {"d30": return_since(closes, 30), "d90": return_since(closes, 90),
+                        "y1": return_since(closes, 365), "as_of": closes[-1][0].isoformat() if closes else None},
+        "fund_state": state_of(fund_results),
+        "fund_firing": [result_json(r, with_cases=False) for r in fund_results or [] if r.firing],
+        "holdings_as_of": as_of.isoformat() if as_of else None,
+        "holdings_source": rows[0]["source"] if rows else None,
+        "total_holdings_count": len(rows),
+        "looked_through_share": sum(float(r["weight"]) for r in rows if r["holding"] in tracked),
+        "holdings": holdings,
+        "heads_up": [{"ticker": h["ticker"], "name": h["name"], "weight": h["weight"]}
+                     for h in holdings if h["state"] == engine.WATCH],
+        "filings_span": {"start": start.isoformat(), "end": day.isoformat()} if day else None,
+        "week_filings": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+                          "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])} for f in week],
+        "note": None if rows else f"Holdings for {t} aren't loaded yet.",
+    }
+
+
 @app.get("/api/market/rate_jump")
 def market_rate_jump(c: psycopg.Connection = Conn):
     """Rate jumps and the whole market: the plain "was it lower?" test run on SPY itself."""
