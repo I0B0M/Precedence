@@ -47,6 +47,21 @@ def company_or_404(c: psycopg.Connection, ticker: str) -> dict:
     return row
 
 
+def signal_results(c: psycopg.Connection, sym: str, kind: str, market_symbol: str,
+                   rates: list | None = None, market: list | None = None) -> list[engine.Result] | None:
+    """A stock's own signals; for the market fund (SPY), the rate-jump test run on the market itself;
+    None for a fund we never tested (it gets no state, never CALM)."""
+    if kind == "stock":
+        return list(service.run_all(c, sym, rates, market).values())
+    if sym == market_symbol:
+        return [service.run_market_rates(c)[1]]
+    return None
+
+
+def state_of(results: list[engine.Result] | None) -> str | None:
+    return engine.holding_state(results) if results is not None else None
+
+
 def last_two_closes(c: psycopg.Connection, ticker: str) -> tuple[dict | None, float | None]:
     rows = c.execute("select day, close from prices_daily where ticker = %s order by day desc limit 2",
                      (ticker,)).fetchall()
@@ -88,7 +103,7 @@ def company(ticker: str, c: psycopg.Connection = Conn):
         """select accepted_at, owner_name, owner_title, transaction_date, shares, price, accession, seq
            from insider_trades where ticker = %s and code = 'S' order by accepted_at desc, seq limit 15""", (t,)).fetchall()
     rate = c.execute("select day, value from rates where series = 'DGS10' order by day desc limit 1").fetchone()
-    results = service.run_all(c, t) if co["kind"] == "stock" else {}
+    results = signal_results(c, t, co["kind"], service.load_market(c)[0])
     return {
         "company": co,
         "last": {"close": float(last["close"]), "day": last["day"].isoformat(), "change": change} if last else None,
@@ -102,8 +117,8 @@ def company(ticker: str, c: psycopg.Connection = Conn):
                            "price": float(s["price"]) if s["price"] is not None else None} for s in sales],
         "facts": latest_facts(c, t),
         "rate": {"day": rate["day"].isoformat(), "value": float(rate["value"])} if rate else None,
-        "signals": [result_json(r) for r in results.values()],
-        "state": engine.holding_state(list(results.values())) if results else None,
+        "signals": [result_json(r) for r in results or []],
+        "state": state_of(results),
     }
 
 
@@ -183,20 +198,13 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
     for sym, row in board_rows(values, weights).items():
         bars = service.load_bars(c, sym)
         bad = bad_day_return([b.close for b in bars])
-        if known[sym]["kind"] == "stock":
-            results = list(service.run_all(c, sym, rates, market).values())
-            state = engine.holding_state(results)
-        elif sym == market_symbol:  # the one fund tested on its own history: rate jumps and the market
-            results = [service.run_market_rates(c)[1]]
-            state = engine.holding_state(results)
-        else:
-            results, state = [], None  # a fund we never tested: no state, never CALM
+        results = signal_results(c, sym, known[sym]["kind"], market_symbol, rates, market)
         exposure.append({
             "symbol": sym, "name": known[sym]["name"], "sector": known[sym]["sector"],
             "direct": row.direct, "via_etf": row.via_etf, "total": row.shown,
             "share_of_total": row.shown / total if total else None,
             "bad_day_return": bad, "bad_day_loss": bad * row.shown if bad is not None else None,
-            "state": state, "firing": [result_json(r, with_cases=False) for r in results if r.firing],
+            "state": state_of(results), "firing": [result_json(r, with_cases=False) for r in results or [] if r.firing],
             "children": [{"symbol": k, "name": known[k]["name"], "total": v}
                          for k, v in sorted(row.children.items(), key=lambda kv: -kv[1])],
         })
