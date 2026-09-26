@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BadgeKey, StateBadge } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
+import { Why } from "@/components/Why";
+import { api, type Scan } from "@/lib/api";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { loadFund, type FundView } from "@/lib/fund";
 import { money, pct, shortDate } from "@/lib/format";
@@ -31,14 +33,17 @@ export default function FundScreen() {
   const symbol = decodeURIComponent(raw).toUpperCase();
   const [f, setF] = useState<FundView | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const [scan, setScan] = useState<Scan | null>(null);
 
   useEffect(() => {
     loadFund(symbol).then(setF).catch(setError);
+    api.scan().then(setScan).catch(() => {});
   }, [symbol]);
 
   if (error) return isNotFound(error) ? <NotFollowed ticker={symbol} /> : <ApiProblem />;
   if (!f) return <Loading what={symbol} />;
 
+  const fundSignal = f.fund_firing.find((s) => s.label === "STRONG") ?? f.fund_firing[0] ?? null;
   const top = f.holdings.slice(0, 10);
   const max = Math.max(...top.map((h) => h.weight), 0.0001);
   const more = f.total_holdings_count - top.length;
@@ -55,6 +60,8 @@ export default function FundScreen() {
           <div className="row-flex" style={{ gap: 14, alignItems: "center" }}>
             <h1>{f.name}</h1>
             <StateBadge state={f.fund_state} />
+            {fundSignal && <Why signal={fundSignal} scan={scan} what={`${f.symbol} ${fundSignal.lite}`}
+              source="FRED DGS10 rate data · Stone's daily closes" asOf={f.price?.as_of} />}
           </div>
         </div>
         {f.price && (
@@ -119,6 +126,8 @@ export default function FundScreen() {
                   <div key={label}>
                     <div className={`bignum ${v != null && v < 0 ? "down" : "up"}`} style={{ fontSize: "clamp(24px, 2.6vw, 34px)" }}>{v == null ? "—" : pct(v, true, 1)}</div>
                     <p className="note">{label}</p>
+                    <Why what={`${f.symbol} ${label} change`} rows={[["Change", v == null ? "Not enough history" : `${pct(v, true, 2)} over ${label}`], ["Basis", f.performance.basis]]}
+                      source="Stone's daily closes" asOf={f.performance.as_of} />
                   </div>
                 ))}
               </div>
@@ -147,7 +156,12 @@ export default function FundScreen() {
 
       {f.holdings.length > 0 && (
         <div className="card pro-only">
-          <h3>Top {f.holdings.length} holdings</h3>
+          <div className="row-flex" style={{ justifyContent: "space-between" }}>
+            <h3>Top {f.holdings.length} holdings</h3>
+            <Why what={`${f.symbol} holdings weights`}
+              rows={[["Weights", "Each holding's share of the fund, from the fund's own holdings file"], ["Stone tracks", `${w(f.looked_through_share)} of the fund`], ["Holdings", `${f.total_holdings_count}${f.built_from === "api" ? " in the fund" : " that Stone can see"}`]]}
+              source={source ?? undefined} asOf={f.holdings_as_of} />
+          </div>
           <div className="tscroll">
             <table>
               <thead><tr><th className="num">#</th><th>Holding</th><th className="num">Weight</th><th>State</th><th>Signals firing</th></tr></thead>
