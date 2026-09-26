@@ -154,9 +154,9 @@ def test_normal_days_exclude_event_windows():
     spec = e.Spec("t", "", "", 5)
     r = e.evaluate(spec, bars, [e.Event(at(bars[10].day, 17), "x")])
     assert r.n == 1 and r.hits == 1
-    assert r.normal_n == 30 - 5 + 1 - 5
-    # days just before the window still reach into it, so some normal days fall
-    assert 0 < r.normal_rate < 0.5
+    # 26 possible start days; 7..15 would reach into the window [11, 16), so 17 are normal
+    assert r.normal_n == 17
+    assert r.normal_rate == 0.0  # only clean days count, and every clean day rose
 
 
 def test_live_window_is_firing_not_a_case():

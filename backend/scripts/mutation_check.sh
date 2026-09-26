@@ -31,7 +31,8 @@ mut "no float rounding on rate jump"   "change = round(v - obs[j][1], 4)"    "ch
 mut "rate known same day"              "datetime.combine(next_weekday(obs_day)" "datetime.combine(obs_day"
 mut "cluster needs 2 filings not 3"    "min_filings: int = 3"                "min_filings: int = 2"
 mut "overlapping events both count"    "if i < busy_until:"                  "if False:"
-mut "normal days include windows"      "if not in_window[k]:"                "if True:"
+mut "normal days include windows"      "if touched[k + h] == touched[k]:"    "if True:"
+mut "normal days only skip window starts" "if touched[k + h] == touched[k]:"  "if not in_window[k]:"
 mut "skipped event never firing"       "            if i + h - 1 >= len(bars):
                 firing = ev
             continue"                  "            continue"

@@ -6,7 +6,7 @@ Pure functions, no I/O. For each signal:
   3. measure the return over the signal's horizon (trading days, open -> close)
   4. a "hit" = the stock was lower at the end (every signal here is a risk signal)
   5. compare the hit rate to the same stock's hit rate on normal days
-     (every day not inside an event window), with a 90% Wilson range
+     (days whose whole horizon touches no event window), with a 90% Wilson range
   6. label: WEAK if fewer than 10 cases; STRONG only if the range's low end is
      above the normal rate; otherwise NOT PROVEN
 A holding is WATCH only when a STRONG signal is firing right now.
@@ -204,9 +204,13 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event]) -> Result:
     for a, b in windows:
         for k in range(a, min(b, len(bars))):
             in_window[k] = True
+    # a normal day's whole horizon must be free of event windows, or it measures the event too
+    touched = [0]
+    for flag in in_window:
+        touched.append(touched[-1] + flag)
     normal_n = normal_hits = 0
     for k in range(len(bars) - h + 1):
-        if not in_window[k]:
+        if touched[k + h] == touched[k]:
             normal_n += 1
             normal_hits += bars[k + h - 1].close / bars[k].open - 1 < 0
 
