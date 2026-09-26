@@ -155,3 +155,17 @@ def test_gemini_blocked_or_unreadable_answers_say_so():
         gemini.parse_response(not_json)
     no_symbol = {"candidates": [{"content": {"parts": [{"text": '{"rows": [{"shares": 3}], "printed_total": 5}'}]}}]}
     assert gemini.parse_response(no_symbol).rows == []  # a row without a ticker can't be used
+
+
+def test_gemini_filing_summary_response_parses_and_keeps_only_known_kinds():
+    body = {"summary": "Sales grew.", "figures": [
+        {"label": "Revenue", "kind": "revenue", "text_value": "$5.0 billion", "value": 5.0e9, "period_end": "2026-02-25"},
+        {"label": "Odd", "kind": "made_up", "text_value": "7", "value": 7, "period_end": None}]}
+    import json as _json
+    doc = {"candidates": [{"content": {"parts": [{"text": _json.dumps(body)}]}}]}
+    read = gemini.parse_summary_response(doc)
+    assert read.summary == "Sales grew."
+    assert [f["kind"] for f in read.figures] == ["revenue", "other"]  # an unknown kind isn't checked as if known
+    with pytest.raises(gemini.ScreenshotUnreadable, match="SAFETY"):
+        gemini.parse_summary_response({"promptFeedback": {"blockReason": "SAFETY"}})
+    assert gemini.first_sentences("One. Two! Three? Four.", 3) == "One. Two! Three?"

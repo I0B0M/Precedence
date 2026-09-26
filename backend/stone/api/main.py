@@ -15,11 +15,13 @@ from pydantic import BaseModel
 from stone import config
 from stone.api.views import filing_url, latest_facts, result_json
 from stone.config import NotConnected
+from stone.figures import check_figures, html_to_text
 from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
 from stone.sources.gemini import MODEL as GEMINI_MODEL
-from stone.sources.gemini import GeminiClient, ScreenshotUnreadable
+from stone.sources.gemini import GeminiClient, ScreenshotUnreadable, first_sentences
+from stone.sources.sec import SecClient
 
 app = FastAPI(title="Stone")
 
@@ -409,6 +411,56 @@ def reconciled_json(r: rc.Reconciled, rows: list[rc.Row]) -> dict:
 def reconcile_rows(body: ReconcileIn):
     rows = [rc.Row(r.symbol.strip().upper(), r.shares, r.price, r.value) for r in body.rows]
     return reconciled_json(rc.reconcile(rows, body.printed_total), rows)
+
+
+SUMMARY_FORMS = {"10-K", "10-Q", "8-K", "10-K/A", "10-Q/A", "8-K/A"}
+
+
+def filing_text(cik: int | None, accession: str, primary_doc: str | None, source: str) -> str:
+    """The filing's main document as plain text, from the SEC (cached after the first read)."""
+    if source != "sec" or not cik or not primary_doc:
+        raise HTTPException(400, "This filing has no SEC document to summarize.")
+    settings = config.load()
+    try:
+        sec = SecClient(settings)
+    except NotConnected:
+        sec = SecClient(settings, offline=True)  # without SEC_USER_AGENT, only an already-cached document works
+    try:
+        return html_to_text(sec.document(cik, accession, primary_doc))
+    except FileNotFoundError:
+        raise HTTPException(503, "Reading filings from the SEC needs SEC_USER_AGENT (a contact email) to be set.")
+
+
+@app.get("/api/filings/{accession}/summary")
+def filing_summary(accession: str, c: psycopg.Connection = Conn):
+    """Gemini's plain summary of a filing. Every figure it states is checked against the filing's own XBRL."""
+    f = c.execute("""select f.accession, f.ticker, f.form, f.accepted_at, f.primary_doc, f.source, co.cik
+                     from filings f join companies co on co.ticker = f.ticker where f.accession = %s""",
+                  (accession,)).fetchone()
+    if not f:
+        raise HTTPException(404, f"No filing {accession}")
+    if f["form"] not in SUMMARY_FORMS:
+        raise HTTPException(400, "Summaries cover 10-K, 10-Q and 8-K filings.")
+    try:
+        client = GeminiClient(config.load())
+    except NotConnected:
+        raise HTTPException(503, "Filing summaries aren't connected yet (GEMINI_API_KEY is not set).")
+    text = filing_text(f["cik"], accession, f["primary_doc"], f["source"])
+    try:
+        read, cached, generated = client.summarize_filing(text, f["ticker"], f["form"], accession)
+    except ScreenshotUnreadable as e:
+        raise HTTPException(422, str(e))
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"Gemini returned HTTP {e.response.status_code} (model {GEMINI_MODEL}).")
+    facts = c.execute("select concept, value, period_end from xbrl_facts where accession = %s and taxonomy = 'us-gaap'",
+                      (accession,)).fetchall()
+    return {
+        "accession": accession, "ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+        "url": filing_url(f["cik"], accession, f["primary_doc"], f["source"]),
+        "summary_lite": first_sentences(read.summary, 3),
+        "figures": check_figures(read.figures, facts),
+        "model": GEMINI_MODEL, "generated_at": generated.isoformat(), "cached": cached,
+    }
 
 
 MAX_SCREENSHOT_BYTES = 15 * 1024 * 1024  # Gemini takes inline images up to ~20 MB per request

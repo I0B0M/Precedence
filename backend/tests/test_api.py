@@ -326,3 +326,40 @@ def test_fund_page_for_a_fund_without_holdings_and_for_non_funds(client):
         conn.commit()
     assert client.get("/api/funds/HLCN").status_code == 400
     assert client.get("/api/funds/NOPE").status_code == 404
+
+
+class FakeSummarizer(FakeGemini):
+    def summarize_filing(self, text, ticker, form, accession):
+        from datetime import datetime, timezone
+
+        from stone.sources.gemini import FilingRead
+        read = FilingRead(
+            "Sales grew. Profit held up. Debt went down. The company also bought back shares.",
+            [{"label": "Revenue", "kind": "revenue", "text_value": "$5.0 billion", "value": 5.0e9,
+              "period_end": "2026-02-25"},
+             {"label": "Net income", "kind": "net_income", "text_value": "$431 million", "value": 4.31e8,
+              "period_end": "2026-02-25"},
+             {"label": "Trucks", "kind": "other", "text_value": "1,204", "value": 1204, "period_end": None}])
+        return read, False, datetime(2026, 9, 26, 22, 0, tzinfo=timezone.utc)
+
+
+def test_filing_summary_checks_every_figure_against_the_filings_xbrl(client, monkeypatch):
+    import stone.api.main as m
+    monkeypatch.setattr(m, "GeminiClient", FakeSummarizer)
+    monkeypatch.setattr(m, "filing_text", lambda cik, accession, primary_doc, source: "the filing text")
+    body = client.get("/api/filings/SAMPLE-ORCA-10-Q-6/summary").json()
+    assert body["ticker"] == "ORCA" and body["form"] == "10-Q" and body["cached"] is False
+    assert body["summary_lite"] == "Sales grew. Profit held up. Debt went down."  # at most 3 sentences
+    rev, ni, other = body["figures"]
+    assert rev["match"] is True and rev["concept"] == "us-gaap:Revenues" and rev["xbrl_value"] == 5_039_780_223
+    assert ni["match"] is False and ni["xbrl_value"] == 422_401_137  # a mismatch is shown, never hidden
+    assert other["match"] is None
+    assert body["model"] and body["generated_at"].startswith("2026-09-26")
+
+
+def test_filing_summary_errors(client, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    r = client.get("/api/filings/SAMPLE-ORCA-10-Q-6/summary")
+    assert r.status_code == 503 and "GEMINI_API_KEY" in r.json()["detail"]
+    assert client.get("/api/filings/NOPE-123/summary").status_code == 404
+    assert client.get("/api/filings/SAMPLE-HLCN-4-121/summary").status_code == 400  # Form 4s aren't summarized

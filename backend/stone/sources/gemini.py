@@ -1,15 +1,18 @@
-"""Gemini vision: read holdings rows off a brokerage screenshot.
+"""Gemini: read holdings rows off a brokerage screenshot, and summarize a filing.
 
-Gemini only *reads*. Whether the reading is right is decided by
-portfolio.reconcile, which checks the rows against the total printed on the
-screenshot. The model is never trusted on its own.
+Gemini only *reads*. Whether the reading is right is decided elsewhere:
+portfolio.reconcile checks screenshot rows against the printed total, and
+figures.check_figures checks a summary's numbers against the filing's own XBRL.
+The model is never trusted on its own.
 """
 
 import base64
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from stone.config import NotConnected, Settings
 from stone.fetch import CachedFetcher, RateLimiter
@@ -74,6 +77,67 @@ def parse_response(doc: dict) -> ScreenshotRead:
     return ScreenshotRead(rows, body.get("printed_total"))
 
 
+# ---------- filing summary ----------
+
+SUMMARY_PROMPT = """Below is the text of an SEC {form} filing by {ticker}.
+1. In at most 3 short sentences, in plain words a non-expert understands, say what this filing
+   tells an investor. No jargon, no advice.
+2. List up to 8 key financial figures the text itself prints. For each: a short label; kind, from
+   the allowed list (use "other" if none fits); text_value copied exactly as printed (e.g.
+   "$5.0 billion"); value as a plain number in full units (dollars, not millions; per-share amounts
+   in dollars; losses negative); period_end as the date that figure's period ends (YYYY-MM-DD),
+   or null if the text doesn't say.
+Copy numbers as printed. Do not calculate, estimate or correct anything.
+
+FILING TEXT:
+{text}"""
+
+
+def summary_schema() -> dict:
+    from stone.figures import KINDS
+    return {
+        "type": "OBJECT",
+        "properties": {
+            "summary": {"type": "STRING"},
+            "figures": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
+                "label": {"type": "STRING"},
+                "kind": {"type": "STRING", "enum": KINDS},
+                "text_value": {"type": "STRING"},
+                "value": {"type": "NUMBER", "nullable": True},
+                "period_end": {"type": "STRING", "nullable": True},
+            }, "required": ["label", "kind", "text_value"]}},
+        },
+        "required": ["summary", "figures"],
+    }
+
+
+@dataclass(frozen=True)
+class FilingRead:
+    summary: str
+    figures: list[dict]  # {label, kind, text_value, value, period_end}
+
+
+def first_sentences(text: str, n: int) -> str:
+    parts = re.split(r"(?<=[.!?])\s+", text.strip())
+    return " ".join(parts[:n])
+
+
+def parse_summary_response(doc: dict) -> FilingRead:
+    from stone.figures import KINDS
+    blocked = (doc.get("promptFeedback") or {}).get("blockReason")
+    if blocked or not doc.get("candidates"):
+        raise ScreenshotUnreadable(f"Gemini would not read this filing ({blocked or 'no answer'}).")
+    try:
+        body = json.loads(doc["candidates"][0]["content"]["parts"][0]["text"])
+    except (KeyError, IndexError, TypeError, json.JSONDecodeError):
+        reason = doc["candidates"][0].get("finishReason", "no summary")
+        raise ScreenshotUnreadable(f"Gemini didn't return a summary ({reason}).") from None
+    figures = [{"label": f.get("label", ""), "kind": f.get("kind") if f.get("kind") in KINDS else "other",
+                "text_value": f.get("text_value", ""), "value": f.get("value"), "period_end": f.get("period_end")}
+               for f in body.get("figures", [])]
+    return FilingRead(body.get("summary", "").strip(), figures)
+
+
 class GeminiClient:
     def __init__(self, settings: Settings, offline: bool = False):
         if not settings.gemini_api_key and not offline:
@@ -94,3 +158,17 @@ class GeminiClient:
         key = f"screenshot_{MODEL}_{hashlib.sha256(image).hexdigest()[:24]}.json"
         raw = self.http.post_json(f"{BASE}/{MODEL}:generateContent", key, body)
         return parse_response(json.loads(raw))
+
+    def summarize_filing(self, text: str, ticker: str, form: str, accession: str) -> tuple[FilingRead, bool, datetime]:
+        """(summary, served from cache?, when it was generated). Cached per filing and model."""
+        body = {
+            "contents": [{"parts": [{"text": SUMMARY_PROMPT.format(form=form, ticker=ticker, text=text)}]}],
+            "generationConfig": {"responseMimeType": "application/json",
+                                 "responseSchema": summary_schema(), "temperature": 0},
+        }
+        key = f"filing_{MODEL}_{accession}.json"
+        path = self.http.path_for(key)
+        cached = path.exists()
+        raw = self.http.post_json(f"{BASE}/{MODEL}:generateContent", key, body)
+        generated = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+        return parse_summary_response(json.loads(raw)), cached, generated
