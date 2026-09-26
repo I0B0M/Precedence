@@ -12,7 +12,27 @@ export function StateBadge({ state }: { state: State | null }) {
   );
 }
 
+/** What the badge means, in both modes, so Heads up and WATCH (Calm and CALM) are clearly the same thing. */
+export function BadgeKey() {
+  return (
+    <p className="note badge-key">
+      <span className="lite-only">
+        <b>Heads up</b> = this has happened more often than usual after news like this, not that it&apos;s likely.{" "}
+        <b>Calm</b> = nothing that has mattered before is happening.
+      </span>
+      <span className="pro-only">
+        <b>WATCH</b> (Lite: Heads up) = a STRONG signal for this stock is firing now. <b>CALM</b> (Lite: Calm) = none is.
+      </span>
+    </p>
+  );
+}
+
 export function LabelTag({ label }: { label: Label }) {
+  // NO DATA: the source data isn't loaded, so nothing was tested. A neutral tag, never a verdict.
+  if (label === "NO DATA") {
+    return <span className="label nodata" title="Source data not loaded yet, so this wasn't tested"
+      style={{ borderColor: "var(--sep)", color: "var(--text-2)", fontWeight: 500 }}>Not loaded</span>;
+  }
   return <span className={`label ${label.toLowerCase().replace(" ", "")}`}>{label}</span>;
 }
 
@@ -36,10 +56,15 @@ export function HitDots({ cases, vsMarket = false }: { cases: { hit: boolean }[]
 /** Pro: whether a STRONG result held up on each half of the history. */
 export function HoldoutNote({ s }: { s: SignalResult }) {
   if (!s.holdout) return <span className="mute">—</span>;
-  const { first, second, held_up, verdict } = s.holdout;
+  // Say only what the backend says: its verdict ("held up" / "did not hold" / "too few cases to check"),
+  // else "held up" / "did not hold" only for an explicit true / false.
+  const h = s.holdout as NonNullable<SignalResult["holdout"]> & { label?: string | null; held_up: boolean | null };
+  const { first, second } = h;
+  const verdict = h.verdict ?? h.label
+    ?? (h.held_up === true ? "held up" : h.held_up === false ? "did not hold" : "too few cases to check");
   return (
     <span>
-      <b>{verdict ?? (held_up ? "held up" : "did not hold")}</b>
+      <b>{verdict}</b>
       <span className="note" style={{ display: "block" }}>1st half {first.n} cases {whole(first.hit_rate)} vs {whole(first.normal_rate)} ·
         2nd half {second.n} cases {whole(second.hit_rate)} vs {whole(second.normal_rate)}</span>
     </span>

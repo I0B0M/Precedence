@@ -1,0 +1,41 @@
+{
+  "_about": "Stone's design tokens after the pattern study. scripts/check-styles.mjs asserts these against computed styles on the running app.",
+  "color": {
+    "bg": "rgb(255, 255, 255)",
+    "text": "rgb(15, 15, 14)",
+    "accent": "rgb(37, 99, 235)",
+    "up": "rgb(26, 127, 55)",
+    "down": "rgb(215, 0, 21)",
+    "practice": "rgb(255, 214, 10)",
+    "pro_bg": "rgb(11, 11, 12)",
+    "pro_text": "rgb(245, 245, 245)"
+  },
+  "font": {
+    "head": "Bricolage",
+    "body": "Figtree",
+    "label": "Doto"
+  },
+  "type": {
+    "title": { "size": "32px", "line": "40px" },
+    "title_phone": { "size": "28px", "line": "34px" },
+    "price": { "size": "40px", "line": "48px", "weight": "700" },
+    "price_phone": { "size": "36px", "line": "44px" },
+    "change": { "size": "15px", "line": "24px" },
+    "tab": { "size": "13px", "weight": "700", "tracking": "2px" },
+    "label": { "size": "13px", "line": "20px" },
+    "banner": { "size": "15px", "weight": "600" }
+  },
+  "chart": { "stroke": "2px" },
+  "size": {
+    "tap_min": 44,
+    "row_min": 64,
+    "cta_min": 48
+  },
+  "radius": { "pill": "999px" },
+  "motion": {
+    "dot_stagger_s": 0.06,
+    "colour_s": 0.2,
+    "reveal_s": 0.3
+  },
+  "widths": [390, 768, 1280]
+}

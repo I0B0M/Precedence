@@ -2,14 +2,58 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { OtherAssetsForms } from "@/components/OtherAssets";
+import { SHOW_CRYPTO } from "@/lib/flags";
 import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib/api";
-import { money } from "@/lib/format";
+import { money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 
 const CONNECT = [
   { name: "Robinhood", what: "Stocks and funds" },
-  { name: "Binance", what: "Crypto" },
+  ...(SHOW_CRYPTO ? [{ name: "Binance", what: "Crypto" }] : []),
 ];
+
+const EXAMPLE: [string, number][] = [["BX", 10], ["AMZN", 5], ["SPY", 3]];
+
+/** Fill what a person typing would leave out: price from the latest close, value from shares x price. */
+async function fillTyped(rows: EditRow[]): Promise<{ rows: EditRow[]; priced: { symbol: string; day: string | null }[]; unpriced: string[] }> {
+  const needPrice = rows.some((r) => r.price.trim() === "" && r.value.trim() === "");
+  const cos = needPrice ? await api.companies() : [];
+  const priced: { symbol: string; day: string | null }[] = [];
+  const unpriced: string[] = [];
+  const out = rows.map((r) => {
+    let { price, value } = r;
+    const sym = r.symbol.trim().toUpperCase();
+    if (price.trim() === "" && value.trim() === "") {
+      const c = cos.find((x) => x.ticker === sym);
+      if (c?.last_close != null) {
+        price = c.last_close.toFixed(2);
+        priced.push({ symbol: sym, day: c.as_of });
+      } else {
+        unpriced.push(sym);
+      }
+    }
+    const sh = num(r.shares), pr = num(price);
+    if (value.trim() === "" && sh != null && pr != null) value = (sh * pr).toFixed(2);
+    return { ...r, symbol: sym, price, value };
+  });
+  return { rows: out, priced, unpriced };
+}
+
+type Example = { rows: EditRow[]; total: string; asOf: string | null };
+
+/** Real tickers at their latest closes, with the matching total, so Check → Save takes two taps. Nothing is saved here. */
+async function loadExample(): Promise<Example | null> {
+  try {
+    const cos = await api.companies();
+    const picks = EXAMPLE.map(([t, sh]) => ({ c: cos.find((x) => x.ticker === t), sh })).filter((p) => p.c?.last_close != null);
+    if (!picks.length) return null;
+    const rows = picks.map(({ c, sh }) => ({ symbol: c!.ticker, shares: String(sh), price: c!.last_close!.toFixed(2), value: (sh * c!.last_close!).toFixed(2) }));
+    return { rows, total: rows.reduce((a, r) => a + Number(r.value), 0).toFixed(2), asOf: picks[0].c!.as_of };
+  } catch {
+    return null;
+  }
+}
 
 type EditRow = { symbol: string; shares: string; price: string; value: string };
 
@@ -28,10 +72,31 @@ export default function ImportScreen() {
   const [total, setTotal] = useState("");
   const [check, setCheck] = useState<Reconciled | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [checkErr, setCheckErr] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const [priced, setPriced] = useState<{ symbol: string; day: string | null }[]>([]);
+  const [unpriced, setUnpriced] = useState<string[]>([]);
+  const [example, setExample] = useState<string | null>(null); // the close date, while example rows are in the table
+
+  function applyExample(ex: Example | null) {
+    if (!ex) return setCheckErr(true);
+    setRows(ex.rows);
+    setTotal(ex.total);
+    setCheck(null);
+    setCheckErr(false);
+    setExample(ex.asOf);
+  }
+  // Fill the table, then bring it into view (the button sits at the top of the page).
+  const fillAndShow = () => loadExample().then((ex) => {
+    applyExample(ex);
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    setTimeout(() => document.getElementById("check-rows")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }), 50);
+  });
 
   useEffect(() => {
     api.status().then(setStatus).catch(() => {});
+    if (new URLSearchParams(window.location.search).get("example") === "1") loadExample().then(applyExample);
   }, []);
 
   async function upload(file: File) {
@@ -43,9 +108,12 @@ export default function ImportScreen() {
       setTotal(r.printed_total?.toString() ?? "");
       setCheck(r);
     } catch (e) {
-      setNote(e instanceof ApiError && e.status === 503
-        ? `${e.message} You can type the rows below instead.`
-        : `Couldn't read that screenshot: ${(e as Error).message}`);
+      // The API's own detail already says what went wrong (422 unreadable, 415 not an image, 413 too big, 502/503 reader down).
+      // Only a failure to reach Stone at all gets our own wording.
+      const known = e instanceof ApiError && [413, 415, 422, 502, 503].includes(e.status);
+      setNote(known
+        ? `${(e as ApiError).message} You can type the rows below instead.`
+        : "Couldn't read that screenshot: Stone can't reach its data right now. Is the server running? You can type the rows below instead.");
     } finally {
       setBusy(false);
     }
@@ -53,8 +121,18 @@ export default function ImportScreen() {
 
   async function runCheck(next = rows, nextTotal = total) {
     const kept = next.filter((r) => r.symbol.trim());  // drop blank rows so check.rows[i] lines up with rows[i]
-    if (kept.length !== next.length) setRows(kept.length ? kept : [blank()]);
-    setCheck(await api.reconcile(kept.map(toRead), num(nextTotal)));
+    try {
+      setCheckErr(false);
+      // Typed rows: a missing price comes from the latest close, a missing value is shares x price. "BX 10" must work.
+      const filled = await fillTyped(kept);
+      setRows(filled.rows.length ? filled.rows : [blank()]);
+      setPriced(filled.priced);
+      setUnpriced(filled.unpriced);
+      setCheck(await api.reconcile(filled.rows.map(toRead), num(nextTotal)));
+    } catch {
+      setCheck(null);
+      setCheckErr(true);
+    }
   }
 
   /** Sample mode only: today's sample prices with one share count misread, like a blurry screenshot. */
@@ -90,9 +168,14 @@ export default function ImportScreen() {
   }
 
   const edit = (i: number, k: keyof EditRow, v: string) => {
+    setExample(null);
     setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
     setCheck(null);
   };
+
+  // Typed in with no screenshot total: nothing to reconcile against, so every row just needs a value.
+  const typedOk = check?.status === "no_total" && check.rows.length > 0 && check.rows.every((r) => r.ok);
+  const canSave = check?.status === "ok" || typedOk;
 
   return (
     <section className="stack" style={{ gap: 22 }}>
@@ -100,6 +183,13 @@ export default function ImportScreen() {
         <span className="ticker">Add an account</span>
         <h1>Bring in what you own</h1>
         <p className="lede">Connect an account, or add a screenshot of any app. Stone only reads what you own; it can never trade or move money.</p>
+      </div>
+
+      {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
+      <div className="card" style={{ borderWidth: 2 }}>
+        <h3>Try an example portfolio</h3>
+        <p>See Stone with BX, AMZN and SPY at their real closing prices. It&apos;s labelled as an example, and nothing is saved until you press Save.</p>
+        <button className="btn" type="button" onClick={fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
       </div>
 
       {/* Connecting isn't built yet (no SnapTrade endpoint), so these stay disabled. Never fake a connection. */}
@@ -117,8 +207,8 @@ export default function ImportScreen() {
 
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Your app isn&apos;t here? Add a screenshot</h2>
-        <p className="mute">We read the rows, then check they add up to the total printed on your screen. If they don&apos;t, we find the misread
-          before anything is saved.</p>
+        <p className="mute">Read by Gemini, then checked against your total. If the rows don&apos;t add up to the total on your screen, we find the
+          misread before anything is saved.</p>
       </div>
 
       <div className="drop">
@@ -135,9 +225,12 @@ export default function ImportScreen() {
         )}
       </div>
 
-      <div className="card">
+      <div className="card" id="check-rows" style={{ scrollMarginTop: 110 }}>
         <h3>Check the rows</h3>
-        <p className="note">No screenshot? Type your holdings here instead.</p>
+        <p className="note">No screenshot? Type your holdings here instead: a ticker and shares is enough.</p>
+        {example && (
+          <p className="example-note"><b>Example holdings, not yours.</b> Real prices at the close on {shortDate(example)}. Nothing is saved until you press Save.</p>
+        )}
         <div className="tscroll">
           <table className="readtable">
             <thead><tr><th>Ticker</th><th>Shares</th><th>Price</th><th>Value</th><th /></tr></thead>
@@ -178,17 +271,31 @@ export default function ImportScreen() {
           <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
 
-        {check && (
+        {checkErr && <div className="badline">Stone can&apos;t reach its data right now, so it can&apos;t check the rows. Is the server running?</div>}
+        {priced.length > 0 && (
+          <p className="note">Price filled in from the latest close: {priced.map((p) => `${p.symbol}${p.day ? ` (close ${shortDate(p.day)})` : ""}`).join(", ")}.</p>
+        )}
+        {unpriced.length > 0 && (
+          <p className="badline">Stone has no price for {unpriced.join(", ")}. It follows the S&amp;P 100 and a few funds. Type a price and value for {unpriced.length > 1 ? "them" : "it"}, or remove the row.</p>
+        )}
+        {check && !(check.status === "no_total" && unpriced.length > 0) && (typedOk ? (
+          <div className="okline">✓ No total to check against, so these rows add up to {money(check.rows_sum)}. Confirm they&apos;re right, then save.</div>
+        ) : (
           <div className={check.status === "ok" ? "okline" : "badline"}>
             {check.status === "ok" ? "✓ " : ""}{check.message}
           </div>
-        )}
+        ))}
         <div className="row-flex">
-          <button className="btn" type="button" disabled={check?.status !== "ok"} onClick={save}>Save as my holdings</button>
-          {check && check.status !== "ok" && <span className="note">Saving unlocks once the rows add up to the total.</span>}
+          <button className="btn" type="button" disabled={!canSave} onClick={save}>Save as my holdings</button>
+          {check && !canSave && <span className="note">Saving unlocks once every row has a value and they add up to the total.</span>}
         </div>
       </div>
 
+      <div className="stack" style={{ gap: 12, marginTop: 8 }}>
+        <h2>Everything else you own</h2>
+        <p className="mute">A home, a 401(k) or an IRA{SHOW_CRYPTO ? ", crypto" : ""}. Stone keeps what you type; values show only once there&apos;s a real estimate.</p>
+      </div>
+      <OtherAssetsForms />
     </section>
   );
 }

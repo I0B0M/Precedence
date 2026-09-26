@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { StateBadge } from "@/components/bits";
+import { ApiProblem, Loading } from "@/components/Problem";
 import { api, type CompanyRow, type PortfolioOut } from "@/lib/api";
 import { money, shortDate } from "@/lib/format";
 import { readHoldings } from "@/lib/holdings";
@@ -27,7 +28,7 @@ function priceNote(day: string): string {
 export default function PracticeScreen() {
   const stored = usePractice();
   const [cos, setCos] = useState<CompanyRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [boardFor, setBoardFor] = useState<{ key: string; data: PortfolioOut } | null>(null);
   const [side, setSide] = useState<Side>("buy");
   const [symbol, setSymbol] = useState("");
@@ -37,7 +38,7 @@ export default function PracticeScreen() {
   const [done, setDone] = useState<string | null>(null);
 
   useEffect(() => {
-    api.companies().then(setCos).catch((e) => setError(e.message));
+    api.companies().then(setCos).catch(setError);
   }, []);
 
   // First visit: start from what the board holds, plus practice cash.
@@ -60,8 +61,8 @@ export default function PracticeScreen() {
   }, [posKey]);
   const board = boardFor?.key === posKey ? boardFor.data : null;
 
-  if (error) return <div className="badline">{error}</div>;
-  if (!s || !cos) return <p className="mute">Loading practice…</p>;
+  if (error) return <ApiProblem />;
+  if (!s || !cos) return <Loading what="practice" />;
 
   const pick = price.get(symbol);
   const shares = Number(qty);
@@ -84,13 +85,13 @@ export default function PracticeScreen() {
 
   return (
     <section className="stack" style={{ gap: 24 }}>
-      <div className="practice-banner" role="note"><b>PRACTICE</b> — not real money. No order is ever sent.</div>
+      <div className="practice-banner" role="note">Practice money. Not real. No order is ever sent.</div>
 
       <div className="pf-head" style={{ margin: 0 }}>
-        <div className="stack" style={{ gap: 6 }}>
-          <span className="ticker">Practice</span>
-          <div className="bignum">{money(s.cash + invested)}</div>
-          <p className="lede" style={{ color: "var(--text)" }}>{money(s.cash, true)} practice cash · {money(invested)} in {held.length} holding{held.length === 1 ? "" : "s"}</p>
+        <div className="stack" style={{ gap: 4 }}>
+          <span className="kicker">Pretend total</span>
+          <div className="pf-total">{money(s.cash + invested)}</div>
+          <p className="sc-change" style={{ fontWeight: 400 }}>{money(s.cash)} practice cash · {money(invested)} in {held.length} holding{held.length === 1 ? "" : "s"}</p>
         </div>
         <p className="note" style={{ maxWidth: "36ch" }}>
           Started from what you own plus {money(PRACTICE_CASH)} practice cash{asOf ? `. Prices: close ${shortDate(asOf)}, from Stone's price data.` : "."}
@@ -98,43 +99,53 @@ export default function PracticeScreen() {
       </div>
 
       <div className="grid2">
-        <div className="card">
-          <h3>Make a practice trade</h3>
-          <div className="seg-choice" role="group" aria-label="Buy or sell">
-            {(["buy", "sell"] as const).map((x) => (
-              <button key={x} type="button" aria-pressed={side === x} onClick={() => { setSide(x); setDraft(null); }}>{x === "buy" ? "Buy" : "Sell"}</button>
-            ))}
-          </div>
-          <label className="list-head" htmlFor="p-stock">Stock</label>
-          <select id="p-stock" className="select" value={symbol} onChange={(e) => { setSymbol(e.target.value); setDraft(null); }}>
-            <option value="" disabled>Pick a stock</option>
-            {side === "sell"
-              ? held.map(([sym, sh]) => <option key={sym} value={sym}>{sym} · you hold {sharesText(sh)}</option>)
-              : cos.filter((c) => c.last_close != null).map((c) => <option key={c.ticker} value={c.ticker}>{c.ticker} · {c.name} · {money(c.last_close, true)}</option>)}
-          </select>
-          <label className="list-head" htmlFor="p-qty">Whole shares</label>
-          <input id="p-qty" className="field" inputMode="numeric" value={qty} style={{ maxWidth: 160 }}
-            onChange={(e) => { setQty(e.target.value.replace(/[^0-9]/g, "")); setDraft(null); }} />
-          {symbol && problem && <p className="note down">{problem}</p>}
-          <button className="btn" type="button" disabled={!!problem} onClick={review} style={{ alignSelf: "flex-start" }}>Review trade</button>
-
-          {draft && (
+        <div className="card ticket">
+          <h3>{draft ? "Review" : "Make a practice trade"}</h3>
+          {!draft ? (
+            <>
+              <div className="seg-choice" role="group" aria-label="Buy or sell">
+                {(["buy", "sell"] as const).map((x) => (
+                  <button key={x} type="button" aria-pressed={side === x} onClick={() => { setSide(x); setDone(null); }}>{x === "buy" ? "Buy" : "Sell"}</button>
+                ))}
+              </div>
+              <div className="t-row">
+                <label htmlFor="p-stock">Stock</label>
+                <select id="p-stock" className="select" value={symbol} onChange={(e) => { setSymbol(e.target.value); setDone(null); }}>
+                  <option value="" disabled>Pick a stock</option>
+                  {side === "sell"
+                    ? held.map(([sym, sh]) => <option key={sym} value={sym}>{sym} · you hold {sharesText(sh)}</option>)
+                    : cos.filter((c) => c.last_close != null).map((c) => <option key={c.ticker} value={c.ticker}>{c.ticker} · {c.name} · {money(c.last_close, true)}</option>)}
+                </select>
+              </div>
+              <div className="t-row">
+                <label htmlFor="p-qty">Whole shares</label>
+                <input id="p-qty" className="field" inputMode="numeric" value={qty}
+                  onChange={(e) => { setQty(e.target.value.replace(/[^0-9]/g, "")); setDone(null); }} />
+              </div>
+              <dl className="t-sum">
+                <dt>Price</dt>
+                <dd>{pick?.last_close != null ? <>{money(pick.last_close, true)} <span className="note">close {pick.as_of ? shortDate(pick.as_of) : ""}</span></> : "—"}</dd>
+                <dt>{side === "buy" ? "Estimated cost" : "Estimated proceeds"}</dt>
+                <dd className="t-total">{pick?.last_close != null && shares > 0 ? money(shares * pick.last_close) : "—"}</dd>
+              </dl>
+              {symbol && problem && <p className="note down">{problem}</p>}
+              <button className="btn t-go" type="button" disabled={!!problem} onClick={review}>Review trade</button>
+            </>
+          ) : (
             <div className="receipt" role="region" aria-label="Practice trade receipt">
               <p className="list-head">Receipt, before you place it</p>
               <dl className="kv">
                 <dt>{draft.side === "buy" ? "Buy" : "Sell"}</dt><dd>{draft.shares} {draft.symbol}</dd>
                 <dt>Price</dt><dd>{money(draft.price, true)} <span className="note">close {shortDate(draft.day)}</span></dd>
-                <dt>{draft.side === "buy" ? "Cost" : "You get"}</dt><dd>{draft.shares} × {money(draft.price, true)} = {money(draft.shares * draft.price, true)}</dd>
-                <dt>Practice cash left</dt><dd>{money(s.cash + (draft.side === "buy" ? -1 : 1) * draft.shares * draft.price, true)}</dd>
+                <dt>{draft.side === "buy" ? "Cost" : "You get"}</dt><dd>{draft.shares} × {money(draft.price, true)} = {money(draft.shares * draft.price)}</dd>
+                <dt>Practice cash left</dt><dd>{money(s.cash + (draft.side === "buy" ? -1 : 1) * draft.shares * draft.price)}</dd>
               </dl>
               <p className="note">No real money moves. {priceNote(draft.day)}</p>
-              <div className="row-flex">
-                <button className="btn" type="button" onClick={place}>Place practice trade</button>
-                <button className="btn light" type="button" onClick={() => setDraft(null)}>Cancel</button>
-              </div>
+              <button className="btn t-go" type="button" onClick={place}>Place practice trade</button>
+              <button className="btn light t-go" type="button" onClick={() => setDraft(null)}>Back</button>
             </div>
           )}
-          {done && <p className="okline">{done}</p>}
+          {done && <p className="okline" role="status">{done}</p>}
         </div>
 
         <div className="card">
@@ -145,9 +156,10 @@ export default function PracticeScreen() {
                 const c = price.get(sym);
                 const e = board?.exposure.find((x) => x.symbol === sym);
                 return (
-                  <Link key={sym} href={`/company/${sym}`} className="list-row" style={{ alignItems: "center" }}>
+                  <Link key={sym} href={c?.kind === "etf" ? `/fund/${sym}` : `/company/${sym}`} className="list-row" style={{ alignItems: "center" }}>
                     <span>
                       <b>{sym}</b> <span className="mute">{sharesText(sh)} share{sh === 1 ? "" : "s"}</span>
+                      {s.seeded && sym in s.seeded && <span className="copied">copied from your portfolio</span>}
                       {e && <span className="note" style={{ display: "block" }}>{c?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>}
                     </span>
                     <span className="row-flex" style={{ gap: 8, flexWrap: "nowrap" }}>
@@ -169,7 +181,7 @@ export default function PracticeScreen() {
             {s.trades.map((t) => (
               <div key={t.at} className="list-row">
                 <span>{t.side === "buy" ? "Bought" : "Sold"} {t.shares} {t.symbol} at {money(t.price, true)} <span className="mute">(close {shortDate(t.day)})</span></span>
-                <span>{money(t.shares * t.price, true)}</span>
+                <span>{money(t.shares * t.price)}</span>
               </div>
             ))}
           </div>

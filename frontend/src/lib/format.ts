@@ -46,3 +46,8 @@ export function dateTimeET(iso: string): string {
     hour: "numeric", minute: "2-digit",
   }) + " ET";
 }
+
+/** "5:00 PM ET" */
+export function timeET(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET";
+}

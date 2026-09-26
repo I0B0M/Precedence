@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HitDots, HoldoutNote, LabelTag } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
+import { ApiProblem, Loading } from "@/components/Problem";
 import { api, type CompanyRow, type SignalResult } from "@/lib/api";
 import { horizonWords, pct, shortDate, whole } from "@/lib/format";
 import { hitWords, liteHistory, liteVerdict } from "@/lib/words";
@@ -21,7 +22,7 @@ export default function SignalLab() {
   const [ticker, setTicker] = useState<string | null>(null);
   const [signal, setSignal] = useState<string | null>(null);
   const [result, setResult] = useState<{ key: string; r: SignalResult } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [unavailable, setUnavailable] = useState<string[]>([]);
 
   useEffect(() => {
@@ -40,18 +41,19 @@ export default function SignalLab() {
       // With no link params, open on the demo story (BX + rate jump) when the API has both.
       setTicker(t ? (tOk ? t : null) : st.find((c) => c.ticker === DEFAULT.t)?.ticker ?? st[0]?.ticker ?? null);
       setSignal(s ? (sOk ? s : null) : sp.find((x) => x.key === DEFAULT.s)?.key ?? sp[0]?.key ?? null);
-    }).catch((e) => setError(e.message));
+    }).catch(setError);
   }, []);
 
   useEffect(() => {
     if (!ticker || !signal) return;
-    api.lab(ticker, signal).then((r) => setResult({ key: `${ticker}|${signal}`, r })).catch((e) => setError(e.message));
+    api.lab(ticker, signal).then((r) => setResult({ key: `${ticker}|${signal}`, r })).catch(setError);
     try {
       window.history.replaceState(null, "", `/lab?t=${ticker}&s=${signal}`);
     } catch {}
   }, [ticker, signal]);
 
-  if (error) return <div className="badline">{error}</div>;
+  if (error) return <ApiProblem />;
+  if (!stocks.length || !specs.length) return <Loading what="the Lab" />;
   const quick = QUICK.filter((t) => stocks.some((c) => c.ticker === t));
   const key = `${ticker}|${signal}`;
 
@@ -114,39 +116,64 @@ export default function SignalLab() {
             <p className="mute">Pick {!ticker ? "a stock" : ""}{!ticker && !signal ? " and " : ""}{!signal ? "a kind of news" : ""} above to run a test.</p>
           </div>
         )
-      ) : result?.key !== key ? <p className="mute">Testing…</p> : <LabResult key={key} r={result.r} ticker={ticker} />}
+      ) : result?.key !== key ? <Loading what={`${ticker} and that news`} /> : <LabResult key={key} r={result.r} ticker={ticker} />}
     </section>
   );
+}
+
+const STAGGER = 60; // ms between dots; matches .hitdots in globals.css
+
+/** Counts from 0 to `to` over `ms`, ease-out. Shows the final number at once under reduced motion. */
+function CountUp({ to, ms }: { to: number; ms: number }) {
+  const [v, setV] = useState(0);
+  const raf = useRef(0);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || ms <= 0) {
+      raf.current = requestAnimationFrame(() => setV(to));
+      return () => cancelAnimationFrame(raf.current);
+    }
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const f = Math.min(1, (t - t0) / ms);
+      setV(Math.round(to * (1 - Math.pow(1 - f, 3))));
+      if (f < 1) raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, [to, ms]);
+  return <>{v}%</>;
 }
 
 function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
   const cases = r.cases ?? [];
   const span = horizonWords(r.horizon).replace("a ", "");
+  // The reveal: dots fill one by one (and the hit rate counts with them), then normal and the range fade in,
+  // then the verdict strip. t1/t2 are CSS delays so reduced motion simply shows everything.
+  const fill = cases.length * STAGGER + 320;
+  const timing = { "--t1": `${fill}ms`, "--t2": `${fill + 300}ms` } as React.CSSProperties;
+  const tone = r.label === "STRONG" ? "strong" : r.label === "NO DATA" ? "nodata" : "weak";
   return (
-    <div className="card lab-result">
-      <div className="row-flex" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "nowrap" }}>
-        <h2>{ticker}: <span className="lite-only">{r.lite.toLowerCase()}</span><span className="pro-only">{r.pro}</span></h2>
-        <LabelTag label={r.label} />
-      </div>
+    <div className="card lab-result" style={timing}>
+      <h2>{ticker}: <span className="lite-only">{r.lite.toLowerCase()}</span><span className="pro-only">{r.pro}</span></h2>
+
+      <HitDots cases={cases} vsMarket={r.vs_market} />
 
       {r.n > 0 && (
         <div className="versus">
           <div>
-            <div className="bignum">{whole(r.hit_rate)}</div>
+            <div className="bignum" aria-label={whole(r.hit_rate)}>{r.hit_rate == null ? "—" : <CountUp to={Math.round(r.hit_rate * 100)} ms={fill} />}</div>
             <p className="note">{r.hits} of {r.n} times, it {hitWords(r)}</p>
           </div>
-          <div>
+          <div className="lab-after">
             <div className="bignum mute">{whole(r.normal_rate)}</div>
             <p className="note">in a normal {span}: {r.normal_hits} of {r.normal_n}</p>
           </div>
         </div>
       )}
 
-      <p className="say-big">{liteHistory(r, ticker)} <b>{liteVerdict(r)}</b></p>
-      <HitDots cases={cases} vsMarket={r.vs_market} />
 
       {r.n > 0 && (
-        <div className="stack" style={{ gap: 4 }}>
+        <div className="stack lab-after" style={{ gap: 4 }}>
           <span className="note">
             <span className="lite-only">The dark bar is where the real rate likely is. The blue line is a normal {span}.
               If the whole bar is right of the line, it&apos;s a real pattern.</span>
@@ -161,6 +188,11 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
           </div>
         </div>
       )}
+
+      <div className={`verdict ${tone}`} role="status">
+        <LabelTag label={r.label} />
+        <p><b>{liteVerdict(r)}</b> <span className="lite-only">{liteHistory(r, ticker)}</span></p>
+      </div>
 
       {r.holdout && (
         <p className="pro-only note">Split-half hold-out: <HoldoutNote s={r} /></p>
