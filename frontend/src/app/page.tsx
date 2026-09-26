@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LabelTag, StateBadge } from "@/components/bits";
+import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
@@ -28,15 +29,7 @@ export default function HoldingsBoard() {
   }, [holdings]);
 
   if (error) return <div className="badline">Couldn&apos;t load your holdings: {error}</div>;
-  if (holdings && !holdings.length) {
-    return (
-      <div className="empty">
-        <h2>Nothing here yet</h2>
-        <p className="mute">Bring in what you own and Stone will tell you the one thing that matters today.</p>
-        <Link className="btn" href="/import">Add an account</Link>
-      </div>
-    );
-  }
+  if (holdings && !holdings.length) return <StartFlow />;
   if (!board) return <p className="mute">Loading what you own…</p>;
 
   const watching = board.exposure.filter((e) => e.state === "WATCH").length;
@@ -60,6 +53,8 @@ export default function HoldingsBoard() {
           {" "}{board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in Stone's price data."}
         </p>
       </div>
+
+      <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
 
       <div className="rows">
         {board.exposure.map((e) => {
