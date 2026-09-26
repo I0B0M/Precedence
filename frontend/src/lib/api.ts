@@ -62,7 +62,7 @@ export interface FundPage {
   total_holdings_count: number; // 504 for SPY
   looked_through_share: number; // weight in stocks Stone tracks, 0..1
   holdings: FundHolding[]; // top 25 by weight
-  heads_up: { ticker: string; name: string; weight: number }[]; // holdings on WATCH
+  heads_up: { ticker: string; name: string; weight: number }[]; // WATCH among the top 25 holdings
   filings_span: { start: string; end: string } | null;
   week_filings: { ticker: string; form: string; accepted_at: string; url: string | null }[]; // top 25 holdings
   note: string | null; // e.g. "Holdings for QQQ aren't loaded yet."

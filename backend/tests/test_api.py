@@ -1,5 +1,5 @@
 import os
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -283,3 +283,43 @@ def test_insider_signal_says_no_data_when_filings_are_not_loaded(client):
     page = client.get("/api/companies/ORCA").json()
     assert next(s for s in page["signals"] if s["signal"] == "insider_cluster")["label"] == "NO DATA"
     assert next(s for s in page["signals"] if s["signal"] == "gap_down")["label"] != "NO DATA"  # prices are loaded
+
+
+def test_fund_page_shows_whats_inside_how_its_doing_and_whats_next(client):
+    f = client.get("/api/funds/brd500").json()
+    assert f["symbol"] == "BRD500" and f["holdings_source"] == "sample" and f["holdings_as_of"] == "2026-09-25"
+    assert f["total_holdings_count"] == 4 and f["looked_through_share"] == pytest.approx(0.066)
+    weights = [h["weight"] for h in f["holdings"]]
+    assert weights == sorted(weights, reverse=True) and f["holdings"][0]["ticker"] == "HLCN"
+    hlcn = f["holdings"][0]
+    assert hlcn["in_stone"] and hlcn["state"] == "WATCH" and hlcn["firing"] and hlcn["lite_line"]
+    assert {h["ticker"] for h in f["heads_up"]} == {h["ticker"] for h in f["holdings"] if h["state"] == "WATCH"}
+    board = client.post("/api/portfolio", json={"holdings": [{"symbol": "BRD500", "shares": 1}]}).json()
+    assert f["fund_state"] == next(e for e in board["exposure"] if e["symbol"] == "BRD500")["state"]
+    assert [s["signal"] for s in f["fund_firing"]] == ["market_rate_jump"]
+    conn = db.connect(os.environ["DATABASE_URL"])
+    closes = {r["day"]: float(r["close"]) for r in conn.execute(
+        "select day, close from prices_daily where ticker = 'BRD500'").fetchall()}
+    last = max(closes)
+    back = max(d for d in closes if d <= last - timedelta(days=30))
+    assert f["price"] == {"last_close": closes[last], "as_of": last.isoformat()}
+    assert f["performance"]["d30"] == pytest.approx(closes[last] / closes[back] - 1)
+    assert f["performance"]["y1"] is not None and f["performance"]["as_of"] == last.isoformat()
+    assert f["filings_span"] == {"start": "2026-09-19", "end": "2026-09-25"}
+    assert all(w["ticker"] in {h["ticker"] for h in f["holdings"]} for w in f["week_filings"])
+
+
+def test_fund_page_for_a_fund_without_holdings_and_for_non_funds(client):
+    conn = db.connect(os.environ["DATABASE_URL"])
+    conn.execute("insert into companies (ticker, cik, name, sector, kind, source) values "
+                 "('EMPTYF', null, 'Empty Fund', null, 'etf', 'sample') on conflict do nothing")
+    conn.commit()
+    try:
+        f = client.get("/api/funds/EMPTYF").json()
+        assert f["holdings"] == [] and f["total_holdings_count"] == 0 and "EMPTYF" in f["note"]
+        assert f["price"] is None and f["performance"]["d30"] is None and f["fund_state"] is None
+    finally:
+        conn.execute("delete from companies where ticker = 'EMPTYF'")
+        conn.commit()
+    assert client.get("/api/funds/HLCN").status_code == 400
+    assert client.get("/api/funds/NOPE").status_code == 404
