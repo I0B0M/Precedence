@@ -139,9 +139,20 @@ def _num(raw: str | None) -> float | None:
         return None
 
 
-def parse_form4(xml_bytes: bytes) -> list[InsiderTrade]:
-    """Non-derivative transactions only (actual shares bought or sold)."""
+def form4_issuer_cik(xml_bytes: bytes) -> int | None:
+    raw = _text(ET.fromstring(xml_bytes), "issuer/issuerCik")
+    return int(raw) if raw and raw.isdigit() else None
+
+
+def parse_form4(xml_bytes: bytes, issuer_ciks: set[int]) -> list[InsiderTrade]:
+    """Non-derivative transactions only (actual shares bought or sold).
+
+    A company's submissions also list Form 4s where the company is the REPORTING OWNER
+    (e.g. Blackstone funds selling a portfolio company's shares). Those are not trades in
+    the company's own stock, so anything whose issuer isn't one of `issuer_ciks` is dropped."""
     root = ET.fromstring(xml_bytes)
+    if form4_issuer_cik(xml_bytes) not in issuer_ciks:
+        return []
     owners = root.findall("reportingOwner")
     name = "; ".join(filter(None, (_text(o, "reportingOwnerId/rptOwnerName") for o in owners)))
     title = next(filter(None, (_text(o, "reportingOwnerRelationship/officerTitle") for o in owners)), None)
@@ -206,8 +217,8 @@ class SecClient:
             raise
         return parse_companyfacts(json.loads(raw))
 
-    def form4(self, cik: int, filing: Filing) -> list[InsiderTrade]:
+    def form4(self, cik: int, filing: Filing, issuer_ciks: set[int]) -> list[InsiderTrade]:
         folder = filing.accession.replace("-", "")
         doc = form4_xml_name(filing.primary_doc)
         raw = self.http.get(f"{ARCHIVES}/{cik}/{folder}/{doc}", f"form4_{filing.accession}.xml")
-        return parse_form4(raw)
+        return parse_form4(raw, issuer_ciks)

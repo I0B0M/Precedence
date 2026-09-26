@@ -56,7 +56,7 @@ def ingest_sec(conn: psycopg.Connection, sec: SecClient, since: date, stocks: li
         failed = 0
         for cik, f in form4s:
             try:
-                store.upsert_trades(conn, t.symbol, f.accession, f.accepted_at, sec.form4(cik, f), "sec")
+                store.upsert_trades(conn, t.symbol, f.accession, f.accepted_at, sec.form4(cik, f, set(by_cik)), "sec")
             except Exception as e:  # one bad Form 4 must not stop the run
                 failed += 1
                 log(f"  {t.symbol} Form 4 {f.accession}: {e}")
