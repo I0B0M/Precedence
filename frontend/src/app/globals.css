@@ -164,6 +164,7 @@ html[data-mode="pro"] .grid2.pro-only { display: grid !important; }
 .btn.hl { background: var(--accent-fill); }
 .btn.light { background: var(--bg); color: var(--text); border-color: var(--edge-c); }
 .btn.light:hover { background: var(--fill); filter: none; }
+.btn.light:disabled { opacity: 1; color: var(--text-2); border-color: var(--sep); background: var(--fill); }
 .btn.small { padding: 7px 14px; font-size: 14px; }
 .btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; transform: none; }
 .linkb {
