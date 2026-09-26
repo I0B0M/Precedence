@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { BadgeKey, HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
+import { FilingSummary } from "@/components/FilingSummary";
 import { MarketCard } from "@/components/MarketCard";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { PriceChart, type Pin } from "@/components/PriceChart";
@@ -11,6 +12,9 @@ import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api"
 import { bigMoney, money, pct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
+
+// Filings that get a plain-words summary (Gemini, figures checked against XBRL).
+const SUMMARY_FORMS = new Set(["8-K", "10-Q", "10-K"]);
 
 // Brief: "understanding what they own" · "spread across different sources" · "summarize complex information"
 export default function CompanyScreen() {
@@ -164,7 +168,7 @@ export default function CompanyScreen() {
                 <div className="list-row"><span>Insiders sold shares</span><span className="mute">{shortDate(d.insider_sales[0].accepted_at)}</span></div>
               )}
               {d.filings.slice(0, 3).map((f) => (
-                <div key={f.accession} className="list-row"><span>{FORM_WORDS[f.form] ?? f.form}</span><span className="mute">{shortDate(f.accepted_at)}</span></div>
+                <div key={f.accession} className="list-row"><span>{FORM_WORDS[f.form] ?? f.form}{SUMMARY_FORMS.has(f.form) && <FilingSummary accession={f.accession} />}</span><span className="mute">{shortDate(f.accepted_at)}</span></div>
               ))}
               {d.rate && (
                 <div className="list-row"><span>10-year Treasury rate {d.rate.value.toFixed(2)}%</span><span className="mute">{shortDate(d.rate.day)}</span></div>
@@ -270,6 +274,7 @@ export default function CompanyScreen() {
                       <td className="nowrap">
                         {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer"><b>{f.form}</b></a> : <b>{f.form}</b>}
                         <div className="note">{f.accession}</div>
+                        {SUMMARY_FORMS.has(f.form) && <FilingSummary accession={f.accession} />}
                       </td>
                       <td className="nowrap">{shortDate(f.accepted_at)}<div className="note">{timeET(f.accepted_at)}</div></td>
                       <td className="nowrap">{f.report_date ?? "—"}</td>
