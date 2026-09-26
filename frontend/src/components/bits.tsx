@@ -51,10 +51,14 @@ export function HitDots({ cases, vsMarket = false }: { cases: { hit: boolean }[]
 /** Pro: whether a STRONG result held up on each half of the history. */
 export function HoldoutNote({ s }: { s: SignalResult }) {
   if (!s.holdout) return <span className="mute">—</span>;
-  const { first, second, held_up } = s.holdout;
+  // Say only what the backend says: its own label if it sends one (e.g. "too few cases to check"),
+  // "held up" / "did not hold" only for an explicit true / false, and no verdict otherwise.
+  const h = s.holdout as NonNullable<SignalResult["holdout"]> & { label?: string | null; held_up: boolean | null };
+  const { first, second } = h;
+  const verdict = h.label ? h.label : h.held_up === true ? "held up" : h.held_up === false ? "did not hold" : "too few cases to check";
   return (
     <span>
-      <b>{held_up ? "held up" : "did not hold"}</b>
+      <b>{verdict}</b>
       <span className="note" style={{ display: "block" }}>1st half {first.n} cases {whole(first.hit_rate)} vs {whole(first.normal_rate)} ·
         2nd half {second.n} cases {whole(second.hit_rate)} vs {whole(second.normal_rate)}</span>
     </span>
