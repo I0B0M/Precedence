@@ -181,11 +181,11 @@ def test_skipped_overlapping_event_can_still_be_firing():
     assert r.firing is not None and r.firing.note == "second"
 
 
-def strong_setup(fire_now: bool):
-    """12 past events, each followed by a fall; normal days rise. Optionally one live event."""
-    days = weekdays(date(2023, 1, 2), 400)
+def strong_setup(fire_now: bool, events: int = 12):
+    """`events` past events, each followed by a fall; normal days rise. Optionally one live event."""
+    days = weekdays(date(2023, 1, 2), 40 + events * 30)
     bars = [B(d, 100, 100.5) for d in days]
-    starts = list(range(20, 20 + 12 * 30, 30))
+    starts = list(range(20, 20 + events * 30, 30))
     for s in starts:
         for k in range(s + 1, s + 1 + 5):
             bars[k] = B(bars[k].day, 100, 97)
@@ -218,23 +218,31 @@ def test_watch_only_when_a_strong_signal_is_firing():
 
 def test_strong_result_gets_a_holdout_that_held_up():
     spec = e.Spec("t", "", "", 5)
-    r = e.test_signal(spec, *strong_setup(fire_now=False))
+    r = e.test_signal(spec, *strong_setup(fire_now=False, events=24))
     assert r.label == e.STRONG and r.holdout is not None
     assert r.holdout.first.n + r.holdout.second.n == r.n
-    assert r.holdout.first.n > 0 and r.holdout.second.n > 0
-    assert r.holdout.held_up
+    assert r.holdout.first.n >= 10 and r.holdout.second.n >= 10
+    assert r.holdout.held_up and r.holdout.verdict == e.HELD_UP
+
+
+def test_holdout_with_fewer_than_ten_cases_in_a_half_is_too_few_to_check():
+    r = e.test_signal(e.Spec("t", "", "", 5), *strong_setup(fire_now=False))  # 12 cases: 6 per half
+    assert r.label == e.STRONG and r.holdout.first.n < 10
+    assert r.holdout.first.hit_rate > r.holdout.first.normal_rate  # it looks fine, but 6 cases prove nothing
+    assert not r.holdout.held_up and r.holdout.verdict == e.TOO_FEW_TO_CHECK
 
 
 def test_holdout_fails_when_one_half_does_not_hold():
-    bars, evs = strong_setup(fire_now=False)
+    bars, evs = strong_setup(fire_now=False, events=24)
     half = len(bars) // 2
     for i in range(half, len(bars)):  # second half: events are followed by rises, normal days fall
         falling = bars[i].close < bars[i].open
         bars[i] = B(bars[i].day, 100, 103 if falling else 99.5)
     h = e.holdout(e.Spec("t", "", "", 5), bars, evs)
+    assert h.first.n >= 10 and h.second.n >= 10
     assert h.first.hit_rate > h.first.normal_rate
     assert h.second.hit_rate < h.second.normal_rate
-    assert not h.held_up
+    assert not h.held_up and h.verdict == e.DID_NOT_HOLD
 
 
 def test_only_strong_results_get_a_holdout():

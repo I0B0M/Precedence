@@ -43,14 +43,15 @@ conn.commit()
 line = lambda r: (f"  {r[0]:6} {r[1]:16} n={r[2]:3} hit={r[3]:3} ({f(r[4])}) normal={f(r[5])} of {r[6]} "
                   f"range={f(r[7])}-{f(r[8])} {r[9]}{' FIRING' if r[10] else ''}")
 print(f"{len(stocks)} stocks with prices, {tested} stock-signal pairs tested: {counts}")
+too_few = sum(1 for *_, r in strong if r.holdout and r.holdout.verdict == engine.TOO_FEW_TO_CHECK)
 print(f"{eligible} pairs had 10+ cases; {len(strong)} STRONG, about {0.05 * eligible:.0f} expected by chance; "
-      f"{held} STRONG held up in both halves")
+      f"{held} STRONG held up in both halves (10+ cases each), {too_few} too few cases to check")
 print("\nEvery STRONG, with its split-half hold-out:")
 for t, key, r in strong:
     h = r.holdout
     print(f"  {t:6} {key:16} n={r.n:3} {f(r.hit_rate)} vs {f(r.normal_rate)} | 1st half {h.first.n} cases "
           f"{f(h.first.hit_rate)} vs {f(h.first.normal_rate)} | 2nd half {h.second.n} cases "
-          f"{f(h.second.hit_rate)} vs {f(h.second.normal_rate)} | {'HELD UP' if h.held_up else 'did not hold'}"
+          f"{f(h.second.hit_rate)} vs {f(h.second.normal_rate)} | {h.verdict.upper() if h.held_up else h.verdict}"
           f"{' | FIRING' if r.firing else ''}")
 print(f"\nFIRING NOW and STRONG (real WATCH): {len(watch)}")
 for r in watch:

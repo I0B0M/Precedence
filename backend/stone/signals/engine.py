@@ -31,6 +31,7 @@ MIN_CASES = 10
 STRONG, WEAK, NOT_PROVEN = "STRONG", "WEAK", "NOT PROVEN"
 NO_DATA = "NO DATA"  # the signal's source data isn't loaded for this stock: nothing was tested
 CALM, WATCH = "CALM", "WATCH"
+HELD_UP, DID_NOT_HOLD, TOO_FEW_TO_CHECK = "held up", "did not hold", "too few cases to check"
 
 
 class BarLike(Protocol):
@@ -110,9 +111,18 @@ class Holdout:
     second: "Result"
 
     @property
+    def verdict(self) -> str:
+        """Each half needs MIN_CASES of its own before it can confirm anything."""
+        halves = (self.first, self.second)
+        if any(h.n < MIN_CASES for h in halves):
+            return TOO_FEW_TO_CHECK
+        beats = all(h.hit_rate is not None and h.normal_rate is not None and h.hit_rate > h.normal_rate
+                    for h in halves)
+        return HELD_UP if beats else DID_NOT_HOLD
+
+    @property
     def held_up(self) -> bool:
-        return all(h.hit_rate is not None and h.normal_rate is not None and h.hit_rate > h.normal_rate
-                   for h in (self.first, self.second))
+        return self.verdict == HELD_UP
 
 
 # ---------- statistics ----------

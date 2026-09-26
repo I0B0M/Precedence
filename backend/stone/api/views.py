@@ -34,7 +34,8 @@ def result_json(r: engine.Result, with_cases: bool = True) -> dict:
         half = lambda h: {"n": h.n, "hits": h.hits, "hit_rate": h.hit_rate, "normal_rate": h.normal_rate,
                           "normal_n": h.normal_n, "label": h.label}
         out["holdout"] = {"first": half(r.holdout.first), "second": half(r.holdout.second),
-                          "held_up": r.holdout.held_up}
+                          "held_up": r.holdout.held_up,
+                          "verdict": r.holdout.verdict}  # "held up" | "did not hold" | "too few cases to check"
     else:
         out["holdout"] = None
     if with_cases:

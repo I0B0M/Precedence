@@ -30,7 +30,9 @@ export interface SignalResult {
   label: Label;
   firing: { known_at: string; note: string } | null;
   note?: string | null; // why there is no result, for label "NO DATA"
-  holdout: { first: Half; second: Half; held_up: boolean } | null;
+  // held up only with 10+ cases in each half, each beating its own normal rate
+  holdout: { first: Half; second: Half; held_up: boolean;
+    verdict?: "held up" | "did not hold" | "too few cases to check" } | null;
   cases?: Case[];
 }
 
