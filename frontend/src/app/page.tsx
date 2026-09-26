@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LabelTag, StateBadge } from "@/components/bits";
+import { HoldingsRail } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { StartFlow, TodayFunnel } from "@/components/Today";
@@ -56,6 +57,7 @@ export default function HoldingsBoard() {
         </p>
       </div>
 
+      <HoldingsRail rows={board.exposure} />
       <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
 
       <div className="rows">

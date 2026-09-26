@@ -364,6 +364,23 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
 .problem { max-width: 640px; }
 
+/* ---------- Pro holdings rail ---------- */
+.rail { border: var(--edge); border-radius: var(--r-card); padding: 14px 18px; margin-bottom: 20px; flex-direction: column; gap: 8px; }
+html[data-mode="pro"] .rail.pro-only { display: flex !important; }
+.rail-rows { display: flex; flex-direction: column; }
+.rail-row {
+  display: grid; grid-template-columns: 64px 96px minmax(0, 1fr) 72px auto; gap: 12px; align-items: center;
+  padding: 8px 0; border-top: 1px solid var(--sep); text-decoration: none; min-height: 44px;
+}
+.rail-row:first-child { border-top: 0; }
+.rail-row .num { text-align: right; font-variant-numeric: tabular-nums; }
+.spark { display: block; }
+@media (max-width: 640px) {
+  .rail-row { grid-template-columns: 52px 72px minmax(0, 1fr) auto; }
+  .rail-row .num:nth-of-type(2) { display: none; }
+  .spark { width: 72px; }
+}
+
 /* ---------- today / start ---------- */
 .today { border: var(--edge); border-radius: var(--r-card); padding: 16px 20px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
 .trail { margin: 0; color: var(--text-2); font-family: var(--head); font-size: 22px; }
