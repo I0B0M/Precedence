@@ -1,19 +1,19 @@
-"""Daily prices from Massive (formerly Polygon). Free tier: 5 requests/minute, 2 years.
+"""Daily prices from Alpaca market data (free IEX feed), many symbols per request.
 
-One request per ticker returns every daily bar, split-adjusted.
+Alpaca returns nothing unless start and end are both given. Results page with
+next_page_token when there are more bars than `limit`.
 """
 
 import json
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from stone.config import NotConnected, Settings
 from stone.fetch import CachedFetcher, RateLimiter
 
 EASTERN = ZoneInfo("America/New_York")
-# Massive kept Polygon's REST paths. UNVERIFIED until the first real run.
-BASE = "https://api.massive.com"
+DATA = "https://data.alpaca.markets/v2/stocks/bars"
 
 
 @dataclass(frozen=True)
@@ -26,24 +26,39 @@ class Bar:
     volume: float | None
 
 
-def parse_aggs(doc: dict) -> list[Bar]:
-    """Bar timestamps are ms since epoch at the start of the trading day, US Eastern."""
-    bars = []
-    for r in doc.get("results") or []:
-        day = datetime.fromtimestamp(r["t"] / 1000, tz=timezone.utc).astimezone(EASTERN).date()
-        bars.append(Bar(day, float(r["o"]), float(r["h"]), float(r["l"]), float(r["c"]), r.get("v")))
-    return sorted(bars, key=lambda b: b.day)
+def parse_bars(doc: dict) -> tuple[dict[str, list[Bar]], str | None]:
+    """One page -> ({symbol: bars}, next_page_token). Bar time is midnight US Eastern, in UTC."""
+    out: dict[str, list[Bar]] = {}
+    for sym, rows in (doc.get("bars") or {}).items():
+        out[sym] = [Bar(datetime.fromisoformat(r["t"].replace("Z", "+00:00")).astimezone(EASTERN).date(),
+                        float(r["o"]), float(r["h"]), float(r["l"]), float(r["c"]), r.get("v"))
+                    for r in rows]
+    return out, doc.get("next_page_token")
 
 
-class MassiveClient:
+class AlpacaPrices:
     def __init__(self, settings: Settings, offline: bool = False):
-        if not settings.massive_api_key and not offline:
-            raise NotConnected("MASSIVE_API_KEY is not set")
-        self.key = settings.massive_api_key
-        self.http = CachedFetcher("massive", settings.cache_dir, RateLimiter(5 / 60), offline=offline)
+        if not (settings.alpaca_api_key and settings.alpaca_api_secret) and not offline:
+            raise NotConnected("ALPACA_API_KEY / ALPACA_API_SECRET are not set")
+        self.http = CachedFetcher(
+            "alpaca", settings.cache_dir, RateLimiter(3),  # Alpaca allows 200/min
+            headers={"APCA-API-KEY-ID": settings.alpaca_api_key, "APCA-API-SECRET-KEY": settings.alpaca_api_secret},
+            offline=offline,
+        )
 
-    def daily(self, ticker: str, start: date, end: date) -> list[Bar]:
-        url = f"{BASE}/v2/aggs/ticker/{ticker}/range/1/day/{start}/{end}"
-        params = {"adjusted": "true", "sort": "asc", "limit": 50000, "apiKey": self.key}
-        raw = self.http.get(url, f"aggs_{ticker}_{start}_{end}.json", params=params)
-        return parse_aggs(json.loads(raw))
+    def daily(self, symbols: list[str], start: date, end: date) -> dict[str, list[Bar]]:
+        out: dict[str, list[Bar]] = {s: [] for s in symbols}
+        token, page = None, 0
+        while True:
+            params = {"symbols": ",".join(symbols), "timeframe": "1Day", "start": str(start), "end": str(end),
+                      "limit": 10000, "feed": "iex", "adjustment": "split"}
+            if token:
+                params["page_token"] = token
+            key = f"bars_{'-'.join(symbols)}_{start}_{end}_p{page}.json"
+            bars, token = parse_bars(json.loads(self.http.get(DATA, key, params=params)))
+            for sym, rows in bars.items():
+                out.setdefault(sym, []).extend(rows)
+            if not token:
+                break
+            page += 1
+        return {s: sorted(b, key=lambda x: x.day) for s, b in out.items()}

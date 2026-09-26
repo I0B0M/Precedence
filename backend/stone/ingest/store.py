@@ -25,7 +25,9 @@ def upsert_filings(conn: psycopg.Connection, ticker: str, filings: list[Filing],
         cur.executemany(
             """insert into filings (accession, ticker, form, filed_date, accepted_at, report_date, primary_doc, source)
                values (%s, %s, %s, %s, %s, %s, %s, %s)
-               on conflict (accession) do nothing""",
+               on conflict (accession) do update set form = excluded.form, filed_date = excluded.filed_date,
+                   accepted_at = excluded.accepted_at, report_date = excluded.report_date,
+                   primary_doc = excluded.primary_doc""",
             [(f.accession, ticker, f.form, f.filed_date, f.accepted_at, f.report_date, f.primary_doc, source)
              for f in filings])
 
@@ -48,7 +50,8 @@ def upsert_trades(conn: psycopg.Connection, ticker: str, accession: str, accepte
             """insert into insider_trades (accession, seq, ticker, owner_name, owner_title, transaction_date,
                    code, shares, price, acquired_disposed, accepted_at, source)
                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-               on conflict (accession, seq) do nothing""",
+               on conflict (accession, seq) do update set accepted_at = excluded.accepted_at,
+                   code = excluded.code, shares = excluded.shares, price = excluded.price""",
             [(accession, t.seq, ticker, t.owner_name, t.owner_title, t.transaction_date, t.code,
               t.shares, t.price, t.acquired_disposed, accepted_at, source) for t in trades])
 

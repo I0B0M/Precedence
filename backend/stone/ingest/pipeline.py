@@ -1,4 +1,4 @@
-"""Real ingest: SEC + Massive + FRED into Postgres, for the tickers in tickers.py.
+"""Real ingest: SEC + Alpaca prices + FRED into Postgres, for the tickers in tickers.py.
 
 Each source runs only if its key is set; a missing key skips that source with a
 message instead of failing the whole run. With offline=True nothing leaves the
@@ -11,23 +11,23 @@ import psycopg
 
 from stone.config import NotConnected, Settings
 from stone.ingest import store
-from stone.ingest.tickers import STOCKS, TICKERS
+from stone.ingest.tickers import TICKERS
 from stone.sources.fred import FredClient
-from stone.sources.prices import MassiveClient
+from stone.sources.prices import AlpacaPrices
 from stone.sources.sec import SecClient
 
 YEARS_BACK = 2
 
 
-def check_ciks(sec: SecClient) -> None:
+def check_ciks(sec: SecClient, stocks: list) -> None:
     live = sec.ticker_map()
-    wrong = [(t.symbol, t.cik, live.get(t.symbol)) for t in STOCKS if live.get(t.symbol) != t.cik]
+    wrong = [(t.symbol, t.cik, live.get(t.symbol)) for t in stocks if live.get(t.symbol) != t.cik]
     if wrong:
         raise ValueError(f"CIKs in tickers.py disagree with SEC: {wrong}")
 
 
-def ingest_sec(conn: psycopg.Connection, sec: SecClient, since: date, log=print) -> None:
-    for t in STOCKS:
+def ingest_sec(conn: psycopg.Connection, sec: SecClient, since: date, stocks: list, log=print) -> None:
+    for t in stocks:
         filings = sec.filings(t.cik, since)
         store.upsert_filings(conn, t.symbol, filings, "sec")
         store.upsert_facts(conn, t.symbol, sec.companyfacts(t.cik), "sec")
@@ -43,12 +43,15 @@ def ingest_sec(conn: psycopg.Connection, sec: SecClient, since: date, log=print)
         log(f"{t.symbol}: {len(filings)} filings, {len(form4s)} Form 4s ({failed} failed)")
 
 
-def ingest_prices(conn: psycopg.Connection, massive: MassiveClient, since: date, today: date, log=print) -> None:
-    for t in TICKERS:
-        bars = massive.daily(t.symbol, since, today)
-        store.upsert_bars(conn, t.symbol, bars, "massive")
+def ingest_prices(conn: psycopg.Connection, alpaca: AlpacaPrices, tickers: list, since: date, today: date,
+                  log=print) -> None:
+    symbols = [t.symbol for t in tickers]
+    for i in range(0, len(symbols), 25):
+        batch = alpaca.daily(symbols[i:i + 25], since, today)
+        for sym, bars in batch.items():
+            store.upsert_bars(conn, sym, bars, "alpaca-iex")
+            log(f"{sym}: {len(bars)} price days")
         conn.commit()
-        log(f"{t.symbol}: {len(bars)} price days")
 
 
 def ingest_rates(conn: psycopg.Connection, fred: FredClient, since: date, log=print) -> None:
@@ -58,24 +61,27 @@ def ingest_rates(conn: psycopg.Connection, fred: FredClient, since: date, log=pr
     log(f"DGS10: {len(obs)} days")
 
 
-def run(conn: psycopg.Connection, settings: Settings, today: date, offline: bool = False, log=print) -> None:
+def run(conn: psycopg.Connection, settings: Settings, today: date, offline: bool = False,
+        only: set[str] | None = None, log=print) -> None:
     since = today - timedelta(days=365 * YEARS_BACK + 40)  # a little extra so 2y of signals have history
-    for t in TICKERS:
-        store.upsert_company(conn, t.symbol, t.cik, t.name, t.sector, t.kind, "sec" if t.cik else "massive")
+    tickers = [t for t in TICKERS if not only or t.symbol in only]
+    stocks = [t for t in tickers if t.kind == "stock"]
+    for t in tickers:
+        store.upsert_company(conn, t.symbol, t.cik, t.name, t.sector, t.kind, "sec" if t.cik else "alpaca-iex")
     conn.commit()
 
     try:
         sec = SecClient(settings, offline)
         if not offline:
-            check_ciks(sec)
-        ingest_sec(conn, sec, since, log)
+            check_ciks(sec, stocks)
+        ingest_sec(conn, sec, since, stocks, log)
     except NotConnected as e:
         log(f"SKIPPED SEC: {e}")
 
     try:
-        ingest_prices(conn, MassiveClient(settings, offline), since, today, log)
+        ingest_prices(conn, AlpacaPrices(settings, offline), tickers, since, today, log)
     except NotConnected as e:
-        log(f"SKIPPED Massive prices: {e}")
+        log(f"SKIPPED Alpaca prices: {e}")
 
     try:
         ingest_rates(conn, FredClient(settings, offline), since, log)

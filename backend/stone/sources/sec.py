@@ -7,7 +7,7 @@ parse_* functions are pure and unit-tested against hand-written files in EDGAR's
 import json
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 
 from stone.config import NotConnected, Settings
@@ -15,15 +15,22 @@ from stone.fetch import CachedFetcher, RateLimiter
 
 EASTERN = ZoneInfo("America/New_York")
 
-# The submissions JSON writes acceptance times like "2024-11-01T18:04:34.000Z".
-# We read that clock time as US Eastern, not UTC: it matches the "Accepted" time on
-# the filing's index page, which EDGAR shows in Eastern.
-# UNVERIFIED until the first real run: compare one filing against its index page.
-ACCEPTANCE_TZ = EASTERN
+# The submissions JSON writes acceptance times like "2026-08-07T20:01:44.000Z", and the Z
+# is real UTC. Verified 2026-09-26 on BX 10-Q 0001193125-26-340208: the JSON says 20:01:44Z,
+# the filing's index page says "Accepted 2026-08-07 16:01:44" (Eastern, EDT = UTC-4).
+ACCEPTANCE_TZ = timezone.utc
 
 DATA = "https://data.sec.gov"
 ARCHIVES = "https://www.sec.gov/Archives/edgar/data"
 TICKER_MAP = "https://www.sec.gov/files/company_tickers.json"
+
+# The only filing types Stone uses. Everything else (e.g. thousands of 424B2 bond
+# offerings at big banks) is dropped before it reaches the database.
+KEEP_FORMS = {"10-K", "10-Q", "8-K", "4", "S-1"}
+
+
+def wanted(form: str) -> bool:
+    return form.removesuffix("/A") in KEEP_FORMS
 
 
 @dataclass(frozen=True)
@@ -184,7 +191,7 @@ class SecClient:
                 break
             page = json.loads(self.http.get(f"{DATA}/submissions/{name}", f"submissions_{name}"))
             filings += parse_filings_block(page)
-        return [f for f in filings if f.filed_date >= since]
+        return [f for f in filings if f.filed_date >= since and wanted(f.form)]
 
     def companyfacts(self, cik: int) -> list[Fact]:
         key = f"CIK{cik:010d}"

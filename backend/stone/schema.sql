@@ -1,5 +1,5 @@
 -- Stone schema. Idempotent: safe to run on every start.
--- Every row carries `source` ('sec', 'massive', 'fred', 'sample', ...) so the app
+-- Every row carries `source` ('sec', 'alpaca-iex', 'fred', 'sample', ...) so the app
 -- can always tell real data from sample data, and say so on screen.
 
 create table if not exists companies (
