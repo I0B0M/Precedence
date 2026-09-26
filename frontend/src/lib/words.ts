@@ -6,11 +6,13 @@ export function headline(signals: SignalResult[]): SignalResult | null {
   return signals.find((s) => s.firing && s.label === "STRONG") ?? signals.find((s) => s.firing) ?? null;
 }
 
+// Lite copy: one short sentence each, plain words, about 14 words at most. Pro copy can stay detailed.
+
 export function liteSummary(firing: SignalResult[]): string {
   const strong = firing.find((s) => s.label === "STRONG");
-  if (strong?.signal === "market_rate_jump") return "Interest rates jumped, and the whole market has usually fallen after that.";
-  if (strong) return `${strong.lite}, and for this stock that has mattered before.`;
-  if (firing.length) return `${firing[0].lite}, but that hasn't clearly mattered here before.`;
+  if (strong?.signal === "market_rate_jump") return "Rates jumped, and the market usually fell after that.";
+  if (strong) return `${strong.lite}, and that has mattered here before.`;
+  if (firing.length) return `${firing[0].lite}, but that hasn't clearly mattered here.`;
   return "Nothing important today.";
 }
 
@@ -25,29 +27,27 @@ export function hitWords(s: { vs_market: boolean }): string {
   return s.vs_market ? "did worse than the whole market (SPY)" : "was lower";
 }
 
-/** "The last 12 times ... it was lower a month later 10 times. In a normal month, about 27%." */
+/** "8 of the last 15 times, BX did worse than the market (normal: 51%)." */
 export function liteHistory(s: SignalResult, ticker: string): string {
-  if (s.label === "NO DATA") return s.note ?? "We haven't loaded the data for this yet, so it wasn't tested.";
+  if (s.label === "NO DATA") return s.note ?? "This data isn't loaded yet, so it wasn't tested.";
   const h = horizonWords(s.horizon);
-  const span = h.replace("a ", "");
-  if (s.n === 0) return `This hasn't happened to ${ticker} in the last two years, so there's nothing to go on.`;
-  const what = s.vs_market ? `it ${hitWords(s)} over the next ${span}` : `it was lower ${h} later`;
-  return `The last ${s.n} time${s.n > 1 ? "s" : ""} this happened to ${ticker}, ${what} ` +
-    `${s.hits} time${s.hits === 1 ? "" : "s"}. In a normal ${span}, that's about ${whole(s.normal_rate)} of the time.`;
+  if (s.n === 0) return `This hasn't happened to ${ticker} in two years.`;
+  const what = s.vs_market ? "did worse than the market" : `was lower ${h} later`;
+  if (s.n === 1) return `It happened once; ${ticker} ${s.hits ? what : `then ${s.vs_market ? "kept up with the market" : "wasn't lower"}`}.`;
+  return `${s.hits} of the last ${s.n} times, ${ticker} ${what} (normal: ${whole(s.normal_rate)}).`;
 }
 
-/** Market card: "After these rate jumps the whole market (SPY) fell 10 of 15 times; in a normal week it falls about 38% of the time." */
+/** Market card: "The market fell after 10 of 15 rate jumps (normal week: 38%)." */
 export function liteMarket(m: MarketResult): string {
   const span = horizonWords(m.horizon).replace("a ", "");
-  return `After these rate jumps the whole market (${m.symbol}) fell ${m.hits} of ${m.n} times; ` +
-    `in a normal ${span} it falls about ${whole(m.normal_rate)} of the time.`;
+  return `The market fell after ${m.hits} of ${m.n} rate jumps (normal ${span}: ${whole(m.normal_rate)}).`;
 }
 
 export function liteVerdict(s: SignalResult): string {
-  if (s.label === "STRONG") return s.signal === "market_rate_jump" ? "That's a real pattern for the whole market." : "That's a real pattern for this stock.";
+  if (s.label === "STRONG") return s.signal === "market_rate_jump" ? "A real pattern for the market." : "A real pattern for this stock.";
   if (s.label === "NO DATA") return "";
-  if (s.label === "WEAK") return "That's too few times to be sure.";
-  return "That's not clearly different from normal.";
+  if (s.label === "WEAK") return "Too few times to be sure.";
+  return "Not clearly different from normal.";
 }
 
 /** Signal keys in plain words, for places that get only the key (e.g. fund holdings). */
