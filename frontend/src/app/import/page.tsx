@@ -14,6 +14,31 @@ const CONNECT = [
 
 const EXAMPLE: [string, number][] = [["BX", 10], ["AMZN", 5], ["SPY", 3]];
 
+/** Fill what a person typing would leave out: price from the latest close, value from shares x price. */
+async function fillTyped(rows: EditRow[]): Promise<{ rows: EditRow[]; priced: { symbol: string; day: string | null }[]; unpriced: string[] }> {
+  const needPrice = rows.some((r) => r.price.trim() === "" && r.value.trim() === "");
+  const cos = needPrice ? await api.companies() : [];
+  const priced: { symbol: string; day: string | null }[] = [];
+  const unpriced: string[] = [];
+  const out = rows.map((r) => {
+    let { price, value } = r;
+    const sym = r.symbol.trim().toUpperCase();
+    if (price.trim() === "" && value.trim() === "") {
+      const c = cos.find((x) => x.ticker === sym);
+      if (c?.last_close != null) {
+        price = c.last_close.toFixed(2);
+        priced.push({ symbol: sym, day: c.as_of });
+      } else {
+        unpriced.push(sym);
+      }
+    }
+    const sh = num(r.shares), pr = num(price);
+    if (value.trim() === "" && sh != null && pr != null) value = (sh * pr).toFixed(2);
+    return { ...r, symbol: sym, price, value };
+  });
+  return { rows: out, priced, unpriced };
+}
+
 type Example = { rows: EditRow[]; total: string; asOf: string | null };
 
 /** Real tickers at their latest closes, with the matching total, so Check → Save takes two taps. Nothing is saved here. */
@@ -49,6 +74,8 @@ export default function ImportScreen() {
   const [checkErr, setCheckErr] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const [priced, setPriced] = useState<{ symbol: string; day: string | null }[]>([]);
+  const [unpriced, setUnpriced] = useState<string[]>([]);
   const [example, setExample] = useState<string | null>(null); // the close date, while example rows are in the table
 
   function applyExample(ex: Example | null) {
@@ -88,10 +115,14 @@ export default function ImportScreen() {
 
   async function runCheck(next = rows, nextTotal = total) {
     const kept = next.filter((r) => r.symbol.trim());  // drop blank rows so check.rows[i] lines up with rows[i]
-    if (kept.length !== next.length) setRows(kept.length ? kept : [blank()]);
     try {
       setCheckErr(false);
-      setCheck(await api.reconcile(kept.map(toRead), num(nextTotal)));
+      // Typed rows: a missing price comes from the latest close, a missing value is shares x price. "BX 10" must work.
+      const filled = await fillTyped(kept);
+      setRows(filled.rows.length ? filled.rows : [blank()]);
+      setPriced(filled.priced);
+      setUnpriced(filled.unpriced);
+      setCheck(await api.reconcile(filled.rows.map(toRead), num(nextTotal)));
     } catch {
       setCheck(null);
       setCheckErr(true);
@@ -135,6 +166,10 @@ export default function ImportScreen() {
     setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
     setCheck(null);
   };
+
+  // Typed in with no screenshot total: nothing to reconcile against, so every row just needs a value.
+  const typedOk = check?.status === "no_total" && check.rows.length > 0 && check.rows.every((r) => r.ok);
+  const canSave = check?.status === "ok" || typedOk;
 
   return (
     <section className="stack" style={{ gap: 22 }}>
@@ -227,14 +262,22 @@ export default function ImportScreen() {
         </div>
 
         {checkErr && <div className="badline">Stone can&apos;t reach its data right now, so it can&apos;t check the rows. Is the server running?</div>}
-        {check && (
+        {priced.length > 0 && (
+          <p className="note">Price filled in from the latest close: {priced.map((p) => `${p.symbol}${p.day ? ` (close ${shortDate(p.day)})` : ""}`).join(", ")}.</p>
+        )}
+        {unpriced.length > 0 && (
+          <p className="badline">Stone has no price for {unpriced.join(", ")}. It follows the S&amp;P 100 and a few funds. Type a price and value for {unpriced.length > 1 ? "them" : "it"}, or remove the row.</p>
+        )}
+        {check && !(check.status === "no_total" && unpriced.length > 0) && (typedOk ? (
+          <div className="okline">✓ No total to check against, so these rows add up to {money(check.rows_sum, true)}. Confirm they&apos;re right, then save.</div>
+        ) : (
           <div className={check.status === "ok" ? "okline" : "badline"}>
             {check.status === "ok" ? "✓ " : ""}{check.message}
           </div>
-        )}
+        ))}
         <div className="row-flex">
-          <button className="btn" type="button" disabled={check?.status !== "ok"} onClick={save}>Save as my holdings</button>
-          {check && check.status !== "ok" && <span className="note">Saving unlocks once the rows add up to the total.</span>}
+          <button className="btn" type="button" disabled={!canSave} onClick={save}>Save as my holdings</button>
+          {check && !canSave && <span className="note">Saving unlocks once every row has a value and they add up to the total.</span>}
         </div>
       </div>
 
