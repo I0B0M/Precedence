@@ -8,17 +8,17 @@ import { liteMarket } from "@/lib/words";
 
 /** The rate-jump test run on the market itself (SPY). A rate jump hits every stock on the same days,
  *  so the per-stock result is measured against this. `where` says where the stock result sits on the page. */
-export function MarketCard({ where }: { where: "above" | "below" }) {
+export function MarketCard({ where, onlyFor }: { where: "above" | "below" | "self"; onlyFor?: string }) {
   const [m, setM] = useState<MarketResult | null>(null);
   useEffect(() => {
     api.marketRateJump().then(setM).catch(() => setM(null));
   }, []);
-  if (!m) return null;
+  if (!m || (onlyFor && m.symbol !== onlyFor)) return null;
 
   return (
     <div className="market">
       <p className="lite-only">
-        {liteMarket(m)} So the stock result {where} is measured against the market.
+        {liteMarket(m)}{where !== "self" && ` So the stock result ${where} is measured against the market.`}
       </p>
       <div className="pro-only stack" style={{ gap: 10 }}>
         <div className="row-flex" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "nowrap" }}>

@@ -16,7 +16,6 @@ export default function HoldingsBoard() {
   const [board, setBoard] = useState<PortfolioOut | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const [holdings, setHoldings] = useHoldings(status ? (status.data === "sample" ? SAMPLE_PORTFOLIO : NO_HOLDINGS) : null);
 
   useEffect(() => {
@@ -42,9 +41,6 @@ export default function HoldingsBoard() {
 
   const watching = board.exposure.filter((e) => e.state === "WATCH").length;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);
-  // Looking through a fund can add ~100 rows. Keep what you hold directly, anything on WATCH, and the first few.
-  const shown = showAll ? board.exposure : board.exposure.filter((e, i) => e.direct > 0 || e.state === "WATCH" || i < 8);
-  const hidden = board.exposure.length - shown.length;
   return (
     <section>
       <div className="pf-head">
@@ -61,12 +57,12 @@ export default function HoldingsBoard() {
         <p className="note" style={{ maxWidth: "34ch" }}>
           <span className="lite-only">Tap a holding to see what&apos;s going on, in plain words.</span>
           <span className="pro-only">WATCH only when a signal that has proven itself on this stock is firing.</span>
-          {" "}Values at the latest close in Stone&apos;s price data.
+          {" "}{board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in Stone's price data."}
         </p>
       </div>
 
       <div className="rows">
-        {shown.map((e) => {
+        {board.exposure.map((e) => {
           const row = board.rows.find((r) => r.symbol === e.symbol);
           const isOpen = open === e.symbol;
           return (
@@ -93,18 +89,13 @@ export default function HoldingsBoard() {
                 </span>
               </button>
               <div className="hpanel" id={`panel-${e.symbol}`} inert={!isOpen}>
-                <div><Panel e={e} kind={row?.kind} fund={board.funds.find((f) => f.symbol === e.symbol)} /></div>
+                <div><Panel e={e} kind={row?.kind} fund={board.funds.find((f) => f.symbol === e.symbol)} portfolio={board.total} /></div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {(hidden > 0 || showAll) && board.exposure.length > 8 && (
-        <button type="button" className="linkb" style={{ marginTop: 12 }} onClick={() => setShowAll(!showAll)}>
-          {showAll ? "Show fewer" : `Show all ${board.exposure.length} (${hidden} more inside your funds)`}
-        </button>
-      )}
       <div className="stack" style={{ gap: 6, marginTop: 14 }}>
         {board.funds.map((f) => <FundLine key={f.symbol} f={f} />)}
         {splitFunds.length > 0 && (
@@ -138,15 +129,22 @@ function FundLine({ f }: { f: FundInfo }) {
 }
 
 /** Opens in place under a row: what's going on, and what it means for you in dollars. */
-function Panel({ e, kind, fund }: { e: ExposureRow; kind?: string; fund?: FundInfo }) {
+function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fund?: FundInfo; portfolio: number }) {
   const viaEtf = Object.values(e.via_etf).reduce((a, b) => a + b, 0);
+  const isFund = kind === "etf";
+  // A fund row stands for only part of the fund (the rest shows as its stocks), so judge the whole fund from `direct`.
+  const share = isFund ? (portfolio ? e.direct / portfolio : null) : e.share_of_total;
+  const badDay = isFund ? (e.bad_day_return != null ? e.bad_day_return * e.direct : null) : e.bad_day_loss;
+  const [allKids, setAllKids] = useState(false);
+  const kids = allKids ? e.children : e.children.slice(0, 6);
   return (
     <div className="hdetail">
       <div className="stack" style={{ gap: 8 }}>
         <h3>What&apos;s going on</h3>
-        {kind === "etf" ? (
+        {isFund && (
           <p>{fund?.as_of ? `A fund. Its holdings are from ${shortDate(fund.as_of)}.` : "A fund. Its holdings aren't loaded yet, so it's shown as one line."}</p>
-        ) : (
+        )}
+        {(!isFund || e.firing.length > 0) && (
           <>
             {e.firing.length > 0 ? (
               <div className="list">
@@ -163,17 +161,34 @@ function Panel({ e, kind, fund }: { e: ExposureRow; kind?: string; fund?: FundIn
             ) : <p className="mute">Nothing important today.</p>}
           </>
         )}
+        {e.children.length > 0 && (
+          <div className="list">
+            <p className="list-head">Smaller holdings inside {e.symbol} (under 1% of what you own each)</p>
+            {kids.map((k) => (
+              <Link key={k.symbol} className="list-row" href={`/company/${k.symbol}`}>
+                <span>{k.symbol} <span className="mute">{k.name}</span></span>
+                <span>{money(k.total)}</span>
+              </Link>
+            ))}
+            {e.children.length > 6 && (
+              <button type="button" className="linkb" style={{ paddingTop: 8 }} onClick={() => setAllKids(!allKids)}>
+                {allKids ? "Show fewer" : `Show all ${e.children.length}`}
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <div className="stack" style={{ gap: 8 }}>
         <h3>What it means for you</h3>
         <dl className="kv">
           <dt>You own directly</dt><dd>{money(e.direct)}</dd>
           {viaEtf > 0 && (<><dt>Inside your funds</dt><dd>{money(viaEtf)}</dd></>)}
-          <dt>Share of everything you own</dt><dd>{whole(e.share_of_total)}</dd>
+          {isFund && e.direct > e.total && (<><dt>Shown above and below as its stocks</dt><dd>{money(e.direct - e.total)}</dd></>)}
+          <dt>Share of everything you own</dt><dd>{whole(share)}</dd>
           <dt>A bad day could cost you</dt>
-          <dd className="down">{money(e.bad_day_loss)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span></dd>
+          <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span></dd>
         </dl>
-        <p className="note">&quot;A bad day&quot; is the 1-in-20 worst day of the past year.</p>
+        <p className="note">&quot;A bad day&quot; is the 1-in-20 worst day of the past year{isFund ? ", for the whole fund" : ""}.</p>
         {kind !== "etf" && <Link className="linkb" href={`/company/${e.symbol}`}>Open {e.symbol} ›</Link>}
       </div>
     </div>

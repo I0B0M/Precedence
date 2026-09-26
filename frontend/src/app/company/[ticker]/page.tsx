@@ -16,6 +16,7 @@ export default function CompanyScreen() {
   const { ticker } = useParams<{ ticker: string }>();
   const [d, setD] = useState<CompanyDetail | null>(null);
   const [mine, setMine] = useState<ExposureRow | null>(null);
+  const [portfolioTotal, setPortfolioTotal] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scan, setScan] = useState<Scan | null>(null);
 
@@ -25,7 +26,10 @@ export default function CompanyScreen() {
       setD(body);
       const holdings = readHoldings() ?? (body.company.source === "sample" ? SAMPLE_PORTFOLIO : []);
       if (holdings.length) {
-        api.portfolio(holdings).then((p) => setMine(p.exposure.find((e) => e.symbol === body.company.ticker) ?? null));
+        api.portfolio(holdings).then((p) => {
+          setMine(p.exposure.find((e) => e.symbol === body.company.ticker) ?? null);
+          setPortfolioTotal(p.total);
+        });
       }
     }).catch((e) => setError(e.message));
   }, [ticker]);
@@ -47,6 +51,10 @@ export default function CompanyScreen() {
   const others = d.signals.filter((s) => s !== main);
   const rateJump = d.signals.find((s) => s.signal === "rate_jump");
   const factsFrom = d.facts[0];
+  // A fund's board row stands for only part of it (the rest shows as its stocks), so judge the whole fund from `direct`.
+  const isFund = co.kind === "etf";
+  const myShare = mine ? (isFund ? (portfolioTotal ? mine.direct / portfolioTotal : null) : mine.share_of_total) : null;
+  const myBadDay = mine ? (isFund ? (mine.bad_day_return != null ? mine.bad_day_return * mine.direct : null) : mine.bad_day_loss) : null;
   const filingUrl = (accession: string) => d.filings.find((f) => f.accession === accession)?.url ?? null;
 
   return (
@@ -84,7 +92,10 @@ export default function CompanyScreen() {
               {main.signal === "rate_jump" && <MarketCard where="above" />}
             </>
           ) : (
-            <p className="say-big">{co.kind === "etf" ? "Funds hold many stocks; open a stock to see its signals." : "Nothing unusual is happening. No need to do anything."}</p>
+            <>
+              <p className="say-big">{co.kind === "etf" ? "Funds hold many stocks; open a stock to see its signals." : "Nothing unusual is happening. No need to do anything."}</p>
+              {isFund && <MarketCard where="self" onlyFor={co.ticker} />}
+            </>
           )}
           <div className="stack" style={{ gap: 6, marginTop: 6 }}>
             <PriceChart prices={d.prices} />
@@ -109,9 +120,11 @@ export default function CompanyScreen() {
             {mine ? (
               <dl className="kv">
                 <dt>You own directly</dt><dd>{money(mine.direct)}</dd>
-                <dt>Inside your funds</dt><dd>{money(Object.values(mine.via_etf).reduce((a, b) => a + b, 0))}</dd>
-                <dt>Share of everything you own</dt><dd>{whole(mine.share_of_total)}</dd>
-                <dt>A bad day could cost you</dt><dd className="down">{money(mine.bad_day_loss)}</dd>
+                {Object.values(mine.via_etf).some((v) => v > 0) && (
+                  <><dt>Inside your funds</dt><dd>{money(Object.values(mine.via_etf).reduce((a, b) => a + b, 0))}</dd></>
+                )}
+                <dt>Share of everything you own</dt><dd>{whole(myShare)}</dd>
+                <dt>A bad day could cost you</dt><dd className="down">{money(myBadDay)}</dd>
               </dl>
             ) : (
               <>
@@ -119,7 +132,7 @@ export default function CompanyScreen() {
                 <Link className="btn light small" href="/import" style={{ alignSelf: "flex-start" }}>Bring holdings in</Link>
               </>
             )}
-            {mine && <p className="note">&quot;A bad day&quot; is this stock&apos;s 1-in-20 worst day of the past year.</p>}
+            {mine && <p className="note">&quot;A bad day&quot; is this {isFund ? "fund" : "stock"}&apos;s 1-in-20 worst day of the past year.</p>}
           </div>
 
           {factsFrom && (
@@ -279,8 +292,8 @@ export default function CompanyScreen() {
                 <dl className="kv">
                   <dt>Direct</dt><dd>{money(mine.direct)}</dd>
                   {Object.entries(mine.via_etf).map(([etf, v]) => (<Fragment key={etf}><dt>Via {etf}</dt><dd>{money(v)}</dd></Fragment>))}
-                  <dt>Share of portfolio</dt><dd>{pct(mine.share_of_total, false)}</dd>
-                  <dt>5th-percentile day (1y)</dt><dd className="down">{pct(mine.bad_day_return)} · {money(mine.bad_day_loss)}</dd>
+                  <dt>Share of portfolio</dt><dd>{pct(myShare, false)}</dd>
+                  <dt>5th-percentile day (1y)</dt><dd className="down">{pct(mine.bad_day_return)} · {money(myBadDay)}</dd>
                 </dl>
               </div>
             )}
