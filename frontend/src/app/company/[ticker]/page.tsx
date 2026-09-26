@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
+import { BadgeKey, HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { PriceChart, type Pin } from "@/components/PriceChart";
@@ -82,6 +82,7 @@ export default function CompanyScreen() {
           </div>
         )}
       </header>
+      {d.state === "WATCH" && <BadgeKey />}
 
       {/* ---------------- LITE ---------------- */}
       <div className="grid2 lite-only">

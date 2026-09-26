@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { LabelTag, StateBadge } from "@/components/bits";
+import { BadgeKey, LabelTag, StateBadge } from "@/components/bits";
 import { HoldingsRail } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
 import { ApiProblem, Loading } from "@/components/Problem";
@@ -65,6 +65,7 @@ export default function HoldingsBoard() {
       <HoldingsRail rows={board.exposure} />
       <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
 
+      {watching > 0 && <BadgeKey />}
       <div className="rows">
         {board.exposure.map((e) => {
           const row = board.rows.find((r) => r.symbol === e.symbol);

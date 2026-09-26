@@ -12,6 +12,21 @@ export function StateBadge({ state }: { state: State | null }) {
   );
 }
 
+/** What the badge means, in both modes, so Heads up and WATCH (Calm and CALM) are clearly the same thing. */
+export function BadgeKey() {
+  return (
+    <p className="note badge-key">
+      <span className="lite-only">
+        <b>Heads up</b> = this has happened more often than usual after news like this, not that it&apos;s likely.{" "}
+        <b>Calm</b> = nothing that has mattered before is happening.
+      </span>
+      <span className="pro-only">
+        <b>WATCH</b> (Lite: Heads up) = a STRONG signal for this stock is firing now. <b>CALM</b> (Lite: Calm) = none is.
+      </span>
+    </p>
+  );
+}
+
 export function LabelTag({ label }: { label: Label }) {
   return <span className={`label ${label.toLowerCase().replace(" ", "")}`}>{label}</span>;
 }
