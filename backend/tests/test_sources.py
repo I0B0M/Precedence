@@ -6,7 +6,7 @@ import pytest
 
 from stone.config import NotConnected, load
 from stone.fetch import CachedFetcher, RateLimiter
-from stone.sources import fred, gemini, prices, sec
+from stone.sources import etfs, fred, gemini, prices, sec
 
 FIX = Path(__file__).parent / "fixtures"
 
@@ -107,3 +107,26 @@ def test_fetcher_serves_from_cache_and_never_calls_out_offline(tmp_path):
     assert f.get("https://example.invalid", "k") == b"cached"
     with pytest.raises(FileNotFoundError):
         f.get("https://example.invalid", "missing")
+
+
+def test_spdr_holdings_file_gives_date_and_weights():
+    h = etfs.parse_spdr("SPY", fixture("spdr_spy_holdings.xlsx"))
+    assert h.etf == "SPY" and h.source == "ssga" and h.as_of == date(2026, 9, 24)
+    assert h.weights["NVDA"] == pytest.approx(0.08185276)  # the file says 8.185276 (percent)
+    assert h.weights["AAPL"] == pytest.approx(0.07383483)
+    assert "BRK.B" in h.weights and "BNY" in h.weights  # same spelling as our tickers
+    assert 480 < len(h.weights) < 520
+    assert 0.97 < sum(h.weights.values()) <= 1.01
+    assert all(w > 0 for w in h.weights.values())
+
+
+def test_xlsx_reader_places_cells_by_column_when_one_is_empty():
+    import io
+    import zipfile
+    sheet = ('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+             '<row r="1"><c r="A1" t="inlineStr"><is><t>Name</t></is></c><c r="C1"><v>2.5</v></c></row>'
+             '</sheetData></worksheet>')
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("xl/worksheets/sheet1.xml", sheet)
+    assert etfs.xlsx_rows(buf.getvalue()) == [["Name", None, "2.5"]]  # B1 is empty, so 2.5 stays in column C

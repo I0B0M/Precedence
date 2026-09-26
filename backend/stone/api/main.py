@@ -165,10 +165,16 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
 
     etfs = [s for s in values if known[s]["kind"] == "etf"]
     weights: dict[str, dict[str, float]] = {}
+    funds = []
     for etf in etfs:
         latest = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (etf,)).fetchone()["d"]
-        weights[etf] = {r["holding"]: float(r["weight"]) for r in c.execute(
-            "select holding, weight from etf_holdings where etf = %s and as_of = %s", (etf, latest)).fetchall()}
+        rows_ = c.execute("select holding, weight, source from etf_holdings where etf = %s and as_of = %s",
+                          (etf, latest)).fetchall()
+        # only stocks we have data for are split out; the rest of the fund stays as the fund itself
+        weights[etf] = {r["holding"]: float(r["weight"]) for r in rows_ if r["holding"] in known}
+        funds.append({"symbol": etf, "as_of": latest.isoformat() if latest else None,
+                      "source": rows_[0]["source"] if rows_ else None,
+                      "looked_through": sum(weights[etf].values())})
     total = sum(values.values())
     rates = service.load_rates(c)
     market = service.load_market(c)[1]
@@ -190,7 +196,7 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
             "firing": firing,
         })
     exposure.sort(key=lambda e: (e["state"] != engine.WATCH, -e["total"]))
-    return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown}
+    return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds}
 
 
 class ReadRowIn(BaseModel):

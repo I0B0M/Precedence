@@ -143,6 +143,15 @@ export interface PortfolioOut {
   rows: { symbol: string; name: string; kind: string; shares: number; price: number; value: number; change: number | null }[];
   exposure: ExposureRow[];
   unknown: string[];
+  funds: FundInfo[];
+}
+
+/** One per ETF held. The board should say "holdings as of <as_of>, <source>" for each fund. */
+export interface FundInfo {
+  symbol: string;
+  as_of: string | null; // null: no holdings loaded, so the whole fund shows as one row
+  source: string | null; // "ssga" = State Street's daily file; "sample" in sample mode
+  looked_through: number; // share of the fund split out into stocks we have data for, 0..1
 }
 
 export interface ReadRow {

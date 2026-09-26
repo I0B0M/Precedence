@@ -14,8 +14,9 @@ for your attention. Each holding is CALM, or WATCH when a proven signal is firin
 
 ```
 SEC EDGAR ─┐
-Massive  ──┼─> fetch.py (rate limit + disk cache) ─> ingest/ ─> Postgres (Tiger Data)
-FRED     ──┘                                                        │
+Alpaca   ──┤
+FRED     ──┼─> fetch.py (rate limit + disk cache) ─> ingest/ ─> Postgres (Tiger Data)
+SSGA     ──┘                                                        │
                                           signals/ (pure functions) ┤
                                                                     └─> FastAPI ─> Next.js
 ```
@@ -32,7 +33,7 @@ FRED     ──┘                                                        │
 Every database row has a `source`. `scripts/seed_sample.py` fills the database with
 **fictional** companies (HLCN, MRDN, ORCA, BRVE, BRD500) for development. While any sample
 rows exist, the UI shows a SAMPLE DATA banner. `scripts/ingest_all.py` loads the real
-tickers from SEC, Massive and FRED.
+tickers from SEC, Alpaca and FRED; `scripts/ingest_etfs.py` loads SPY's holdings from State Street.
 
 ## Run it
 
@@ -69,8 +70,9 @@ Everything else in this repo was written at the event.
 | Source | Key | Limit | Used for |
 |---|---|---|---|
 | SEC EDGAR (submissions, companyfacts, Form 4) | none, contact email in User-Agent | 10 req/s (we use 8) | Filings, financials, insider sales |
-| Massive (formerly Polygon) | free key | 5 req/min | 2 years of daily prices |
+| Alpaca Market Data (IEX feed) | free paper-account key | 25 symbols per request | 2 years of daily prices (split-adjusted) |
 | FRED | free key | generous | 10-year Treasury yield (DGS10) |
+| State Street (SSGA) daily SPY holdings file | none | one file a day, cached | What SPY holds, for looking through the fund (shown with its "as of" date) |
 
 ## Research used
 

@@ -105,3 +105,25 @@ def test_no_market_prices_is_a_clear_503(client, monkeypatch):
     r = client.get("/api/lab/MRDN/rate_jump")
     assert r.status_code == 503 and "No market prices" in r.json()["detail"]
     assert client.get("/api/lab/BRVE/gap_down").status_code == 200  # other signals don't need the market
+
+
+def test_portfolio_says_where_fund_holdings_come_from_and_when(client):
+    body = client.post("/api/portfolio", json={"holdings": [{"symbol": "BRD500", "shares": 10}]}).json()
+    [fund] = body["funds"]
+    assert fund["symbol"] == "BRD500" and fund["source"] == "sample" and fund["as_of"] == "2026-09-25"
+    assert fund["looked_through"] == pytest.approx(0.066)  # share of the fund shown as its stocks
+
+
+def test_fund_holdings_we_have_no_data_for_stay_in_the_fund(client):
+    conn = db.connect(os.environ["DATABASE_URL"])
+    as_of = conn.execute("select max(as_of) as d from etf_holdings where etf = 'BRD500'").fetchone()["d"]
+    conn.execute("insert into etf_holdings values ('BRD500', 'ZZZZ', 0.5, %s, 'sample')", (as_of,))
+    conn.commit()
+    try:
+        body = client.post("/api/portfolio", json={"holdings": [{"symbol": "BRD500", "shares": 10}]}).json()
+        assert sum(e["total"] for e in body["exposure"]) == pytest.approx(body["total"])
+        assert "ZZZZ" not in {e["symbol"] for e in body["exposure"]}
+        assert body["funds"][0]["looked_through"] == pytest.approx(0.066)  # ZZZZ isn't shown, so isn't counted
+    finally:
+        conn.execute("delete from etf_holdings where holding = 'ZZZZ'")
+        conn.commit()
