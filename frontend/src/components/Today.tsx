@@ -199,7 +199,11 @@ export function StartFlow() {
                 </button>
               ))}
             </div>
-            <button className="btn" type="button" disabled={!own.length} onClick={() => setStep(2)} style={{ alignSelf: "flex-start" }}>Next</button>
+            <div className="row-flex">
+              <button className="btn" type="button" disabled={!own.length} onClick={() => setStep(2)}>Next</button>
+              <Link className="btn light" href="/import?example=1">Try an example portfolio</Link>
+            </div>
+            <p className="note">The example uses real prices for BX, AMZN and SPY. It&apos;s labelled as an example and nothing is saved until you press Save.</p>
           </>
         ) : (
           <>

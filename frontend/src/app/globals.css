@@ -393,6 +393,7 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
   width: 100%; min-width: 70px; border: 0; background: var(--raised); border-radius: 8px; padding: 8px 10px;
   box-shadow: inset 0 0 0 1px var(--sep); font-size: 16px;
 }
+.example-note { background: var(--accent-tint); border: 1.5px solid var(--accent-fill); border-radius: var(--r-ctl); padding: 10px 14px; font-size: 15px; }
 .readtable tr.bad td { background: var(--down-tint); }
 .readtable td { padding: 6px 4px; }
 .readtable input { min-width: 0; padding: 7px 8px; font-size: 15px; }

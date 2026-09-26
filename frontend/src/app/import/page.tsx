@@ -4,13 +4,30 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { OtherAssetsForms } from "@/components/OtherAssets";
 import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib/api";
-import { money } from "@/lib/format";
+import { money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 
 const CONNECT = [
   { name: "Robinhood", what: "Stocks and funds" },
   { name: "Binance", what: "Crypto" },
 ];
+
+const EXAMPLE: [string, number][] = [["BX", 10], ["AMZN", 5], ["SPY", 3]];
+
+type Example = { rows: EditRow[]; total: string; asOf: string | null };
+
+/** Real tickers at their latest closes, with the matching total, so Check → Save takes two taps. Nothing is saved here. */
+async function loadExample(): Promise<Example | null> {
+  try {
+    const cos = await api.companies();
+    const picks = EXAMPLE.map(([t, sh]) => ({ c: cos.find((x) => x.ticker === t), sh })).filter((p) => p.c?.last_close != null);
+    if (!picks.length) return null;
+    const rows = picks.map(({ c, sh }) => ({ symbol: c!.ticker, shares: String(sh), price: c!.last_close!.toFixed(2), value: (sh * c!.last_close!).toFixed(2) }));
+    return { rows, total: rows.reduce((a, r) => a + Number(r.value), 0).toFixed(2), asOf: picks[0].c!.as_of };
+  } catch {
+    return null;
+  }
+}
 
 type EditRow = { symbol: string; shares: string; price: string; value: string };
 
@@ -32,8 +49,21 @@ export default function ImportScreen() {
   const [checkErr, setCheckErr] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const [example, setExample] = useState<string | null>(null); // the close date, while example rows are in the table
+
+  function applyExample(ex: Example | null) {
+    if (!ex) return setCheckErr(true);
+    setRows(ex.rows);
+    setTotal(ex.total);
+    setCheck(null);
+    setCheckErr(false);
+    setExample(ex.asOf);
+  }
+  const fillExample = () => loadExample().then(applyExample);
+
   useEffect(() => {
     api.status().then(setStatus).catch(() => {});
+    if (new URLSearchParams(window.location.search).get("example") === "1") loadExample().then(applyExample);
   }, []);
 
   async function upload(file: File) {
@@ -101,6 +131,7 @@ export default function ImportScreen() {
   }
 
   const edit = (i: number, k: keyof EditRow, v: string) => {
+    setExample(null);
     setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
     setCheck(null);
   };
@@ -148,7 +179,13 @@ export default function ImportScreen() {
 
       <div className="card">
         <h3>Check the rows</h3>
-        <p className="note">No screenshot? Type your holdings here instead.</p>
+        <div className="row-flex" style={{ justifyContent: "space-between" }}>
+          <p className="note">No screenshot? Type your holdings here instead.</p>
+          <button className="btn light small" type="button" onClick={fillExample}>Try an example portfolio</button>
+        </div>
+        {example && (
+          <p className="example-note"><b>Example holdings, not yours.</b> Real prices at the close on {shortDate(example)}. Nothing is saved until you press Save.</p>
+        )}
         <div className="tscroll">
           <table className="readtable">
             <thead><tr><th>Ticker</th><th>Shares</th><th>Price</th><th>Value</th><th /></tr></thead>
