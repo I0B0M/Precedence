@@ -144,6 +144,7 @@ export interface PortfolioOut {
   exposure: ExposureRow[];
   unknown: string[];
   funds: FundInfo[];
+  price_as_of: string | null; // the market close the values are priced at, e.g. "2026-09-25"
 }
 
 /** One per ETF held. The board should say "holdings as of <as_of>, <source>" for each fund. */

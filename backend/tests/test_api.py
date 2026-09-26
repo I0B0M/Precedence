@@ -127,3 +127,9 @@ def test_fund_holdings_we_have_no_data_for_stay_in_the_fund(client):
     finally:
         conn.execute("delete from etf_holdings where holding = 'ZZZZ'")
         conn.commit()
+
+
+def test_portfolio_says_which_close_the_prices_are_from(client):
+    body = client.post("/api/portfolio", json={"holdings": [{"symbol": "HLCN", "shares": 1}]}).json()
+    assert body["price_as_of"] == "2026-09-25"
+    assert client.post("/api/portfolio", json={"holdings": []}).json()["price_as_of"] is None

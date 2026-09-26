@@ -161,7 +161,7 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
         value = h.shares * float(last["close"])
         values[sym] = values.get(sym, 0.0) + value
         rows.append({"symbol": sym, "name": known[sym]["name"], "kind": known[sym]["kind"], "shares": h.shares,
-                     "price": float(last["close"]), "value": value, "change": change})
+                     "price": float(last["close"]), "value": value, "change": change, "day": last["day"]})
 
     etfs = [s for s in values if known[s]["kind"] == "etf"]
     weights: dict[str, dict[str, float]] = {}
@@ -196,7 +196,9 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
             "firing": firing,
         })
     exposure.sort(key=lambda e: (e["state"] != engine.WATCH, -e["total"]))
-    return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds}
+    price_as_of = max((r.pop("day") for r in rows), default=None)  # the close the values are priced at
+    return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds,
+            "price_as_of": price_as_of.isoformat() if price_as_of else None}
 
 
 class ReadRowIn(BaseModel):
