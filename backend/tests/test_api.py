@@ -197,3 +197,50 @@ def test_today_counts_the_last_trading_day_from_the_database(client):
 def test_today_without_holdings_has_only_the_market(client):
     body = client.get("/api/today").json()
     assert body["holdings"] is None and body["market"]["filings"]["source"] == "sample"
+
+
+class FakeGemini:
+    """Stands in for GeminiClient once a key is set, so the whole path to reconcile is tested."""
+    def __init__(self, *_):
+        pass
+
+    def read_screenshot(self, image, mime):
+        from stone.sources.gemini import ReadRow, ScreenshotRead
+        return ScreenshotRead([ReadRow("BRVE", 85, 12.5, 687.5)], 687.5)
+
+
+def test_screenshot_import_reads_then_reconciles_once_a_key_is_set(client, monkeypatch):
+    import stone.api.main as m
+    monkeypatch.setattr(m, "GeminiClient", FakeGemini)
+    r = client.post("/api/import/screenshot", files={"file": ("s.png", b"\x89PNG....", "image/png")})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "fixable" and body["rows"][0]["fix"] == {"shares": 55}
+
+
+def test_screenshot_import_errors_are_plain(client, monkeypatch):
+    import httpx
+
+    import stone.api.main as m
+    from stone.sources.gemini import ScreenshotUnreadable
+
+    class Unreadable(FakeGemini):
+        def read_screenshot(self, image, mime):
+            raise ScreenshotUnreadable("Gemini blocked the image (SAFETY)")
+
+    class Down(FakeGemini):
+        def read_screenshot(self, image, mime):
+            req = httpx.Request("POST", "https://generativelanguage.googleapis.com/x")
+            raise httpx.HTTPStatusError("quota", request=req, response=httpx.Response(429, request=req))
+
+    png = {"file": ("s.png", b"\x89PNG....", "image/png")}
+    monkeypatch.setattr(m, "GeminiClient", Unreadable)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 422 and "SAFETY" in r.json()["detail"]
+    monkeypatch.setattr(m, "GeminiClient", Down)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 502 and "429" in r.json()["detail"]
+    monkeypatch.setattr(m, "GeminiClient", FakeGemini)
+    assert client.post("/api/import/screenshot", files={"file": ("a.pdf", b"%PDF", "application/pdf")}).status_code == 415
+    big = {"file": ("s.png", b"\x89PNG" + b"0" * (m.MAX_SCREENSHOT_BYTES + 1), "image/png")}
+    assert client.post("/api/import/screenshot", files=big).status_code == 413

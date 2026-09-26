@@ -4,6 +4,7 @@ screenshot import, which calls Gemini (cached by image) once it is connected."""
 from datetime import timedelta
 from functools import lru_cache
 
+import httpx
 import psycopg
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
@@ -17,7 +18,8 @@ from stone.config import NotConnected
 from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
-from stone.sources.gemini import GeminiClient
+from stone.sources.gemini import MODEL as GEMINI_MODEL
+from stone.sources.gemini import GeminiClient, ScreenshotUnreadable
 
 app = FastAPI(title="Stone")
 
@@ -298,12 +300,26 @@ def reconcile_rows(body: ReconcileIn):
     return reconciled_json(rc.reconcile(rows, body.printed_total), rows)
 
 
+MAX_SCREENSHOT_BYTES = 15 * 1024 * 1024  # Gemini takes inline images up to ~20 MB per request
+
+
 @app.post("/api/import/screenshot")
 async def import_screenshot(file: UploadFile = File(...)):
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(415, "That isn't an image. Add a screenshot (PNG or JPEG).")
+    image = await file.read()
+    if len(image) > MAX_SCREENSHOT_BYTES:
+        raise HTTPException(413, "That screenshot is too large (over 15 MB).")
     try:
         client = GeminiClient(config.load())
     except NotConnected:
         raise HTTPException(503, "Screenshot reading isn't connected yet (GEMINI_API_KEY is not set).")
-    read = client.read_screenshot(await file.read(), file.content_type or "image/png")
+    try:
+        read = client.read_screenshot(image, file.content_type)
+    except ScreenshotUnreadable as e:
+        raise HTTPException(422, f"{e} You can type the rows instead.")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"Gemini returned HTTP {e.response.status_code} "
+                                 f"(model {GEMINI_MODEL}). You can type the rows instead.")
     rows = [rc.Row(r.symbol, r.shares, r.price, r.value) for r in read.rows]
     return reconciled_json(rc.reconcile(rows, read.printed_total), rows)
