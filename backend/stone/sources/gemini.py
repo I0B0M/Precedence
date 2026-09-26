@@ -15,8 +15,10 @@ from stone.config import NotConnected, Settings
 from stone.fetch import CachedFetcher, RateLimiter
 
 BASE = "https://generativelanguage.googleapis.com/v1beta/models"
-# Set GEMINI_MODEL to the current vision model when connecting. UNVERIFIED default.
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+# Stable Flash model with image input, structured output and a free tier, per
+# ai.google.dev/gemini-api/docs/models and /pricing (checked 2026-09-26). The 2.5 models
+# are limited to accounts that used them before, so a new key would fail on them.
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 PROMPT = """This is a screenshot of a brokerage or investing app showing holdings.
 Read every holding row exactly as printed. For each row give the ticker symbol,
@@ -54,11 +56,21 @@ class ScreenshotRead:
     printed_total: float | None
 
 
+class ScreenshotUnreadable(ValueError):
+    """Gemini answered, but not with holdings we can use."""
+
+
 def parse_response(doc: dict) -> ScreenshotRead:
-    text = doc["candidates"][0]["content"]["parts"][0]["text"]
-    body = json.loads(text)
+    blocked = (doc.get("promptFeedback") or {}).get("blockReason")
+    if blocked or not doc.get("candidates"):
+        raise ScreenshotUnreadable(f"Gemini would not read this image ({blocked or 'no answer'}).")
+    try:
+        body = json.loads(doc["candidates"][0]["content"]["parts"][0]["text"])
+    except (KeyError, IndexError, TypeError, json.JSONDecodeError):
+        reason = doc["candidates"][0].get("finishReason", "no holdings table")
+        raise ScreenshotUnreadable(f"Couldn't find holdings in this screenshot ({reason}).") from None
     rows = [ReadRow(r["symbol"].strip().upper(), r.get("shares"), r.get("price"), r.get("value"))
-            for r in body.get("rows", [])]
+            for r in body.get("rows", []) if (r.get("symbol") or "").strip()]  # no ticker, no use
     return ScreenshotRead(rows, body.get("printed_total"))
 
 

@@ -197,3 +197,78 @@ def test_today_counts_the_last_trading_day_from_the_database(client):
 def test_today_without_holdings_has_only_the_market(client):
     body = client.get("/api/today").json()
     assert body["holdings"] is None and body["market"]["filings"]["source"] == "sample"
+
+
+class FakeGemini:
+    """Stands in for GeminiClient once a key is set, so the whole path to reconcile is tested."""
+    def __init__(self, *_):
+        pass
+
+    def read_screenshot(self, image, mime):
+        from stone.sources.gemini import ReadRow, ScreenshotRead
+        return ScreenshotRead([ReadRow("BRVE", 85, 12.5, 687.5)], 687.5)
+
+
+def test_screenshot_import_reads_then_reconciles_once_a_key_is_set(client, monkeypatch):
+    import stone.api.main as m
+    monkeypatch.setattr(m, "GeminiClient", FakeGemini)
+    r = client.post("/api/import/screenshot", files={"file": ("s.png", b"\x89PNG....", "image/png")})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "fixable" and body["rows"][0]["fix"] == {"shares": 55}
+
+
+def test_screenshot_import_errors_are_plain(client, monkeypatch):
+    import httpx
+
+    import stone.api.main as m
+    from stone.sources.gemini import ScreenshotUnreadable
+
+    class Unreadable(FakeGemini):
+        def read_screenshot(self, image, mime):
+            raise ScreenshotUnreadable("Gemini blocked the image (SAFETY)")
+
+    class Down(FakeGemini):
+        def read_screenshot(self, image, mime):
+            req = httpx.Request("POST", "https://generativelanguage.googleapis.com/x")
+            raise httpx.HTTPStatusError("quota", request=req, response=httpx.Response(429, request=req))
+
+    png = {"file": ("s.png", b"\x89PNG....", "image/png")}
+    monkeypatch.setattr(m, "GeminiClient", Unreadable)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 422 and "SAFETY" in r.json()["detail"]
+    monkeypatch.setattr(m, "GeminiClient", Down)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 502 and "429" in r.json()["detail"]
+    monkeypatch.setattr(m, "GeminiClient", FakeGemini)
+    assert client.post("/api/import/screenshot", files={"file": ("a.pdf", b"%PDF", "application/pdf")}).status_code == 415
+    big = {"file": ("s.png", b"\x89PNG" + b"0" * (m.MAX_SCREENSHOT_BYTES + 1), "image/png")}
+    assert client.post("/api/import/screenshot", files=big).status_code == 413
+
+
+def test_today_has_a_week_block_next_to_the_day(client):
+    before = client.get("/api/today?symbols=HLCN").json()  # the sample already has filings that week
+    conn = db.connect(os.environ["DATABASE_URL"])
+    rows = [("W-HLCN-8K", "HLCN", "8-K", date(2026, 9, 22), "2026-09-22 18:00-04"),
+            ("W-ORCA-8K", "ORCA", "8-K", date(2026, 9, 25), "2026-09-25 18:00-04"),
+            ("W-OLD-8K", "ORCA", "8-K", date(2026, 9, 18), "2026-09-18 18:00-04")]  # 8 days back: outside the week
+    for acc, t, form, d, at in rows:
+        conn.execute("insert into filings values (%s, %s, %s, %s, %s, null, null, 'sample')", (acc, t, form, d, at))
+    conn.commit()
+    try:
+        body = client.get("/api/today?symbols=HLCN").json()
+        w = body["week"]
+        assert (w["start"], w["end"]) == ("2026-09-19", "2026-09-25")
+        b = before["week"]["filings"]
+        assert w["filings"]["count"] == b["count"] + 2  # the 22nd and the 25th, not the 18th
+        assert w["filings"]["by_form"].get("8-K", 0) == b["by_form"].get("8-K", 0) + 2
+        assert w["filings"]["as_of"] == "2026-09-25" and w["filings"]["source"] == "sample"
+        assert body["market"]["filings"]["count"] == before["market"]["filings"]["count"] + 1  # day: only the 25th
+        r = w["rate"]
+        assert r["first_day"] >= "2026-09-19" and r["last_day"] <= "2026-09-25"
+        assert r["change"] == pytest.approx(r["last_value"] - r["first_value"])
+        assert isinstance(r["jumps"], list) and r["source"] == "sample"
+        assert body["holdings"]["week_filings"]["count"] == before["holdings"]["week_filings"]["count"] + 1
+    finally:
+        conn.execute("delete from filings where accession like 'W-%'")
+        conn.commit()
