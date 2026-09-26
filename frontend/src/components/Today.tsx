@@ -16,7 +16,8 @@ type Filings = { count: number; by_form: Record<string, number> };
 function filingWords(f: Filings, detail = true): string {
   const lower = (w: string) => w.charAt(0).toLowerCase() + w.slice(1); // "Company news (8-K)" -> "company news (8-K)"
   const many = (w: string, n: number) => (n > 1 && !/news|\)$/.test(w) ? w + "s" : w); // "insider trade" -> "insider trades"
-  const parts = Object.entries(f.by_form).sort((a, b) => b[1] - a[1]).map(([form, n]) => `${n} ${many(lower(FORM_WORDS[form] ?? form), n)}`);
+  const keep = (w: string) => w.replace(/(\d)-([A-Z])/g, "$1\u2011$2"); // "8-K" with a non-breaking hyphen, so it never splits
+  const parts = Object.entries(f.by_form).sort((a, b) => b[1] - a[1]).map(([form, n]) => `${n} ${keep(many(lower(FORM_WORDS[form] ?? form), n))}`);
   return `${plural(f.count, "SEC filing")}${detail && parts.length ? ` (${parts.join(", ")})` : ""}`;
 }
 
@@ -54,7 +55,7 @@ export function TodayMarket({ t }: { t: Today }) {
     return (
       <div className="stack" style={{ gap: 6 }}>
         <span className="ticker">This week in the market</span>
-        <div className="bignum count-in">{wn.toLocaleString("en-US")}</div>
+        <div className="bignum count-in" style={{ fontSize: "clamp(40px, 5vw, 48px)" }}>{wn.toLocaleString("en-US")}</div>
         <p className="lede" style={{ color: "var(--text)" }}>
           new {wn === 1 ? "thing" : "things"} this week ({span(w.start, w.end)}) across the companies Stone follows:{" "}
           {filingWords(w.filings)}{jumps ? ` and ${plural(jumps, "interest-rate jump")}` : ""}.
@@ -70,7 +71,7 @@ export function TodayMarket({ t }: { t: Today }) {
   return (
     <div className="stack" style={{ gap: 6 }}>
       <span className="ticker">Today in the market</span>
-      <div className="bignum count-in">{n.toLocaleString("en-US")}</div>
+      <div className="bignum count-in" style={{ fontSize: "clamp(40px, 5vw, 48px)" }}>{n.toLocaleString("en-US")}</div>
       <p className="lede" style={{ color: "var(--text)" }}>
         new {n === 1 ? "thing" : "things"} in Stone&apos;s data for {shortDate(t.day)}: {marketWords(t)}.
       </p>
@@ -185,6 +186,12 @@ export function StartFlow() {
 
   return (
     <section className="stack" style={{ gap: 28 }}>
+      <div className="stack" style={{ gap: 10 }}>
+        <h1 style={{ fontSize: "clamp(30px, 4.2vw, 40px)", lineHeight: 1.2, maxWidth: "22ch" }}>
+          See what&apos;s happening to what you own, and whether it has ever mattered.
+        </h1>
+        <p className="mute" style={{ fontSize: 16 }}>Real SEC filings, Fed data and prices. No account needed to start.</p>
+      </div>
       {t && <TodayMarket t={t} />}
 
       <div className="card">
