@@ -19,7 +19,7 @@ stocks = [r["ticker"] for r in conn.execute(
        and exists (select 1 from prices_daily p where p.ticker = c.ticker) order by 1""").fetchall()]
 rates = service.load_rates(conn)
 watch, gaps, strong = [], [], []
-counts = {engine.STRONG: 0, engine.WEAK: 0, engine.NOT_PROVEN: 0}
+counts = {engine.STRONG: 0, engine.WEAK: 0, engine.NOT_PROVEN: 0, engine.NO_DATA: 0}
 for t in stocks:
     for key, r in service.run_all(conn, t, rates).items():
         counts[r.label] += 1
@@ -32,7 +32,7 @@ for t in stocks:
             gaps.append((r.hit_rate - r.normal_rate, row))
 
 f = lambda x: "-" if x is None else f"{x:.0%}"
-tested = 3 * len(stocks)
+tested = 3 * len(stocks) - counts[engine.NO_DATA]  # pairs without data weren't tested
 eligible = counts[engine.STRONG] + counts[engine.NOT_PROVEN]
 held = sum(1 for *_, r in strong if r.holdout and r.holdout.held_up)
 as_of = conn.execute("select max(day) as d from prices_daily where source <> 'sample'").fetchone()["d"]

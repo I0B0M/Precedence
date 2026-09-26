@@ -117,12 +117,12 @@ export default function CompanyScreen() {
                 inLab(s.signal) ? (
                   <Link key={s.signal} className="list-row" href={`/lab?t=${co.ticker}&s=${s.signal}`}>
                     <span>{s.lite}</span>
-                    <span className="mute">{s.firing ? "Happening now" : "Not now"} ›</span>
+                    <span className="mute">{s.label === "NO DATA" ? "Not loaded yet" : s.firing ? "Happening now" : "Not now"} ›</span>
                   </Link>
                 ) : (
                   <div key={s.signal} className="list-row">
                     <span>{s.lite}</span>
-                    <span className="mute">{s.firing ? "Happening now" : "Not now"}</span>
+                    <span className="mute">{s.label === "NO DATA" ? "Not loaded yet" : s.firing ? "Happening now" : "Not now"}</span>
                   </div>
                 )
               ))}

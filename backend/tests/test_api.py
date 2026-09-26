@@ -272,3 +272,14 @@ def test_today_has_a_week_block_next_to_the_day(client):
     finally:
         conn.execute("delete from filings where accession like 'W-%'")
         conn.commit()
+
+
+def test_insider_signal_says_no_data_when_filings_are_not_loaded(client):
+    # sample mode loads Form 4s only for HLCN, like real data loads them only for 20 stocks
+    r = client.get("/api/lab/ORCA/insider_cluster").json()
+    assert r["label"] == "NO DATA" and r["n"] == 0 and r["firing"] is None
+    assert "ORCA" in r["note"] and "not loaded" in r["note"]
+    assert client.get("/api/lab/HLCN/insider_cluster").json()["label"] != "NO DATA"
+    page = client.get("/api/companies/ORCA").json()
+    assert next(s for s in page["signals"] if s["signal"] == "insider_cluster")["label"] == "NO DATA"
+    assert next(s for s in page["signals"] if s["signal"] == "gap_down")["label"] != "NO DATA"  # prices are loaded

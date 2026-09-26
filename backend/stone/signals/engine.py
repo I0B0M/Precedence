@@ -29,6 +29,7 @@ Z90 = 1.6448536269514722  # two-sided 90%
 MIN_CASES = 10
 
 STRONG, WEAK, NOT_PROVEN = "STRONG", "WEAK", "NOT PROVEN"
+NO_DATA = "NO DATA"  # the signal's source data isn't loaded for this stock: nothing was tested
 CALM, WATCH = "CALM", "WATCH"
 
 
@@ -93,6 +94,13 @@ class Result:
     firing: Event | None
     cases: list[Case] = field(default_factory=list)
     holdout: "Holdout | None" = None
+    note: str | None = None  # why there is no result, for NO DATA
+
+
+def no_data(spec: Spec, note: str) -> Result:
+    """Not tested because the data isn't there. Never shown as "hasn't happened"."""
+    return Result(signal=spec.key, horizon=spec.horizon, n=0, hits=0, hit_rate=None, normal_n=0, normal_hits=0,
+                  normal_rate=None, low=None, high=None, label=NO_DATA, firing=None, note=note)
 
 
 @dataclass(frozen=True)

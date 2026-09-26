@@ -28,6 +28,7 @@ def result_json(r: engine.Result, with_cases: bool = True) -> dict:
         "normal_n": r.normal_n, "normal_hits": r.normal_hits, "normal_rate": r.normal_rate,
         "low": r.low, "high": r.high, "label": r.label,
         "firing": {"known_at": r.firing.known_at.isoformat(), "note": r.firing.note} if r.firing else None,
+        "note": r.note,
     }
     if r.holdout:
         half = lambda h: {"n": h.n, "hits": h.hits, "hit_rate": h.hit_rate, "normal_rate": h.normal_rate,
