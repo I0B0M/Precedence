@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api, type Today } from "@/lib/api";
 import { shortDate } from "@/lib/format";
+import { SHOW_CRYPTO } from "@/lib/flags";
 import { FORM_WORDS } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
@@ -170,7 +171,7 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
 const OWN = [
   { key: "stocks", label: "Stocks", sub: "Apple, Nvidia…" },
   { key: "funds", label: "Funds", sub: "ETFs and index funds" },
-  { key: "crypto", label: "Crypto", sub: "Bitcoin, Ethereum…" },
+  ...(SHOW_CRYPTO ? [{ key: "crypto", label: "Crypto", sub: "Bitcoin, Ethereum…" }] : []),
   { key: "other", label: "Something else", sub: "Bonds, cash…" },
 ];
 
@@ -216,7 +217,7 @@ export function StartFlow() {
             )}
             <div className="list">
               <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Connect Robinhood or Binance</b><span className="note" style={{ display: "block" }}>Read-only</span></span>
+                <span><b>Connect Robinhood{SHOW_CRYPTO ? " or Binance" : ""}</b><span className="note" style={{ display: "block" }}>Read-only</span></span>
                 <button className="btn light small" type="button" disabled>Connecting opens soon</button>
               </div>
               <div className="list-row" style={{ alignItems: "center" }}>

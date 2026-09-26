@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StateBadge } from "@/components/bits";
+import { SHOW_CRYPTO } from "@/lib/flags";
 import { money } from "@/lib/format";
 import { addCrypto, addProperty, addRetirement, removeOther, useOtherAssets, type RetirementFund } from "@/lib/other-assets";
 
@@ -70,7 +71,7 @@ export function OtherAssetsForms() {
         <p className="note">A screenshot of a 401(k) statement: coming soon. The reader handles stock tickers today, not fund names.</p>
       </div>
 
-      <div className="card">
+      {SHOW_CRYPTO && <div className="card">
         <h3>Add crypto</h3>
         <p className="note">Symbol and how much you hold, as your wallet or exchange shows it. Fractions are fine (0.035).</p>
         {coins.map((c, i) => (
@@ -88,14 +89,15 @@ export function OtherAssetsForms() {
         </button>
         {coinsSaved && <p className="okline">Saved. It shows on your portfolio as &quot;Price coming soon&quot;.</p>}
         <p className="note">Stone doesn&apos;t price crypto yet, so we keep what you typed and show no dollar value until it does.</p>
-      </div>
+      </div>}
     </div>
   );
 }
 
 /** Board: what you added that Stone can't value or test yet. Not counted in the total. */
 export function OtherAssetsRows() {
-  const v = useOtherAssets();
+  const all = useOtherAssets();
+  const v = SHOW_CRYPTO ? all : { ...all, crypto: [] };
   if (!v.properties.length && !v.retirement.length && !v.crypto.length) return null;
   return (
     <div className="stack" style={{ gap: 10, marginTop: 24 }}>

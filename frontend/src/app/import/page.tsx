@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { OtherAssetsForms } from "@/components/OtherAssets";
+import { SHOW_CRYPTO } from "@/lib/flags";
 import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 
 const CONNECT = [
   { name: "Robinhood", what: "Stocks and funds" },
-  { name: "Binance", what: "Crypto" },
+  ...(SHOW_CRYPTO ? [{ name: "Binance", what: "Crypto" }] : []),
 ];
 
 const EXAMPLE: [string, number][] = [["BX", 10], ["AMZN", 5], ["SPY", 3]];
@@ -283,7 +284,7 @@ export default function ImportScreen() {
 
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Everything else you own</h2>
-        <p className="mute">A home, a 401(k) or an IRA, crypto. Stone keeps what you type; values show only once there&apos;s a real estimate.</p>
+        <p className="mute">A home, a 401(k) or an IRA{SHOW_CRYPTO ? ", crypto" : ""}. Stone keeps what you type; values show only once there&apos;s a real estimate.</p>
       </div>
       <OtherAssetsForms />
     </section>
