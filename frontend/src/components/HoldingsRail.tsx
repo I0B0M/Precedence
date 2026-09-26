@@ -9,7 +9,7 @@ import { useMode } from "@/lib/mode";
 
 const DAYS = 30; // trading days
 
-function Spark({ closes }: { closes: number[] }) {
+export function Spark({ closes }: { closes: number[] }) {
   if (closes.length < 2) return <span className="spark" />;
   const W = 96, H = 28, lo = Math.min(...closes), hi = Math.max(...closes), r = hi - lo || 1;
   const d = closes.map((c, i) => `${i ? "L" : "M"}${((i / (closes.length - 1)) * W).toFixed(1)},${(H - 2 - ((c - lo) / r) * (H - 4)).toFixed(1)}`).join("");

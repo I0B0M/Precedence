@@ -283,18 +283,24 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 .rows { background: var(--group); border: var(--edge); border-radius: var(--r-card); overflow: hidden; }
 .hitem { position: relative; }
 .hitem + .hitem::before { content: ""; position: absolute; top: 0; left: 20px; right: 0; border-top: 1px solid var(--sep); z-index: 1; }
+/* Board rows, from the study's quiet list rows: who on the left, a 30-day sparkline, value and move right-aligned,
+   then the badge. 64px minimum, hairlines between, no icons. */
+.pf-total { font-family: var(--head); font-weight: 700; font-size: 40px; line-height: 48px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .hrow {
-  width: 100%; border: 0; background: none; text-align: left; cursor: pointer;
-  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr) auto auto; gap: 16px; align-items: center;
-  padding: 14px 20px; transition: background-color 0.15s var(--ease);
+  width: 100%; border: 0; background: none; text-align: left; cursor: pointer; min-height: 64px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 96px 184px 124px; gap: 20px; align-items: center;
+  padding: 12px 20px; transition: background-color 0.2s var(--ease-out);
 }
 .hrow:hover { background: var(--fill); }
-.hrow .tk { font-weight: 600; font-size: 17px; }
-.hrow .nm { font-size: 13px; color: var(--text-2); display: block; }
-.hrow .say { font-size: 15px; color: var(--text); }
+.hrow .who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.hrow .tk { font-weight: 700; font-size: 16px; line-height: 22px; }
+.hrow .nm { font-size: 13px; line-height: 18px; color: var(--text-2); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hrow .say { font-size: 14px; line-height: 20px; color: var(--text); margin-top: 2px; }
+.hrow .sp { display: flex; align-items: center; }
+.hrow .sp .spark { width: 96px; height: 28px; }
 .hrow .val { text-align: right; font-weight: 600; }
 .hrow .val small { display: block; font-weight: 400; font-size: 13px; }
-.hend { display: inline-flex; align-items: center; gap: 10px; }
+.hend { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; }
 .chev { color: var(--mark); font-size: 22px; line-height: 1; transition: transform 0.25s var(--ease); display: inline-block; }
 .hitem.open .chev { transform: rotate(90deg); }
 /* the panel opens by animating its row from 0fr to 1fr */
@@ -478,10 +484,20 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
 
 @media (max-width: 900px) {
   .grid2, .grid2.even, .grid3 { grid-template-columns: minmax(0, 1fr); }
-  .hrow { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 13px 16px; }
+  .hrow {
+    grid-template-columns: minmax(0, 1fr) 64px minmax(0, auto);
+    grid-template-areas: "tk sp val" "nm sp val" "say say hend";
+    gap: 0 12px; padding: 12px 16px;
+  }
   .hitem + .hitem::before { left: 16px; }
-  .hrow .say { grid-column: 1 / -1; grid-row: 2; }
-  .hrow .val { display: none; }
+  .hrow .who { display: contents; }
+  .hrow .tk { grid-area: tk; }
+  .hrow .nm { grid-area: nm; }
+  .hrow .say { grid-area: say; margin-top: 6px; align-self: center; }
+  .hrow .sp { grid-area: sp; }
+  .hrow .sp .spark { width: 64px; height: 24px; }
+  .hrow .val { grid-area: val; max-width: 150px; }
+  .hrow .hend { grid-area: hend; margin-top: 6px; }
   .hdetail { grid-template-columns: minmax(0, 1fr); padding: 4px 16px 18px; }
 }
 @media (max-width: 640px) {
