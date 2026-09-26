@@ -244,3 +244,31 @@ def test_screenshot_import_errors_are_plain(client, monkeypatch):
     assert client.post("/api/import/screenshot", files={"file": ("a.pdf", b"%PDF", "application/pdf")}).status_code == 415
     big = {"file": ("s.png", b"\x89PNG" + b"0" * (m.MAX_SCREENSHOT_BYTES + 1), "image/png")}
     assert client.post("/api/import/screenshot", files=big).status_code == 413
+
+
+def test_today_has_a_week_block_next_to_the_day(client):
+    before = client.get("/api/today?symbols=HLCN").json()  # the sample already has filings that week
+    conn = db.connect(os.environ["DATABASE_URL"])
+    rows = [("W-HLCN-8K", "HLCN", "8-K", date(2026, 9, 22), "2026-09-22 18:00-04"),
+            ("W-ORCA-8K", "ORCA", "8-K", date(2026, 9, 25), "2026-09-25 18:00-04"),
+            ("W-OLD-8K", "ORCA", "8-K", date(2026, 9, 18), "2026-09-18 18:00-04")]  # 8 days back: outside the week
+    for acc, t, form, d, at in rows:
+        conn.execute("insert into filings values (%s, %s, %s, %s, %s, null, null, 'sample')", (acc, t, form, d, at))
+    conn.commit()
+    try:
+        body = client.get("/api/today?symbols=HLCN").json()
+        w = body["week"]
+        assert (w["start"], w["end"]) == ("2026-09-19", "2026-09-25")
+        b = before["week"]["filings"]
+        assert w["filings"]["count"] == b["count"] + 2  # the 22nd and the 25th, not the 18th
+        assert w["filings"]["by_form"].get("8-K", 0) == b["by_form"].get("8-K", 0) + 2
+        assert w["filings"]["as_of"] == "2026-09-25" and w["filings"]["source"] == "sample"
+        assert body["market"]["filings"]["count"] == before["market"]["filings"]["count"] + 1  # day: only the 25th
+        r = w["rate"]
+        assert r["first_day"] >= "2026-09-19" and r["last_day"] <= "2026-09-25"
+        assert r["change"] == pytest.approx(r["last_value"] - r["first_value"])
+        assert isinstance(r["jumps"], list) and r["source"] == "sample"
+        assert body["holdings"]["week_filings"]["count"] == before["holdings"]["week_filings"]["count"] + 1
+    finally:
+        conn.execute("delete from filings where accession like 'W-%'")
+        conn.commit()

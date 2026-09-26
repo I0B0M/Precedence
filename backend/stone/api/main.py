@@ -135,24 +135,38 @@ def scan(c: psycopg.Connection = Conn):
             "expected_by_chance": float(row["expected_by_chance"])}
 
 
+def filed_between(c: psycopg.Connection, start, end) -> list[dict]:
+    """Filings accepted on these ET days. A Form 4 counts only when its lines were parsed for that
+    company, so it is a trade in the company's own stock and not the company selling someone else's."""
+    return c.execute(
+        """select f.ticker, f.form, f.accession, f.accepted_at, f.primary_doc, f.source, co.cik from filings f
+           join companies co on co.ticker = f.ticker
+           where (f.accepted_at at time zone 'America/New_York')::date between %s and %s
+             and (f.form <> '4' or exists (select 1 from insider_trades i
+                                           where i.accession = f.accession and i.ticker = f.ticker))
+           order by f.accepted_at""", (start, end)).fetchall()
+
+
+def filings_block(filed: list[dict], as_of, source: str) -> dict:
+    by_form: dict[str, int] = {}
+    for f in filed:
+        by_form[f["form"]] = by_form.get(f["form"], 0) + 1
+    return {"count": len(filed), "companies": len({f["ticker"] for f in filed}), "by_form": by_form,
+            "as_of": as_of.isoformat() if as_of else None, "source": source}
+
+
+WEEK_DAYS = 7
+
+
 @app.get("/api/today")
 def today(symbols: str | None = None, c: psycopg.Connection = Conn):
     """The start screen's counts for the last trading day, from the database only.
     symbols: optional comma-separated holdings, e.g. ?symbols=BX,AMZN,SPY."""
     day = c.execute("select max(day) as d from prices_daily").fetchone()["d"]
-    # A Form 4 counts only when its lines were parsed for that company, so it is a trade in the company's
-    # own stock and not the company selling someone else's. Other forms count as filed.
-    filed = c.execute(
-        """select f.ticker, f.form, f.accession, f.accepted_at, f.primary_doc, f.source, co.cik from filings f
-           join companies co on co.ticker = f.ticker
-           where (f.accepted_at at time zone 'America/New_York')::date = %s
-             and (f.form <> '4' or exists (select 1 from insider_trades i
-                                           where i.accession = f.accession and i.ticker = f.ticker))
-           order by f.accepted_at""", (day,)).fetchall()
+    filed = filed_between(c, day, day)
+    week_start = day - timedelta(days=WEEK_DAYS - 1) if day else None
+    week_filed = filed_between(c, week_start, day)
     filing_sources = ",".join(r["source"] for r in c.execute("select distinct source from filings order by 1"))
-    by_form: dict[str, int] = {}
-    for f in filed:
-        by_form[f["form"]] = by_form.get(f["form"], 0) + 1
 
     rate = c.execute("select day, value, source from rates where series = 'DGS10' order by day desc limit 1").fetchone()
     week = rate and c.execute("select value from rates where series = 'DGS10' and day <= %s order by day desc limit 1",
@@ -160,15 +174,30 @@ def today(symbols: str | None = None, c: psycopg.Connection = Conn):
     out = {
         "day": day.isoformat() if day else None,
         "market": {
-            "filings": {"count": len(filed), "companies": len({f["ticker"] for f in filed}), "by_form": by_form,
-                        "as_of": day.isoformat() if day else None, "source": filing_sources},
+            "filings": filings_block(filed, day, filing_sources),
             "rate": {"series": "DGS10", "day": rate["day"].isoformat(), "value": float(rate["value"]),
                      "change_week": round(float(rate["value"] - week["value"]), 4) if week else None,
                      "known_at": engine.rate_known_at(rate["day"]).isoformat(), "source": rate["source"]}
                     if rate else None,
         },
+        "week": None,
         "holdings": None,
     }
+    if day:
+        readings = c.execute("select day, value, source from rates where series = 'DGS10' and day between %s and %s "
+                             "order by day", (week_start, day)).fetchall()
+        jumps = [e for e in engine.detect_rate_jumps(service.load_rates(c))
+                 if week_start <= e.known_at.date() <= day]
+        out["week"] = {
+            "start": week_start.isoformat(), "end": day.isoformat(), "days": WEEK_DAYS,
+            "filings": filings_block(week_filed, day, filing_sources),
+            "rate": {"series": "DGS10", "first_day": readings[0]["day"].isoformat(),
+                     "first_value": float(readings[0]["value"]), "last_day": readings[-1]["day"].isoformat(),
+                     "last_value": float(readings[-1]["value"]),
+                     "change": round(float(readings[-1]["value"] - readings[0]["value"]), 4),
+                     "jumps": [{"known_at": e.known_at.isoformat(), "note": e.note} for e in jumps],
+                     "source": readings[-1]["source"]} if readings else None,
+        }
     if not symbols:
         return out
 
@@ -181,12 +210,18 @@ def today(symbols: str | None = None, c: psycopg.Connection = Conn):
     firing = [{"symbol": s, "signal": r.signal, "label": r.label}
               for s in held for r in signal_results(c, s, kinds[s], market_symbol, rates, market) or [] if r.firing]
     mine = [f for f in filed if f["ticker"] in held]
+    mine_week = [f for f in week_filed if f["ticker"] in held]
     out["holdings"] = {
         "symbols": held, "unknown": [s for s in wanted if s not in kinds],
         "filings": {"count": len(mine), "as_of": out["day"], "source": filing_sources,
                     "items": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
                                "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])}
                               for f in mine]},
+        "week_filings": {"count": len(mine_week), "start": out["week"]["start"] if out["week"] else None,
+                         "as_of": out["day"], "source": filing_sources,
+                         "items": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+                                    "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])}
+                                   for f in mine_week]},
         "signals": {"firing": len(firing), "strong_firing": sum(1 for x in firing if x["label"] == engine.STRONG),
                     "items": firing, "as_of": out["day"], "source": "Stone signal engine (prices, SEC, FRED)"},
     }

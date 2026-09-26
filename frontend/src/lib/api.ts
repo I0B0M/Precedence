@@ -163,10 +163,19 @@ export interface Today {
     filings: { count: number; companies: number; by_form: Record<string, number>; as_of: string | null; source: string };
     rate: { series: "DGS10"; day: string; value: number; change_week: number | null; known_at: string; source: string } | null;
   };
+  /** The 7 days ending on `day`. Lead with this on the start screen; one day is often thin. */
+  week: {
+    start: string; end: string; days: number;
+    filings: { count: number; companies: number; by_form: Record<string, number>; as_of: string | null; source: string };
+    rate: { series: "DGS10"; first_day: string; first_value: number; last_day: string; last_value: number;
+      change: number; jumps: { known_at: string; note: string }[]; source: string } | null;
+  } | null;
   holdings: {
     symbols: string[];
     unknown: string[];
     filings: { count: number; as_of: string | null; source: string;
+      items: { ticker: string; form: string; accepted_at: string; url: string | null }[] };
+    week_filings: { count: number; start: string | null; as_of: string | null; source: string;
       items: { ticker: string; form: string; accepted_at: string; url: string | null }[] };
     signals: { firing: number; strong_firing: number; as_of: string | null; source: string;
       items: { symbol: string; signal: string; label: Label }[] };
