@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { OtherAssetsForms } from "@/components/OtherAssets";
 import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { money } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
@@ -200,6 +201,11 @@ export default function ImportScreen() {
         </div>
       </div>
 
+      <div className="stack" style={{ gap: 12, marginTop: 8 }}>
+        <h2>Everything else you own</h2>
+        <p className="mute">A home, a 401(k) or an IRA. Stone keeps what you type; values show only once there&apos;s a real estimate.</p>
+      </div>
+      <OtherAssetsForms />
     </section>
   );
 }

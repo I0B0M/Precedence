@@ -302,6 +302,10 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 .hdetail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 32px; padding: 4px 20px 20px; }
 .hdetail h3 { font-size: 16px; }
 
+.hrow.other { cursor: default; }
+.hrow.other:hover { background: none; }
+.fund-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; }
+
 /* ---------- chart ---------- */
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LabelTag, StateBadge } from "@/components/bits";
+import { OtherAssetsRows } from "@/components/OtherAssets";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
@@ -102,6 +103,8 @@ export default function HoldingsBoard() {
         )}
         {board.unknown.length > 0 && <p className="badline">No data yet for {board.unknown.join(", ")}.</p>}
       </div>
+
+      <OtherAssetsRows />
 
       <div className="row-flex" style={{ marginTop: 20 }}>
         <Link className="btn small" href="/import">Add an account</Link>
