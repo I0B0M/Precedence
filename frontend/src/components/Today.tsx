@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, type Today } from "@/lib/api";
 import { shortDate } from "@/lib/format";
 import { FORM_WORDS } from "@/lib/words";
@@ -81,27 +81,73 @@ export function TodayMarket({ t }: { t: Today }) {
   );
 }
 
-/** On the board: from everything that landed, down to what has mattered before for what you own. */
+type Stage = { n: number; label: string };
+
+/** The mockup's moment, with real numbers: the big number counts down stage by stage, leaving a struck-through trail.
+ *  With prefers-reduced-motion it shows the final stage straight away. */
+function Countdown({ stages }: { stages: Stage[] }) {
+  const last = stages.length - 1;
+  const reduce = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const [done, setDone] = useState(() => (reduce() ? last : 0)); // last stage fully reached
+  const [label, setLabel] = useState(() => (reduce() ? last : 0)); // stage whose words are showing
+  const [shown, setShown] = useState(() => stages[reduce() ? last : 0].n);
+
+  // Timers, not requestAnimationFrame: rAF pauses in a background tab, which would leave the count stuck mid-way.
+  useEffect(() => {
+    if (done >= last) return;
+    let step: ReturnType<typeof setTimeout> | undefined;
+    const hold = setTimeout(() => {
+      const from = stages[done].n, to = stages[done + 1].n, t0 = Date.now();
+      setLabel(done + 1);
+      const tick = () => {
+        const p = from === to ? 1 : Math.min(1, (Date.now() - t0) / 700), eased = 1 - Math.pow(1 - p, 3);
+        setShown(Math.round(from + (to - from) * eased));
+        if (p < 1) step = setTimeout(tick, 16);
+        else setDone(done + 1);
+      };
+      tick();
+    }, 1300);
+    return () => { clearTimeout(hold); clearTimeout(step); };
+  }, [done, last, stages]);
+
+  return (
+    <div className="countdown">
+      <p className="sr-only">{stages.map((st) => `${st.n} ${st.label}`).join(", then ")}.</p>
+      <div aria-hidden>
+        {label > 0 && (
+          <p className="trail">{stages.slice(0, label).map((st, i) => <span key={i}><s>{st.n}</s> → </span>)}</p>
+        )}
+        <p className="countdown-now">
+          <span className="bignum">{shown}</span>
+          <span>{stages[label].label}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** On the board: from everything that landed this week, down to what has mattered before for what you own. */
 export function TodayFunnel({ symbols }: { symbols: string[] }) {
   const t = useToday(symbols);
-  if (!t?.day || !t.holdings) return null;
-  const h = t.holdings;
-  const w = t.week;
-  const all = w ? w.filings.count + (w.rate?.jumps.length ?? 0) : t.market.filings.count + (t.market.rate ? 1 : 0);
+  const stages = useMemo<Stage[]>(() => {
+    if (!t?.day || !t.holdings) return [];
+    const h = t.holdings, w = t.week;
+    const mine = w && h.week_filings ? h.week_filings : h.filings;
+    const all = w ? w.filings.count + (w.rate?.jumps.length ?? 0) : t.market.filings.count + (t.market.rate ? 1 : 0);
+    const out: (Stage | null)[] = [
+      { n: all, label: w ? `new this week (${span(w.start, w.end)}) across the companies Stone follows` : `new in Stone's data for ${shortDate(t.day)}` },
+      mine && h.signals ? { n: mine.count + h.signals.firing, label: `about what you own: ${plural(mine.count, "SEC filing")} and ${plural(h.signals.firing, "signal")} firing` } : null,
+      h.signals ? { n: h.signals.strong_firing, label: `${h.signals.strong_firing === 1 ? "has" : "have"} mattered before for your holdings` } : null,
+    ];
+    return out.filter((x): x is Stage => x !== null && Number.isFinite(x.n));
+  }, [t]);
+  if (!t?.day || !t.holdings || !stages.length) return null;
+  const h = t.holdings, w = t.week;
   const mine = w && h.week_filings ? h.week_filings : h.filings;
-  const steps: [number, string][] = [
-    [all, w ? `new this week (${span(w.start, w.end)}) across the companies Stone follows` : `new in Stone's data for ${shortDate(t.day)}: ${marketWords(t, false)}`],
-    [mine.count, `SEC ${mine.count === 1 ? "filing" : "filings"} about what you own${w ? " this week" : ""}`],
-    [h.signals.firing, `${h.signals.firing === 1 ? "signal" : "signals"} firing on what you own`],
-  ];
   return (
     <div className="today">
       <span className="ticker">{w ? "This week" : "Today"}</span>
-      <ol className="funnel">
-        {steps.map(([n, label]) => (
-          <li key={label}><b>{n}</b> <span>{label}</span></li>
-        ))}
-      </ol>
+      <Countdown stages={stages} />
       {mine.items.length > 0 && (
         <ul className="funnel-items">
           {mine.items.map((i) => (
@@ -112,11 +158,8 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
           ))}
         </ul>
       )}
-      <p className="funnel-end">
-        <span className="bignum">{h.signals.strong_firing}</span>
-        <span>{h.signals.strong_firing === 1 ? "has" : "have"} mattered before for {h.signals.strong_firing === 1 ? "that holding" : "those holdings"}.</span>
-      </p>
       <p className="note">
+        {w ? `This week: ${filingWords(w.filings, false)}${w.rate?.jumps.length ? ` and ${plural(w.rate.jumps.length, "interest-rate jump")}` : ""}. ` : `${marketWords(t, false)}. `}
         Filings from SEC EDGAR; signals from Stone&apos;s engine on prices, SEC filings and FRED, as of {shortDate(h.signals.as_of ?? t.day)}.
         {h.signals.items.length > 0 && <> Firing: {h.signals.items.map((i) => `${i.symbol} (${i.label})`).join(", ")}.</>}
       </p>

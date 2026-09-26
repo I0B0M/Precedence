@@ -366,14 +366,12 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 
 /* ---------- today / start ---------- */
 .today { border: var(--edge); border-radius: var(--r-card); padding: 16px 20px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
-.funnel { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 15px; color: var(--text-2); }
-.funnel li { display: inline-flex; align-items: baseline; gap: 6px; }
-.funnel li + li::before { content: "→"; color: var(--mark); margin-right: 4px; }
-.funnel b { color: var(--text); font-family: var(--head); font-size: 20px; }
+.trail { margin: 0; color: var(--text-2); font-family: var(--head); font-size: 22px; }
+.trail s { text-decoration-thickness: 2px; }
+.countdown-now { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: 18px; margin: 0; }
+.countdown-now .bignum { font-size: clamp(48px, 8vw, 72px); color: var(--accent-text); font-variant-numeric: tabular-nums; min-width: 1.2ch; }
 .funnel-items { margin: 0; padding-left: 18px; font-size: 15px; display: flex; flex-direction: column; gap: 4px; }
 .funnel-items a { color: var(--accent-text); }
-.funnel-end { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 18px; }
-.funnel-end .bignum { font-size: clamp(40px, 6vw, 56px); color: var(--accent-text); }
 .count-in { animation: rise 0.5s var(--ease) both; }
 
 /* ---------- practice ---------- */
