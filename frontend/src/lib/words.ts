@@ -43,7 +43,7 @@ export function liteMarket(m: MarketResult): string {
 }
 
 export function liteVerdict(s: SignalResult): string {
-  if (s.label === "STRONG") return "That's a real pattern for this stock.";
+  if (s.label === "STRONG") return s.signal === "market_rate_jump" ? "That's a real pattern for the whole market." : "That's a real pattern for this stock.";
   if (s.label === "WEAK") return "That's too few times to be sure.";
   return "That's not clearly different from normal.";
 }
