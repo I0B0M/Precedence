@@ -40,8 +40,8 @@ export function NotFollowed({ ticker }: { ticker: string }) {
       <h3>We don&apos;t follow {ticker} yet</h3>
       <p>Stone has filings, prices and signals for the S&amp;P 100 companies and a few funds. {ticker} isn&apos;t one of them yet.</p>
       <div className="row-flex">
-        <Link className="btn small" href="/">Back to your portfolio</Link>
-        <Link className="btn light small" href="/lab">Signals</Link>
+        <Link className="btn small" href="/portfolio">Back to your portfolio</Link>
+        <Link className="btn light small" href="/signals">Signals</Link>
       </div>
     </div>
   );

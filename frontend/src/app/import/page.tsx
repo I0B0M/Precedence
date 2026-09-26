@@ -164,7 +164,7 @@ export default function ImportScreen() {
       symbol: r.symbol, shares: r.shares ?? (r.value != null && r.price ? r.value / r.price : 0),
     })).filter((h) => h.shares > 0);
     saveHoldings(holdings);
-    router.push("/");
+    router.push("/portfolio");
   }
 
   const edit = (i: number, k: keyof EditRow, v: string) => {
