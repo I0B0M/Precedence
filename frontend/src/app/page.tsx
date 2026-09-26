@@ -16,6 +16,7 @@ export default function HoldingsBoard() {
   const [board, setBoard] = useState<PortfolioOut | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const [holdings, setHoldings] = useHoldings(status ? (status.data === "sample" ? SAMPLE_PORTFOLIO : NO_HOLDINGS) : null);
 
   useEffect(() => {
@@ -41,6 +42,9 @@ export default function HoldingsBoard() {
 
   const watching = board.exposure.filter((e) => e.state === "WATCH").length;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);
+  // Looking through a fund can add ~100 rows. Keep what you hold directly, anything on WATCH, and the first few.
+  const shown = showAll ? board.exposure : board.exposure.filter((e, i) => e.direct > 0 || e.state === "WATCH" || i < 8);
+  const hidden = board.exposure.length - shown.length;
   return (
     <section>
       <div className="pf-head">
@@ -62,7 +66,7 @@ export default function HoldingsBoard() {
       </div>
 
       <div className="rows">
-        {board.exposure.map((e) => {
+        {shown.map((e) => {
           const row = board.rows.find((r) => r.symbol === e.symbol);
           const isOpen = open === e.symbol;
           return (
@@ -74,7 +78,7 @@ export default function HoldingsBoard() {
                   <span className="nm">{e.name}</span>
                 </span>
                 <span className="say">
-                  <span className="lite-only">{row?.kind === "etf" ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
+                  <span className="lite-only">{row?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
                   <span className="pro-only">{proSummary(e.firing)}</span>
                 </span>
                 <span className="val">
@@ -96,6 +100,11 @@ export default function HoldingsBoard() {
         })}
       </div>
 
+      {(hidden > 0 || showAll) && board.exposure.length > 8 && (
+        <button type="button" className="linkb" style={{ marginTop: 12 }} onClick={() => setShowAll(!showAll)}>
+          {showAll ? "Show fewer" : `Show all ${board.exposure.length} (${hidden} more inside your funds)`}
+        </button>
+      )}
       <div className="stack" style={{ gap: 6, marginTop: 14 }}>
         {board.funds.map((f) => <FundLine key={f.symbol} f={f} />)}
         {splitFunds.length > 0 && (

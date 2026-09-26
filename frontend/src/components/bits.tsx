@@ -1,7 +1,9 @@
 import type { Label, Scan, SignalResult, State } from "@/lib/api";
 import { whole } from "@/lib/format";
 
-export function StateBadge({ state }: { state: State }) {
+/** CALM / WATCH. A fund or stock the engine hasn't tested gets a quiet "Not tested", never "Calm". */
+export function StateBadge({ state }: { state: State | null }) {
+  if (state == null) return <span className="badge untested">Not tested</span>;
   return (
     <span className={`badge ${state === "WATCH" ? "watch" : "calm"}`}>
       <span className="lite-only">{state === "WATCH" ? "Heads up" : "Calm"}</span>

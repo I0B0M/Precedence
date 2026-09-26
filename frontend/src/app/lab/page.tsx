@@ -190,7 +190,11 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       </div>
       <div className="lite-only">
         {cases.length > 0 && (
-          <p className="note">Most recent: {cases.slice(-3).reverse().map((c) => `${shortDate(c.entry_day)} (${pct(c.ret)})`).join(" · ")}</p>
+          <p className="note">
+            Most recent, {ticker}&apos;s own move{r.vs_market ? " (and the market's)" : ""}:{" "}
+            {cases.slice(-3).reverse().map((c) =>
+              `${shortDate(c.entry_day)} ${pct(c.ret)}${r.vs_market && c.market_ret != null ? ` (SPY ${pct(c.market_ret)})` : ""}`).join(" · ")}
+          </p>
         )}
       </div>
       <p className="note">Prices from the daily bars in Stone&apos;s database; events timed from SEC acceptance and FRED release.</p>

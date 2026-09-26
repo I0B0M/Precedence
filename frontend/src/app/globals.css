@@ -180,6 +180,7 @@ html[data-mode="pro"] .grid2.pro-only { display: grid !important; }
 .badge { font-weight: 600; font-size: 13px; letter-spacing: -0.01em; border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
 .badge.calm { background: var(--up-tint); color: var(--up); }
 .badge.watch { background: var(--accent-tint); color: var(--accent-text); }
+.badge.untested { background: transparent; color: var(--text-2); font-weight: 500; box-shadow: inset 0 0 0 1px var(--sep); }
 .label { font-weight: 600; font-size: 12px; letter-spacing: 0; border-radius: 6px; padding: 3px 8px; white-space: nowrap; background: var(--fill); color: var(--text-2); }
 .label.strong { background: var(--accent-tint); color: var(--accent-text); }
 

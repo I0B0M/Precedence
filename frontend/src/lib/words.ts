@@ -8,6 +8,7 @@ export function headline(signals: SignalResult[]): SignalResult | null {
 
 export function liteSummary(firing: SignalResult[]): string {
   const strong = firing.find((s) => s.label === "STRONG");
+  if (strong?.signal === "market_rate_jump") return "Interest rates jumped, and the whole market has usually fallen after that.";
   if (strong) return `${strong.lite}, and for this stock that has mattered before.`;
   if (firing.length) return `${firing[0].lite}, but that hasn't clearly mattered here before.`;
   return "Nothing important today.";
