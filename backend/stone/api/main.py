@@ -1,6 +1,7 @@
 """Stone API. Every endpoint reads Postgres; none calls an outside API except
 screenshot import, which calls Gemini (cached by image) once it is connected."""
 
+from datetime import timedelta
 from functools import lru_cache
 
 import psycopg
@@ -130,6 +131,64 @@ def scan(c: psycopg.Connection = Conn):
         return None
     return {**row, "run_at": row["run_at"].isoformat(), "as_of": row["as_of"].isoformat(),
             "expected_by_chance": float(row["expected_by_chance"])}
+
+
+@app.get("/api/today")
+def today(symbols: str | None = None, c: psycopg.Connection = Conn):
+    """The start screen's counts for the last trading day, from the database only.
+    symbols: optional comma-separated holdings, e.g. ?symbols=BX,AMZN,SPY."""
+    day = c.execute("select max(day) as d from prices_daily").fetchone()["d"]
+    # A Form 4 counts only when its lines were parsed for that company, so it is a trade in the company's
+    # own stock and not the company selling someone else's. Other forms count as filed.
+    filed = c.execute(
+        """select f.ticker, f.form, f.accession, f.accepted_at, f.primary_doc, f.source, co.cik from filings f
+           join companies co on co.ticker = f.ticker
+           where (f.accepted_at at time zone 'America/New_York')::date = %s
+             and (f.form <> '4' or exists (select 1 from insider_trades i
+                                           where i.accession = f.accession and i.ticker = f.ticker))
+           order by f.accepted_at""", (day,)).fetchall()
+    filing_sources = ",".join(r["source"] for r in c.execute("select distinct source from filings order by 1"))
+    by_form: dict[str, int] = {}
+    for f in filed:
+        by_form[f["form"]] = by_form.get(f["form"], 0) + 1
+
+    rate = c.execute("select day, value, source from rates where series = 'DGS10' order by day desc limit 1").fetchone()
+    week = rate and c.execute("select value from rates where series = 'DGS10' and day <= %s order by day desc limit 1",
+                              (rate["day"] - timedelta(days=7),)).fetchone()
+    out = {
+        "day": day.isoformat() if day else None,
+        "market": {
+            "filings": {"count": len(filed), "companies": len({f["ticker"] for f in filed}), "by_form": by_form,
+                        "as_of": day.isoformat() if day else None, "source": filing_sources},
+            "rate": {"series": "DGS10", "day": rate["day"].isoformat(), "value": float(rate["value"]),
+                     "change_week": round(float(rate["value"] - week["value"]), 4) if week else None,
+                     "known_at": engine.rate_known_at(rate["day"]).isoformat(), "source": rate["source"]}
+                    if rate else None,
+        },
+        "holdings": None,
+    }
+    if not symbols:
+        return out
+
+    wanted = list(dict.fromkeys(s.strip().upper() for s in symbols.split(",") if s.strip()))
+    kinds = {r["ticker"]: r["kind"] for r in c.execute(
+        "select ticker, kind from companies where ticker = any(%s)", (wanted,)).fetchall()}
+    held = [s for s in wanted if s in kinds]
+    market_symbol, market = service.load_market(c)
+    rates = service.load_rates(c)
+    firing = [{"symbol": s, "signal": r.signal, "label": r.label}
+              for s in held for r in signal_results(c, s, kinds[s], market_symbol, rates, market) or [] if r.firing]
+    mine = [f for f in filed if f["ticker"] in held]
+    out["holdings"] = {
+        "symbols": held, "unknown": [s for s in wanted if s not in kinds],
+        "filings": {"count": len(mine), "as_of": out["day"], "source": filing_sources,
+                    "items": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+                               "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])}
+                              for f in mine]},
+        "signals": {"firing": len(firing), "strong_firing": sum(1 for x in firing if x["label"] == engine.STRONG),
+                    "items": firing, "as_of": out["day"], "source": "Stone signal engine (prices, SEC, FRED)"},
+    }
+    return out
 
 
 @app.get("/api/market/rate_jump")

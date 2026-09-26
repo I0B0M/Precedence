@@ -163,3 +163,37 @@ def test_the_market_fund_page_carries_the_same_state_as_the_board(client, monkey
     monkeypatch.setattr(service, "MARKET_TICKERS", ("HLCN",))  # BRD500 becomes a fund we never tested
     page = client.get("/api/companies/BRD500").json()
     assert page["state"] is None and page["signals"] == []
+
+
+def test_today_counts_the_last_trading_day_from_the_database(client):
+    conn = db.connect(os.environ["DATABASE_URL"])
+    day, at = date(2026, 9, 25), "2026-09-25 18:00-04"
+    rows = [("T-HLCN-8K", "HLCN", "8-K"), ("T-HLCN-4", "HLCN", "4"), ("T-ORCA-4", "ORCA", "4")]
+    for acc, t, form in rows:
+        conn.execute("insert into filings values (%s, %s, %s, %s, %s, null, null, 'sample')", (acc, t, form, day, at))
+    # only HLCN's Form 4 has parsed lines, so only it is known to be about HLCN (not HLCN selling someone else's stock)
+    conn.execute("insert into insider_trades values ('T-HLCN-4', 0, 'HLCN', 'X', null, %s, 'S', 1, 1, 'D', %s, 'sample')",
+                 (day, at))
+    conn.commit()
+    try:
+        body = client.get("/api/today?symbols=hlcn,ORCA,BRD500,ZZZZ").json()
+        assert body["day"] == "2026-09-25"
+        f = body["market"]["filings"]
+        assert f["count"] == 2 and f["by_form"] == {"8-K": 1, "4": 1} and f["as_of"] == "2026-09-25"
+        assert body["market"]["rate"]["day"] == "2026-09-25" and body["market"]["rate"]["source"] == "sample"
+        h = body["holdings"]
+        assert h["symbols"] == ["HLCN", "ORCA", "BRD500"] and h["unknown"] == ["ZZZZ"]
+        assert h["filings"]["count"] == 2 and {i["ticker"] for i in h["filings"]["items"]} == {"HLCN"}
+        page = {s: client.get(f"/api/companies/{s}").json() for s in ("HLCN", "ORCA", "BRD500")}
+        firing = [(s, x["signal"], x["label"]) for s, p in page.items() for x in p["signals"] if x["firing"]]
+        assert h["signals"]["firing"] == len(firing)
+        assert h["signals"]["strong_firing"] == sum(1 for *_, lab in firing if lab == "STRONG") >= 1  # HLCN is WATCH
+    finally:
+        conn.execute("delete from insider_trades where accession = 'T-HLCN-4'")
+        conn.execute("delete from filings where accession like 'T-%'")
+        conn.commit()
+
+
+def test_today_without_holdings_has_only_the_market(client):
+    body = client.get("/api/today").json()
+    assert body["holdings"] is None and body["market"]["filings"]["source"] == "sample"
