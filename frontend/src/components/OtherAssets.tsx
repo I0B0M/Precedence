@@ -171,39 +171,60 @@ export function OtherAssetsForms() {
   );
 }
 
-/** One home row: "About $X · Estimate" in Lite; the price change and the method in Pro / Why. */
+/** Where the home is: a 3×3 mosaic of OpenStreetMap tiles at zoom 17, centred on the Census geocoder's point, with a pin
+ *  drawn in CSS. OSM's own tiles need no key; their licence asks for the visible credit, linked to its copyright page. */
+function HomeMap({ lat, lon, place }: { lat: number; lon: number; place: string }) {
+  const z = 17, n = 2 ** z;
+  const X = ((lon + 180) / 360) * n;
+  const r = (lat * Math.PI) / 180;
+  const Y = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n;
+  const cx = Math.floor(X), cy = Math.floor(Y);
+  const px = (X - (cx - 1)) * 256, py = (Y - (cy - 1)) * 256; // the point, in the mosaic's own pixels
+  return (
+    <div className="home-map" role="img" aria-label={`Map of ${place}`}>
+      <div className="home-tiles" style={{ left: `calc(50% - ${px.toFixed(1)}px)`, top: `calc(50% - ${py.toFixed(1)}px)` }}>
+        {[-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={`${dx},${dy}`} alt="" src={`https://tile.openstreetmap.org/${z}/${cx + dx}/${cy + dy}.png`}
+            width={256} height={256} style={{ left: (dx + 1) * 256, top: (dy + 1) * 256 }} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" />
+        )))}
+      </div>
+      <span className="home-pin" aria-hidden />
+      <a className="home-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
+    </div>
+  );
+}
+
+/** One home: "Your home · address", about how much it's worth, what was paid and how local prices moved, and where
+ *  it is on a map (address lookups only). Pro adds the method, the FHFA index values and the sources. */
 function HomeRow({ p }: { p: Property }) {
   const e = p.estimate;
   const place = e?.address_matched ?? p.address;
-  const where = e?.index_level === "zip5" ? `ZIP ${e.zip ?? ""}` : e?.index_level === "county" ? "County" : e?.index_level === "state" ? (e.us_state ?? "State") : "";
-  const change = e && e.index_change != null && e.index_from
-    ? `${where} prices ${e.index_change >= 0 ? "up" : "down"} ${pct(Math.abs(e.index_change), false, 0)} since ${e.index_from.year}`.trim()
-    : null;
+  const area = e?.index_level === "zip5" ? "your ZIP" : e?.index_level === "county" ? "your county" : e?.index_level === "state" ? (e.us_state ?? "your state") : null;
+  const about = e ? Math.round(e.estimate / 1000) * 1000 : null; // an estimate: never shown to the dollar
   return (
-    <div className="hitem">
-      <div className="hrow other">
-        <span className="who">
-        <span className="tk">Home</span><span className="nm">{place}</span>
-        <span className="say">
-          {e ? <>About {approxMoney(e.estimate)} · Estimate</> : "Estimate coming soon"}
-          {change && <span className="pro-only note"> · {change} (FHFA)</span>}
-          {e && (
-            <Why what={`home estimate for ${place}`} source={e.source} asOf={e.as_of}
-              rows={[
-                ["Method", e.method],
-                ...(change ? [["Change", change] as [string, string]] : []),
-                ["Index", e.index_level ? `${LEVEL_WORDS[e.index_level] ?? e.index_level} series${e.index_from && e.index_to ? `, ${e.index_from.year} ${e.index_from.value} → ${e.index_to.year} ${e.index_to.value}` : ""}` : "—"],
-                ["Located by", e.located_by === "address" ? `address, matched as ${e.address_matched ?? "—"} (${e.geocoder})` : `ZIP ${e.zip ?? "—"}`],
-                ["Paid", `${money(e.paid)} in ${e.bought_year}`],
-                ...(e.note ? [["Note", e.note] as [string, string]] : []),
-              ]} />
-          )}
-        </span>
-        <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`} style={{ alignSelf: "flex-start" }}>Remove</button>
-        </span>
-        <span className="sp" aria-hidden />
-        <span className="val">{e ? `About ${approxMoney(e.estimate)}` : "—"}<small className="mute">{e ? "estimate" : "coming soon"}</small></span>
-        <span className="hend"><StateBadge state={null} /></span>
+    <div className="hitem home-item">
+      <div className="home-body">
+        <div className="home-text">
+          <span className="kicker">Your home · {place}</span>
+          {e ? (
+            <>
+              <div className="home-value"><span className="home-num">About {money(about)}</span> <span className="label">Estimate</span></div>
+              <p className="note">
+                Bought for {money(e.paid)} in {e.bought_year}
+                {area && e.index_change != null ? ` · home prices in ${area} are ${e.index_change >= 0 ? "up" : "down"} ${pct(Math.abs(e.index_change), false, 0)} since` : ""}
+              </p>
+              <p className="note pro-only pro-add">
+                Method: {e.method}.
+                {e.index_level && e.index_from && e.index_to && ` FHFA ${LEVEL_WORDS[e.index_level] ?? e.index_level} index ${e.index_from.year} ${e.index_from.value} → ${e.index_to.year} ${e.index_to.value}.`}
+                {" "}Source: {e.source}{e.as_of ? ` (latest ${e.as_of})` : ""}. Located by {e.located_by === "address" ? `address (${e.geocoder})` : `ZIP ${e.zip ?? ""}`}.
+                {e.note ? ` ${e.note}` : ""}
+              </p>
+            </>
+          ) : <p>Estimate coming soon.</p>}
+          <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`} style={{ alignSelf: "flex-start" }}>Remove</button>
+        </div>
+        {e?.lat != null && e?.lon != null && <HomeMap lat={e.lat} lon={e.lon} place={place} />}
       </div>
     </div>
   );

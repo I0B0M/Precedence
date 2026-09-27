@@ -709,3 +709,15 @@ html[data-mode="pro"] .ownmap.pro-only { display: flex !important; }
 .driver-popover.precedence-tour .driver-popover-next-btn { background: var(--gold); color: var(--on-accent); }
 .driver-popover.precedence-tour .driver-popover-close-btn { color: var(--text-2); min-width: 44px; min-height: 44px; }
 .driver-popover.precedence-tour .driver-popover-arrow { display: none; }
+
+/* A home: value and story on the left, where it is on the right (one column on a phone). */
+.home-item .home-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 16px; padding: 16px 20px; align-items: start; }
+.home-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.home-value { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.home-num { font-family: var(--head); font-size: clamp(26px, 3.4vw, 34px); line-height: 1.1; }
+.home-map { position: relative; height: 200px; overflow: hidden; border-radius: var(--r-ctl); background: var(--fill); border: 1px solid var(--sep); }
+.home-tiles { position: absolute; width: 768px; height: 768px; filter: grayscale(0.6) brightness(0.85); }
+.home-tiles img { position: absolute; display: block; }
+.home-pin { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -20px 0 0 -9px; background: var(--gold); border: 2px solid var(--bg); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+.home-attr { position: absolute; right: 0; bottom: 0; font-size: 11px; line-height: 1; padding: 4px 6px; background: rgba(0, 0, 0, 0.7); color: var(--text); text-decoration: none; }
+@media (max-width: 640px) { .home-item .home-body { grid-template-columns: minmax(0, 1fr); } }
