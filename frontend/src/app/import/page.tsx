@@ -139,8 +139,17 @@ export default function ImportScreen() {
 
   useEffect(() => {
     api.status().then(setStatus).catch(() => setStatusFailed(true));
-    if (new URLSearchParams(window.location.search).get("example") === "1") {
-      loadExample().then((ex) => { applyExample(ex); seedExampleExtras(other); });
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("example") === "1") {
+      loadExample().then(async (ex) => {
+        applyExample(ex);
+        await seedExampleExtras(other);
+        // The landing's "Open your portfolio" for a first visit: the whole example, saved, then straight to the board.
+        if (ex && q.get("open") === "portfolio") {
+          saveHoldings(ex.rows.map((r) => ({ symbol: r.symbol, shares: Number(r.shares) })));
+          router.replace("/portfolio");
+        }
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

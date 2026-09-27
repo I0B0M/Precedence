@@ -128,7 +128,8 @@ export default function Home() {
                 <Link className="btn" href="/portfolio">Open your portfolio</Link>
                 <Link className="btn light" href="/import">Add more</Link>
               </> : <>
-                <Link className="btn" href="/import?example=1">Try it with an example</Link>
+                {/* No holdings yet: the example (the same one /import saves), saved, then the board. */}
+                <Link className="btn" href="/import?example=1&open=portfolio">Open your portfolio</Link>
                 <Link className="btn light" href="/import">Add your account</Link>
               </>}
             </div>
