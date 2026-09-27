@@ -26,6 +26,7 @@ function WeightRow({ href, children }: { href: string | null; children: React.Re
   return href ? <Link href={href} className="list-row weight-row">{children}</Link> : <div className="list-row weight-row">{children}</div>;
 }
 const w = (x: number) => `${(x * 100).toFixed(x >= 0.1 ? 1 : 2)}%`;
+const monthDay = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 // Brief: "understanding what they own". Blackstone coaching: investors think in funds: what's in it, how it's doing, what's next.
 export default function FundScreen() {
@@ -55,6 +56,10 @@ export default function FundScreen() {
   const more = f.total_holdings_count - top.length;
   const unseen = Math.max(0, 1 - f.looked_through_share);
   const source = f.holdings_source ? SOURCES[f.holdings_source] ?? f.holdings_source : null;
+  // VOO, IVV and SPYM track the S&P 500 and are shown with SPY's holdings file; the API's note says which fund's.
+  const from = f.note?.match(/holdings from ([A-Z.]+)/)?.[1] ?? null;
+  const borrowed = from && from !== f.symbol ? from : null;
+  const fileWords = borrowed ? `${borrowed}'s ${source ?? "holdings"} file` : source;
 
   return (
     <section className="stack" style={{ gap: 28 }}>
@@ -85,7 +90,7 @@ export default function FundScreen() {
       <div className="box">
         <h3>What&apos;s going on</h3>
         <p className="say-big">{f.fund_firing.length ? liteSummary(f.fund_firing, f.symbol) : "Nothing important today."}</p>
-        <MarketCard onlyFor={f.symbol} />
+        <MarketCard onlyFor={borrowed ?? f.symbol} />
       </div>
 
       {f.holdings.length === 0 ? (
@@ -113,7 +118,9 @@ export default function FundScreen() {
             </div>
             <p className="note">
               {more > 0 ? `And ${more} more${f.built_from === "api" ? "" : " that we can see"}. ` : ""}
-              {f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}.` : ""}
+              {borrowed
+                ? `Same index as ${borrowed}. Holdings shown from ${borrowed}'s ${(source ?? "").replace(/ \(.*\)$/, "")} file${f.holdings_as_of ? ` (${monthDay(f.holdings_as_of)})` : ""}.`
+                : f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}.` : ""}
               <span className="pro-only">{unseen > 0.005 ? ` The other ${w(unseen)} of the fund is in companies Precedence doesn't track yet.` : ""}</span>
             </p>
             {f.heads_up.length > 0 && (
@@ -166,7 +173,7 @@ export default function FundScreen() {
             <h3>Top {f.holdings.length} holdings</h3>
             <Why what={`${f.symbol} holdings weights`}
               rows={[["Weights", "Each holding's share of the fund, from the fund's own holdings file"], ["Precedence tracks", `${w(f.looked_through_share)} of the fund`], ["Holdings", `${f.total_holdings_count}${f.built_from === "api" ? " in the fund" : " that we can see"}`]]}
-              source={source ?? undefined} asOf={f.holdings_as_of} />
+              source={fileWords ?? undefined} asOf={f.holdings_as_of} />
           </div>
           <div className="tscroll">
             <table>
@@ -185,7 +192,7 @@ export default function FundScreen() {
             </table>
           </div>
           <p className="note">
-            Weights from {source ?? "the fund's holdings file"}{f.holdings_as_of ? `, as of ${shortDate(f.holdings_as_of)}` : ""}; {w(f.looked_through_share)} of the fund
+            Weights from {fileWords ?? "the fund's holdings file"}{f.holdings_as_of ? `, as of ${shortDate(f.holdings_as_of)}` : ""}; {w(f.looked_through_share)} of the fund
             is in companies Precedence tracks. Holdings under 1% of the fund aren&apos;t tested, so they show &quot;Not tested&quot;.
             {f.built_from === "existing endpoints" && " Built from our portfolio look-through until the fund endpoint ships."}
           </p>
