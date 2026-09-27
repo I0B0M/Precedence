@@ -30,6 +30,10 @@ export interface SignalResult {
   label: Label;
   firing: { known_at: string; note: string } | null;
   note?: string | null; // why there is no result, for label "NO DATA"
+  // From the latest full scan's Benjamini-Hochberg run (10% FDR across every stock-signal pair with 10+ cases):
+  // true = still stands after correcting for testing them all at once; false = doesn't; null = not in that run
+  // (fewer than 10 cases, no p-value, a fund, or no scan yet)
+  fdr10_survives?: boolean | null;
   // held up only with 10+ cases in each half, each beating its own normal rate
   holdout: { first: Half; second: Half; held_up: boolean;
     verdict?: "held up" | "did not hold" | "too few cases to check" } | null;
@@ -49,7 +53,7 @@ export interface FundHolding {
   in_stone: boolean; // Stone has prices and signals for it
   state: State | null; // null when not tracked
   firing: { signal: string; label: Label }[];
-  lite_line: string | null; // e.g. "Executives sold shares, and for this stock that has mattered before."
+  lite_line: string | null; // e.g. "Insiders sold shares, and for this stock that has mattered before."
 }
 
 export interface FundPage {

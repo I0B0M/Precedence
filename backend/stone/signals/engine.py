@@ -49,7 +49,7 @@ class Spec:
     vs_market: bool = False  # hit = did worse than the market over the same days, not just lower
 
 
-INSIDER = Spec("insider_cluster", "Executives sold shares",
+INSIDER = Spec("insider_cluster", "Insiders sold shares",  # Form 4 sellers include directors, not only executives
                "Insider selling cluster: 3+ Form 4 sales in 10 days", 20)
 RATES = Spec("rate_jump", "Interest rates jumped",
              "10-year yield (FRED DGS10) up 0.15 pt or more in a week", 5, vs_market=True)

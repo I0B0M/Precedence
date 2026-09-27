@@ -19,7 +19,8 @@ KEY_FACTS = [
 ]
 
 
-def result_json(r: engine.Result, with_cases: bool = True) -> dict:
+def result_json(r: engine.Result, with_cases: bool = True, fdr10: dict[str, bool] | None = None) -> dict:
+    """fdr10: this stock's verdicts from the latest scan's Benjamini-Hochberg run (scan.fdr10_by_signal)."""
     spec = engine.ALL_SPECS[r.signal]
     out = {
         "signal": r.signal, "lite": spec.lite, "pro": spec.pro, "horizon": r.horizon,
@@ -29,6 +30,7 @@ def result_json(r: engine.Result, with_cases: bool = True) -> dict:
         "low": r.low, "high": r.high, "label": r.label,
         "firing": {"known_at": r.firing.known_at.isoformat(), "note": r.firing.note} if r.firing else None,
         "note": r.note,
+        "fdr10_survives": (fdr10 or {}).get(r.signal),  # None: not in that run
     }
     if r.holdout:
         half = lambda h: {"n": h.n, "hits": h.hits, "hit_rate": h.hit_rate, "normal_rate": h.normal_rate,

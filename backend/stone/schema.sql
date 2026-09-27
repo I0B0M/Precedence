@@ -114,6 +114,16 @@ create table if not exists signal_scans (
 -- across every tested pair in that scan (null for scans run before this was added).
 alter table signal_scans add column if not exists strong_fdr10 integer;
 
+-- Every stock-signal pair with a p-value in a scan, and whether it survives Benjamini-Hochberg at 10%.
+create table if not exists signal_scan_pairs (
+    run_at  timestamptz not null references signal_scans (run_at) on delete cascade,
+    ticker  text not null,
+    signal  text not null,
+    p       numeric not null,
+    fdr10   boolean not null,
+    primary key (run_at, ticker, signal)
+);
+
 -- FHFA annual house price index (developmental, all-transactions, NSA), for home estimates.
 -- area: 5-digit ZIP, county FIPS, or two-letter state. hpi: 100 in the first recorded year.
 create table if not exists house_price_index (
