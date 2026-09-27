@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/", label: "Portfolio" },
   { href: "/lab", label: "Does it matter?" },
   { href: "/practice", label: "Practice" },
+  { href: "/briefing", label: "Briefing" },
 ];
 const PORTFOLIO_PATHS = ["/company", "/import"];
 

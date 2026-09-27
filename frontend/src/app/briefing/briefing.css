@@ -1,0 +1,143 @@
+/* The Briefing: a dark stage for the orb inside the app's page. Every rule is prefixed .bf so nothing
+   here leaks into the rest of the app, and nothing in globals.css is changed. */
+
+.bf-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.bf-head h1 { margin: 0; }
+
+.bf {
+  --bf-bg: #0b0a16;
+  --bf-ink: #ede9ff;
+  --bf-dim: #9a94b8;
+  --bf-line: rgba(237, 233, 255, 0.14);
+  --bf-purple: #8e6cf0;
+  --bf-orange: #f26b21;
+  --bf-blue: #9fd1ff;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.bf-stage {
+  position: relative;
+  overflow: hidden;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 28px 22px 18px;
+  border-radius: 20px;
+  background: var(--bf-bg);
+  color: var(--bf-ink);
+  border: 1.5px solid #000;
+  isolation: isolate;
+}
+.bf-glow {
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 70%;
+  background: radial-gradient(closest-side at 50% 45%, rgba(142, 108, 240, 0.28), rgba(142, 108, 240, 0) 70%);
+  transition: background 600ms ease;
+  pointer-events: none;
+  z-index: -1;
+}
+.bf[data-play="playing"] .bf-glow { background: radial-gradient(closest-side at 50% 45%, rgba(201, 184, 255, 0.34), rgba(142, 108, 240, 0) 70%); }
+.bf[data-phase="no-holdings"] .bf-glow { background: radial-gradient(closest-side at 50% 45%, rgba(255, 177, 58, 0.26), rgba(0, 0, 0, 0) 70%); }
+.bf[data-phase="error"] .bf-glow { background: radial-gradient(closest-side at 50% 45%, rgba(210, 59, 46, 0.26), rgba(0, 0, 0, 0) 70%); }
+
+.bf-orbwrap { display: grid; place-items: center; width: 100%; }
+.orb { position: relative; pointer-events: none; }
+.orb canvas { width: 100%; height: 100%; display: block; }
+.orb canvas.hidden { display: none; }
+.orb .css-orb {
+  position: absolute; inset: 14%; border-radius: 50%; opacity: 0.8;
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--glow) 90%, white) 0%, var(--glow) 38%, color-mix(in srgb, var(--glow) 60%, transparent) 62%, transparent 72%);
+  animation: bf-breathe 2s ease-in-out infinite;
+}
+@keyframes bf-breathe { 0%, 100% { transform: scale(0.94); opacity: 0.65; } 50% { transform: scale(1); opacity: 0.8; } }
+@media (prefers-reduced-motion: reduce) { .orb .css-orb { animation: none; } }
+
+.bf-caption { width: 100%; max-width: 46ch; min-height: 7.5em; display: flex; align-items: center; justify-content: center; text-align: center; }
+.bf-cap {
+  margin: 0;
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.bf-cap span { color: rgba(237, 233, 255, 0.34); transition: color 120ms linear; }
+.bf-cap span.on { color: var(--bf-ink); }
+.bf-cap.tone-watch span.on { color: #ffd2b8; }
+.bf-cap.tone-note span.on { color: #e6f1ff; }
+.bf-cap.dim, .bf .dim { color: var(--bf-dim); font-weight: 600; font-size: 1.1rem; }
+.bf[data-mode="pro"] .bf-cap { font-size: 1.15rem; }
+
+.bf-controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+.bf-btn {
+  font: 600 0.95rem/1 var(--font-figtree), sans-serif;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bf-line);
+  background: transparent;
+  color: var(--bf-ink);
+  cursor: pointer;
+}
+.bf-btn:hover:not(:disabled) { border-color: rgba(237, 233, 255, 0.5); }
+.bf-btn:disabled { opacity: 0.4; cursor: default; }
+.bf-btn.primary { background: var(--bf-ink); color: var(--bf-bg); border-color: var(--bf-ink); }
+.bf-btn.primary:hover { background: #fff; }
+.bf-btn:focus-visible, .bf-transcript button:focus-visible, .bf-chip:focus-visible, .bf-link:focus-visible { outline: 2px solid var(--bf-blue); outline-offset: 2px; }
+.bf-note { margin: 8px 0 0; font-size: 0.8rem; color: var(--bf-dim); text-align: center; max-width: 52ch; }
+
+.bf-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.bf-card { border-radius: 16px; border: 1.5px solid var(--bf-line); background: var(--bf-bg); color: var(--bf-ink); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.bf-kicker { font-family: var(--font-doto), monospace; font-weight: 900; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bf-dim); }
+.bf-holding { display: flex; flex-direction: column; gap: 4px; }
+.bf-hrow { display: flex; align-items: center; gap: 10px; }
+.bf-tk { font-family: var(--font-bricolage), sans-serif; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; }
+.bf-hname { color: var(--bf-dim); font-weight: 600; }
+.bf-hnum { display: flex; gap: 12px; font-weight: 700; font-size: 1.1rem; }
+.bf-hnum .up { color: #9be7b8; }
+.bf-hnum .down { color: #ff9d8a; }
+.bf-badge { font: 700 0.75rem/1 var(--font-figtree), sans-serif; padding: 6px 10px; border-radius: 999px; border: 1.5px solid var(--bf-line); }
+.bf-badge.s-WATCH { background: var(--bf-orange); border-color: var(--bf-orange); color: #160800; }
+.bf-badge.s-CALM { background: transparent; }
+.bf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bf-chip { font: 600 0.8rem/1 var(--font-figtree), sans-serif; padding: 7px 10px; border-radius: 999px; border: 1.5px solid var(--bf-line); color: var(--bf-ink); text-decoration: none; }
+.bf-chip:hover { border-color: var(--bf-purple); }
+.bf-link { color: var(--bf-blue); font-weight: 600; text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.bf-link:hover { text-decoration: underline; }
+
+.bf-transcript { list-style: none; margin: 0; padding: 6px 0; display: flex; flex-direction: column; gap: 2px; border-radius: 16px; border: 1.5px solid var(--bf-line); background: var(--bf-bg); max-height: 360px; overflow: auto; }
+.bf-transcript button {
+  display: grid; grid-template-columns: 12px 1fr; gap: 10px; align-items: start;
+  width: 100%; text-align: left; padding: 9px 14px; background: none; border: 0; cursor: pointer;
+  color: var(--bf-dim); font: 500 0.9rem/1.35 var(--font-figtree), sans-serif;
+}
+.bf-transcript li.now button { color: var(--bf-ink); background: rgba(237, 233, 255, 0.06); }
+.bf-transcript li.past button { color: rgba(154, 148, 184, 0.7); }
+.bf-transcript button:hover { color: var(--bf-ink); }
+.bf-dot { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--bf-purple); }
+.bf-transcript li.tone-watch .bf-dot { background: var(--bf-orange); }
+.bf-transcript li.tone-note .bf-dot { background: var(--bf-blue); }
+
+.bf-panel { border-radius: 16px; border: 1.5px solid var(--bf-line); background: var(--bf-bg); color: var(--bf-ink); padding: 12px 16px; }
+.bf-panel summary { cursor: pointer; font-weight: 700; }
+.bf-panel p { margin: 8px 0; font-size: 0.9rem; }
+.bf-panel table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.bf-panel th, .bf-panel td { padding: 6px 4px; border-top: 1px solid var(--bf-line); text-align: left; }
+.bf-panel th { color: var(--bf-dim); font-weight: 600; }
+.bf-panel .num { text-align: right; font-variant-numeric: tabular-nums; }
+.bf-held { margin: 10px 0 0; padding-left: 18px; font-size: 0.85rem; color: var(--bf-dim); display: flex; flex-direction: column; gap: 6px; }
+.bf-held em { color: var(--bf-purple); font-style: normal; }
+
+@media (max-width: 860px) {
+  .bf { grid-template-columns: 1fr; }
+  .bf-stage { min-height: 0; padding: 18px 12px 14px; }
+  .bf-cap { font-size: 1.2rem; }
+  .bf-transcript { max-height: none; }
+}
