@@ -1,8 +1,10 @@
-"""Stone API. Every endpoint reads Postgres; none calls an outside API except
-screenshot import, which calls Gemini (cached by image) once it is connected."""
+"""Precedence API. Endpoints read Postgres. The outside calls are all cached: Gemini (screenshot import,
+filing summary, once a key is set), the SEC (a filing's document for a summary) and the Census
+geocoder (home estimate)."""
 
 from datetime import timedelta
 from functools import lru_cache
+from typing import Literal
 
 import httpx
 import psycopg
@@ -14,9 +16,10 @@ from pydantic import BaseModel
 
 from stone import config
 from stone.api.views import filing_url, latest_facts, result_json
-from stone import homes
+from stone import homes, retirement
 from stone.config import NotConnected
 from stone.figures import check_figures, html_to_text
+from stone.ingest.tickers import HOLDINGS_FROM, RENAMED
 from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
@@ -57,13 +60,20 @@ def company_or_404(c: psycopg.Connection, ticker: str) -> dict:
 
 def signal_results(c: psycopg.Connection, sym: str, kind: str, market_symbol: str,
                    rates: list | None = None, market: list | None = None) -> list[engine.Result] | None:
-    """A stock's own signals; for the market fund (SPY), the rate-jump test run on the market itself;
-    None for a fund we never tested (it gets no state, never CALM)."""
+    """A stock's own signals; for the market fund (SPY), and funds on the same index (VOO, IVV, SPYM),
+    the rate-jump test run on the market itself; None for a fund we never tested (no state, never CALM)."""
     if kind == "stock":
         return list(service.run_all(c, sym, rates, market).values())
-    if sym == market_symbol:
+    if sym == market_symbol or HOLDINGS_FROM.get(sym) == market_symbol:
         return [service.run_market_rates(c)[1]]
     return None
+
+
+def same_index_note(etf: str, src: str, source: str | None) -> str | None:
+    if src == etf:
+        return None
+    return (f"Tracks the same index as {src}; holdings from {src}" + (", State Street" if source == "ssga" else "")
+            + f". Same index as {src}, so {src}'s test applies.")
 
 
 def state_of(results: list[engine.Result] | None) -> str | None:
@@ -257,6 +267,12 @@ def return_over(closes: list[tuple], bars: int) -> float | None:
     return closes[-1][1] / closes[-1 - bars][1] - 1 if len(closes) > bars else None
 
 
+@app.get("/api/funds/lookup")  # declared before /api/funds/{symbol} so "lookup" isn't read as a fund
+def funds_lookup(q: str):
+    """Which index a 401(k) / IRA fund tracks, from a small checked list."""
+    return retirement.lookup(q)
+
+
 @app.get("/api/funds/{symbol}")
 def fund(symbol: str, c: psycopg.Connection = Conn):
     """A fund page: what's in it, how it's doing, what's next. Holdings come from the issuer's file."""
@@ -264,11 +280,12 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
     if co["kind"] != "etf":
         raise HTTPException(400, f"{co['ticker']} is a stock, not a fund")
     t = co["ticker"]
+    src = HOLDINGS_FROM.get(t, t)  # VOO / IVV / SPLG use SPY's holdings
     closes = [(r["day"], float(r["close"])) for r in c.execute(
         "select day, close from prices_daily where ticker = %s order by day", (t,)).fetchall()]
-    as_of = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (t,)).fetchone()["d"]
+    as_of = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (src,)).fetchone()["d"]
     rows = c.execute("select holding, weight, source from etf_holdings where etf = %s and as_of = %s "
-                     "order by weight desc", (t, as_of)).fetchall() if as_of else []
+                     "order by weight desc", (src, as_of)).fetchall() if as_of else []
     tracked = {r["ticker"]: r for r in c.execute(
         "select ticker, name, kind from companies where ticker = any(%s)", ([r["holding"] for r in rows],)).fetchall()}
     market_symbol, market = service.load_market(c)
@@ -305,7 +322,7 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
         "filings_span": {"start": start.isoformat(), "end": day.isoformat()} if day else None,
         "week_filings": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
                           "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])} for f in week],
-        "note": None if rows else f"Holdings for {t} aren't loaded yet.",
+        "note": f"Holdings for {t} aren't loaded yet." if not rows else same_index_note(t, src, rows[0]["source"]),
     }
 
 
@@ -336,8 +353,38 @@ class HoldingIn(BaseModel):
     shares: float
 
 
+class OtherIn(BaseModel):
+    """Something owned outside a brokerage account. The API stays stateless: the browser sends these each time."""
+    kind: Literal["retirement", "property"]
+    fund: str | None = None  # retirement
+    amount: float | None = None
+    account: str | None = None
+    label: str | None = None  # property, carrying the fields from /api/estimate/home
+    address: str | None = None
+    paid: float | None = None
+    bought_year: int | None = None
+    estimate: float | None = None
+    source: str | None = None
+    as_of: str | None = None
+
+
 class PortfolioIn(BaseModel):
     holdings: list[HoldingIn]
+    other: list[OtherIn] = []
+
+
+def fund_weights(c: psycopg.Connection, etf: str, known: dict) -> tuple[dict[str, float], dict]:
+    """The fund's latest holdings, only stocks we have data for (the rest stays as the fund itself).
+    An ETF tracking the same index as a fund we load (VOO, IVV, SPLG -> SPY) uses that fund's holdings."""
+    src = HOLDINGS_FROM.get(etf, etf)
+    latest = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (src,)).fetchone()["d"]
+    rows_ = c.execute("select holding, weight, source from etf_holdings where etf = %s and as_of = %s",
+                      (src, latest)).fetchall()
+    weights = {r["holding"]: float(r["weight"]) for r in rows_ if r["holding"] in known}
+    source = rows_[0]["source"] if rows_ else None
+    return weights, {"symbol": etf, "as_of": latest.isoformat() if latest else None, "source": source,
+                     "looked_through": sum(weights.values()), "holdings_from": src if src != etf else None,
+                     "note": same_index_note(etf, src, source)}
 
 
 @app.post("/api/portfolio")
@@ -345,37 +392,67 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
     known = {r["ticker"]: r for r in c.execute("select * from companies").fetchall()}
     rows, values, unknown = [], {}, []
     for h in body.holdings:
-        sym = h.symbol.strip().upper()
+        typed = h.symbol.strip().upper()
+        sym = RENAMED.get(typed, typed)  # an old ticker a statement may still print (SPLG -> SPYM)
         last, change = last_two_closes(c, sym) if sym in known else (None, None)
         if not last:
-            unknown.append(sym)
+            unknown.append(typed)
             continue
         value = h.shares * float(last["close"])
         values[sym] = values.get(sym, 0.0) + value
         rows.append({"symbol": sym, "name": known[sym]["name"], "kind": known[sym]["kind"], "shares": h.shares,
-                     "price": float(last["close"]), "value": value, "change": change, "day": last["day"]})
+                     "price": float(last["close"]), "value": value, "change": change, "day": last["day"],
+                     "renamed_from": typed if typed != sym else None})
 
+    investments = sum(values.values())
     etfs = [s for s in values if known[s]["kind"] == "etf"]
     weights: dict[str, dict[str, float]] = {}
     funds = []
     for etf in etfs:
-        latest = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (etf,)).fetchone()["d"]
-        rows_ = c.execute("select holding, weight, source from etf_holdings where etf = %s and as_of = %s",
-                          (etf, latest)).fetchall()
-        # only stocks we have data for are split out; the rest of the fund stays as the fund itself
-        weights[etf] = {r["holding"]: float(r["weight"]) for r in rows_ if r["holding"] in known}
-        funds.append({"symbol": etf, "as_of": latest.isoformat() if latest else None,
-                      "source": rows_[0]["source"] if rows_ else None,
-                      "looked_through": sum(weights[etf].values())})
-    total = sum(values.values())
+        weights[etf], info = fund_weights(c, etf, known)
+        funds.append(info)
     rates = service.load_rates(c)
     market_symbol, market = service.load_market(c)
 
+    # 401(k) / IRA funds: a mapped one joins the board as a fund with its stand-in's holdings (SPY on real
+    # data, the sample index fund in sample mode). Only an "exact index" match also takes the stand-in's
+    # state; a "close stand-in" holds other companies too, so SPY's test isn't its test. Unmapped: listed only.
+    stand_in: dict[str, str] = {}
+    same_index: set[str] = set()
+    retirement_rows, properties = [], []
+    for o in body.other:
+        if o.kind == "retirement":
+            if not o.fund or not o.amount or o.amount <= 0:
+                raise HTTPException(422, "A retirement row needs a fund and an amount.")
+            f = retirement.find(o.fund)
+            row = {"kind": "retirement", "fund": o.fund, "ticker": f.ticker if f else None, "name": f.name if f else None,
+                   "account": o.account, "amount": o.amount, "behaves_like": f.behaves_like if f else None,
+                   "match": f.match if f else None, "state": None, "note": retirement.lookup(o.fund)["note"]}
+            if f and f.behaves_like == "SPY" and market_symbol in known:
+                key = f.ticker
+                stand_in[key] = market_symbol
+                if f.match == "exact index":
+                    same_index.add(key)
+                known.setdefault(key, {"ticker": key, "name": f.name, "kind": "etf", "sector": None})
+                values[key] = values.get(key, 0.0) + o.amount
+                if key not in weights:
+                    weights[key], _ = fund_weights(c, market_symbol, known)
+            retirement_rows.append(row)
+        else:
+            if o.estimate is None or o.estimate < 0:
+                raise HTTPException(422, "A property row needs an estimate (from /api/estimate/home).")
+            properties.append({"kind": "property", "label": o.label or o.address or "Home", "paid": o.paid,
+                               "bought_year": o.bought_year, "estimate": o.estimate, "source": o.source,
+                               "as_of": o.as_of, "state": None})
+    total = sum(values.values())
+
     exposure = []
     for sym, row in board_rows(values, weights).items():
-        bars = service.load_bars(c, sym)
+        tested = stand_in.get(sym, sym)  # a mapped 401(k) fund borrows its stand-in's prices
+        bars = service.load_bars(c, tested)
         bad = bad_day_return([b.close for b in bars])
-        results = signal_results(c, sym, known[sym]["kind"], market_symbol, rates, market)
+        results = (None if sym in stand_in and sym not in same_index  # close stand-in: not tested
+                   else signal_results(c, tested, known[tested]["kind"], market_symbol, rates, market))
         exposure.append({
             "symbol": sym, "name": known[sym]["name"], "sector": known[sym]["sector"],
             "direct": row.direct, "via_etf": row.via_etf, "total": row.shown,
@@ -386,9 +463,20 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
                          for k, v in sorted(row.children.items(), key=lambda kv: -kv[1])],
         })
     exposure.sort(key=lambda e: (e["state"] != engine.WATCH, -e["total"]))
+    by_symbol = {e["symbol"]: e for e in exposure}
+    for r in retirement_rows:
+        if r["ticker"] in same_index:
+            r["state"] = by_symbol[r["ticker"]]["state"] if r["ticker"] in by_symbol else None
+            r["note"] = f"Same index as {r['behaves_like']}, so {r['behaves_like']}'s test applies."
     price_as_of = max((r.pop("day") for r in rows), default=None)  # the close the values are priced at
+    retirement_total = sum(r["amount"] for r in retirement_rows)
+    home_estimate = sum(p["estimate"] for p in properties)
     return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds,
-            "price_as_of": price_as_of.isoformat() if price_as_of else None}
+            "price_as_of": price_as_of.isoformat() if price_as_of else None,
+            "retirement": retirement_rows, "properties": properties,
+            "subtotals": {"investments": investments, "retirement": retirement_total, "home_estimate": home_estimate,
+                          "total": investments + retirement_total + home_estimate,
+                          "includes_home_estimate": home_estimate > 0}}
 
 
 class HomeIn(BaseModel):

@@ -422,3 +422,86 @@ def test_home_estimate_errors_are_plain(client, monkeypatch, hpi_rows):
     assert client.post("/api/estimate/home", json={"zip": "3313", "paid": 1, "bought_year": 2012}).status_code == 422
     r = client.post("/api/estimate/home", json={"zip": "33133", "paid": 400000, "bought_year": 1990})
     assert r.status_code == 422 and "No FHFA index" in r.json()["detail"]  # never a guess
+
+
+def test_portfolio_adds_a_401k_and_a_home_with_honest_subtotals(client):
+    body = client.post("/api/portfolio", json={
+        "holdings": [{"symbol": "HLCN", "shares": 10}],
+        "other": [{"kind": "retirement", "fund": "FXAIX", "amount": 10000, "account": "401(k)"},
+                  {"kind": "retirement", "fund": "VFIFX", "amount": 5000},
+                  {"kind": "property", "label": "Home", "paid": 300000, "bought_year": 2015, "estimate": 600000,
+                   "source": "FHFA", "as_of": "2025"}]}).json()
+    hlcn = next(r for r in body["rows"] if r["symbol"] == "HLCN")["value"]
+    s = body["subtotals"]
+    assert s["investments"] == pytest.approx(hlcn) and s["retirement"] == 15000 and s["home_estimate"] == 600000
+    assert s["total"] == pytest.approx(hlcn + 15000 + 600000) and s["includes_home_estimate"] is True
+    fx, tdf = body["retirement"]
+    market = client.get("/api/market/rate_jump").json()
+    expected = "WATCH" if market["label"] == "STRONG" and market["firing"] else "CALM"
+    assert fx["ticker"] == "FXAIX" and fx["match"] == "exact index" and fx["state"] == expected  # the S&P stand-in's state
+    assert tdf["behaves_like"] is None and tdf["state"] is None  # target date: not tested
+    # the mapped 401(k) joins the board through the market fund's holdings; the unmapped one and the home don't
+    assert body["total"] == pytest.approx(hlcn + 10000)
+    assert sum(e["total"] for e in body["exposure"]) == pytest.approx(body["total"])
+    [home] = body["properties"]
+    assert home["estimate"] == 600000 and home["state"] is None and home["kind"] == "property"
+
+
+def test_a_close_stand_in_401k_fund_joins_the_board_but_gets_no_state(client):
+    body = client.post("/api/portfolio", json={
+        "holdings": [], "other": [{"kind": "retirement", "fund": "FSKAX", "amount": 8000}]}).json()
+    [fs] = body["retirement"]
+    assert fs["match"] == "close stand-in" and fs["state"] is None and "stand-in" in fs["note"]
+    assert body["total"] == pytest.approx(8000)  # its dollars still show through the index fund's holdings
+    row = next(e for e in body["exposure"] if e["symbol"] == "FSKAX")
+    assert row["state"] is None
+
+
+def test_portfolio_without_other_rows_has_zero_subtotals_for_them(client):
+    body = client.post("/api/portfolio", json={"holdings": [{"symbol": "HLCN", "shares": 1}]}).json()
+    assert body["retirement"] == [] and body["properties"] == []
+    assert body["subtotals"]["retirement"] == 0 and body["subtotals"]["includes_home_estimate"] is False
+
+
+def test_an_etf_that_tracks_the_same_index_reuses_that_funds_holdings(client, monkeypatch):
+    import stone.api.main as m
+    monkeypatch.setattr(m, "HOLDINGS_FROM", {"ALIASF": "BRD500"})
+    conn = db.connect(os.environ["DATABASE_URL"])
+    conn.execute("insert into companies (ticker, cik, name, sector, kind, source) values "
+                 "('ALIASF', null, 'Alias Fund', 'Index', 'etf', 'sample') on conflict do nothing")
+    conn.execute("insert into prices_daily (ticker, day, open, high, low, close, volume, source) values "
+                 "('ALIASF', '2026-09-24', 100, 100, 100, 100, 0, 'sample'), "
+                 "('ALIASF', '2026-09-25', 100, 100, 100, 100, 0, 'sample') on conflict do nothing")
+    conn.commit()
+    try:
+        body = client.post("/api/portfolio", json={"holdings": [{"symbol": "ALIASF", "shares": 100}]}).json()
+        [info] = body["funds"]
+        assert info["holdings_from"] == "BRD500" and info["looked_through"] == pytest.approx(0.066)
+        assert "BRD500" in info["note"]
+        assert sum(e["total"] for e in body["exposure"]) == pytest.approx(10_000)
+        page = client.get("/api/funds/ALIASF").json()
+        assert page["total_holdings_count"] == 4 and page["holdings"][0]["ticker"] == "HLCN"
+        # same index as the market fund, so the market fund's test applies (like VOO and SPY)
+        market_state = client.get("/api/companies/BRD500").json()["state"]
+        alias_row = next(e for e in body["exposure"] if e["symbol"] == "ALIASF")
+        assert alias_row["state"] == market_state and market_state in ("CALM", "WATCH")
+        assert client.get("/api/companies/ALIASF").json()["state"] == market_state
+        assert page["fund_state"] == market_state and "test applies" in info["note"]
+    finally:
+        conn.execute("delete from prices_daily where ticker = 'ALIASF'")
+        conn.execute("delete from companies where ticker = 'ALIASF'")
+        conn.commit()
+
+
+def test_a_renamed_ticker_is_valued_under_its_current_symbol(client, monkeypatch):
+    import stone.api.main as m
+    monkeypatch.setattr(m, "RENAMED", {"OLDH": "HLCN"})  # like SPLG -> SPYM on 2025-10-31
+    body = client.post("/api/portfolio", json={"holdings": [{"symbol": "oldh", "shares": 1}]}).json()
+    [row] = body["rows"]
+    assert row["symbol"] == "HLCN" and row["renamed_from"] == "OLDH" and body["unknown"] == []
+
+
+def test_fund_lookup_endpoint(client):
+    f = client.get("/api/funds/lookup?q=fxaix").json()
+    assert f["query"] == "fxaix" and f["ticker"] == "FXAIX" and f["behaves_like"] == "SPY"
+    assert client.get("/api/funds/lookup?q=VBTLX").json()["behaves_like"] is None
