@@ -1,9 +1,7 @@
 # Design study and restyle
 
-A pass over four Stone pages, using a top consumer investing app's **public, logged-out** product pages
-as a reference for patterns. We took measurements only. The measured patterns are in
-[`robinhood-patterns.md`](robinhood-patterns.md), and the tokens we ended up with are in
-[`stone-tokens.json`](stone-tokens.json).
+A pass over four pages, with layout patterns studied from public consumer investing apps; no assets, fonts, text
+or CSS were copied. The tokens we ended up with are in [`stone-tokens.json`](stone-tokens.json).
 
 ## Patterns borrowed (measured → Stone)
 
