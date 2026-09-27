@@ -566,3 +566,7 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
 .om-plot a:focus-visible rect { stroke: var(--accent); stroke-width: 3px; }
 html[data-mode="pro"] .om-plot a:hover rect { filter: brightness(1.25); }
 @media (max-width: 700px) { .board-extras { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Pro candles (lightweight-charts) ---- */
+.sc-candles { width: 100%; }
+.sc-kind { margin-top: 12px; }
