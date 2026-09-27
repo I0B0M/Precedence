@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Alegreya, Epilogue } from "next/font/google";
+import { Alegreya, Doto, Epilogue } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { SampleBanner } from "@/components/SampleBanner";
@@ -11,6 +11,8 @@ import "./home.css";
 
 const epilogue = Epilogue({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-epilogue" });
 const alegreya = Alegreya({ subsets: ["latin"], weight: ["400"], variable: "--font-alegreya" });
+// Dot-matrix face for the small uppercase labels only (.kicker, the Briefing's .bf-kicker); never body text.
+const doto = Doto({ subsets: ["latin"], weight: ["700", "800", "900"], variable: "--font-doto" });
 
 export const metadata: Metadata = {
   title: "Precedence",
@@ -23,7 +25,7 @@ const MODE_BEFORE_PAINT =
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-mode="lite" className={`${epilogue.variable} ${alegreya.variable}`} suppressHydrationWarning>
+    <html lang="en" data-mode="lite" className={`${epilogue.variable} ${alegreya.variable} ${doto.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: MODE_BEFORE_PAINT }} />
       </head>

@@ -30,6 +30,7 @@
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --font: var(--font-epilogue), -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --head: var(--font);
+  --label: var(--font-doto), var(--font);
   --dot: var(--font);
   --serif: var(--font-alegreya), Georgia, serif;
 
@@ -396,7 +397,7 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 
 /* Small uppercase label line, in gold. */
-.kicker { font-family: var(--font); font-weight: 600; font-size: 13px; line-height: 20px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+.kicker { font-family: var(--label); font-weight: 900; font-size: 13px; line-height: 20px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
 
 /* ---------- company: chart-first header ----------
    Proportions from the design study: title 32/40, price one step up, change 15/24 in the direction colour,

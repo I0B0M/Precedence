@@ -97,7 +97,7 @@
 
 .bf-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .bf-card { border-radius: 16px; border: 1.5px solid var(--bf-line); background: var(--bf-bg); color: var(--bf-ink); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-.bf-kicker { font-family: var(--font-doto), monospace; font-weight: 900; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bf-dim); }
+.bf-kicker { font-family: var(--label); font-weight: 900; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bf-dim); }
 .bf-holding { display: flex; flex-direction: column; gap: 4px; }
 .bf-hrow { display: flex; align-items: center; gap: 10px; }
 .bf-tk { font-family: var(--font-bricolage), sans-serif; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; }
