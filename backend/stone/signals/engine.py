@@ -96,6 +96,7 @@ class Result:
     cases: list[Case] = field(default_factory=list)
     holdout: "Holdout | None" = None
     note: str | None = None  # why there is no result, for NO DATA
+    normal_periods: float = 0.0  # the separate horizon-long periods the overlapping normal days span
 
 
 def no_data(spec: Spec, note: str) -> Result:
@@ -127,8 +128,9 @@ class Holdout:
 
 # ---------- statistics ----------
 
-def wilson(hits: int, n: int, z: float = Z90) -> tuple[float, float]:
-    if n == 0:
+def wilson(hits: float, n: float, z: float = Z90) -> tuple[float, float]:
+    """Wilson score range for a proportion. n may be fractional (an effective number of periods)."""
+    if n <= 0:
         return 0.0, 1.0
     p = hits / n
     d = 1 + z * z / n
@@ -165,6 +167,53 @@ def benjamini_hochberg(pvalues: list[float], q: float = 0.10) -> list[bool]:
     for rank, i in enumerate(order, start=1):
         keep[i] = rank <= cutoff
     return keep
+
+
+def newcombe(hits1: float, n1: float, hits2: float, n2: float, z: float = Z90) -> tuple[float, float]:
+    """Range for p1 - p2, built from each proportion's own Wilson range (Newcombe 1998, method 10).
+    Unlike comparing p1's range with a fixed p2, it counts the uncertainty in both."""
+    p1, p2 = hits1 / n1, hits2 / n2
+    l1, u1 = wilson(hits1, n1, z)
+    l2, u2 = wilson(hits2, n2, z)
+    d = p1 - p2
+    return d - math.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2), d + math.sqrt((u1 - p1) ** 2 + (p2 - l2) ** 2)
+
+
+def normal_sf(z: float) -> float:
+    """P(Z > z) for a standard normal Z."""
+    return 0.5 * math.erfc(z / math.sqrt(2))
+
+
+@dataclass(frozen=True)
+class Strict:
+    """The same counts, judged by the stricter test: the normal rate is uncertain too, because the
+    normal days' horizons overlap and add up to only `normal_periods` separate periods."""
+    p: float  # one-sided p-value for "hits more often than on normal days"
+    diff_low: float  # 90% range for hit_rate - normal_rate; the stricter test passes when diff_low > 0
+    diff_high: float
+    normal_periods: float
+
+
+def strict_evidence(r: "Result") -> Strict | None:
+    """Evidence for Pro, shown next to the label and never changing it. Only for results with 10+
+    cases and normal days. p is read off the range: it touches zero at z*, and p = P(Z > z*)."""
+    if r.n < MIN_CASES or r.normal_rate is None or r.normal_periods <= 0:
+        return None
+    args = (r.hits, r.n, r.normal_rate * r.normal_periods, r.normal_periods)
+    low, high = newcombe(*args)
+    d = r.hits / r.n - r.normal_rate
+    if d == 0:
+        return Strict(0.5, low, high, r.normal_periods)
+    end = 0 if d > 0 else 1  # the end of the range that moves toward zero as the range widens
+    same_side = lambda z: (newcombe(*args, z=z)[end] > 0) == (d > 0)
+    lo, hi = 0.0, 10.0
+    if same_side(hi):
+        lo = hi
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if same_side(mid) else (lo, mid)
+    z = (lo + hi) / 2
+    return Strict(normal_sf(z) if d > 0 else 1 - normal_sf(z), low, high, r.normal_periods)
 
 
 def label_for(n: int, low: float, normal_rate: float | None) -> str:
@@ -245,6 +294,30 @@ def detect_insider_clusters(sales: list[tuple[str, datetime]], min_filings: int 
 
 # ---------- evaluation ----------
 
+def window_days(n_bars: int, windows: list[tuple[int, int]]) -> list[bool]:
+    """Which bars fall inside an event window [start, end)."""
+    inside = [False] * n_bars
+    for a, b in windows:
+        for k in range(max(a, 0), min(b, n_bars)):
+            inside[k] = True
+    return inside
+
+
+def normal_starts(inside: list[bool], h: int) -> list[int]:
+    """The normal days: start days whose whole horizon is clear of event windows, or they'd measure the event too."""
+    touched = [0]
+    for flag in inside:
+        touched.append(touched[-1] + flag)
+    return [k for k in range(len(inside) - h + 1) if touched[k + h] == touched[k]]
+
+
+def periods_spanned(starts: list[int], h: int) -> float:
+    """Overlapping windows share most of their days: a run of L consecutive normal days spans
+    L + h - 1 days, which is (L + h - 1) / h separate periods. The stricter test counts those."""
+    runs = sum(1 for j, k in enumerate(starts) if j == 0 or starts[j - 1] != k - 1)
+    return (len(starts) + runs * (h - 1)) / h
+
+
 def evaluate(spec: Spec, bars: list[BarLike], events: list[Event],
              market: list[BarLike] | None = None) -> Result:
     """market: the market's daily bars (SPY), required when spec.vs_market."""
@@ -291,19 +364,8 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event],
         else:  # the window is still open today
             firing = ev
 
-    in_window = [False] * len(bars)
-    for a, b in windows:
-        for k in range(a, min(b, len(bars))):
-            in_window[k] = True
-    # a normal day's whole horizon must be free of event windows, or it measures the event too
-    touched = [0]
-    for flag in in_window:
-        touched.append(touched[-1] + flag)
-    normal_n = normal_hits = 0
-    for k in range(len(bars) - h + 1):
-        if touched[k + h] == touched[k]:
-            normal_n += 1
-            normal_hits += hit(k, k + h - 1)
+    starts = normal_starts(window_days(len(bars), windows), h)
+    normal_n, normal_hits = len(starts), sum(hit(k, k + h - 1) for k in starts)
 
     n, hits = len(cases), sum(c.hit for c in cases)
     normal_rate = normal_hits / normal_n if normal_n else None
@@ -312,7 +374,7 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event],
         signal=spec.key, horizon=h, n=n, hits=hits, hit_rate=hits / n if n else None,
         normal_n=normal_n, normal_hits=normal_hits, normal_rate=normal_rate,
         low=low, high=high, label=label_for(n, low if low is not None else 0.0, normal_rate),
-        firing=firing, cases=cases,
+        firing=firing, cases=cases, normal_periods=periods_spanned(starts, h),
     )
 
 

@@ -20,7 +20,7 @@ from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
 from stone.sources.gemini import MODEL as GEMINI_MODEL
-from stone.sources.gemini import GeminiClient, ScreenshotUnreadable, first_sentences
+from stone.sources.gemini import IMAGE_TYPES, GeminiClient, ScreenshotUnreadable, first_sentences
 from stone.sources.sec import SecClient
 
 app = FastAPI(title="Stone")
@@ -431,6 +431,16 @@ def filing_text(cik: int | None, accession: str, primary_doc: str | None, source
         raise HTTPException(503, "Reading filings from the SEC needs SEC_USER_AGENT (a contact email) to be set.")
 
 
+def gemini_failed(e: httpx.HTTPError, instead: str = "") -> HTTPException:
+    """Gemini's HTTP failures in plain words. `instead`: what the person can do meanwhile."""
+    if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 429:
+        return HTTPException(503, f"Gemini is busy, or this key's free quota is used up for now (HTTP 429). "
+                                  f"Try again in a minute.{instead}")
+    if isinstance(e, httpx.HTTPStatusError):
+        return HTTPException(502, f"Gemini returned HTTP {e.response.status_code} (model {GEMINI_MODEL}).{instead}")
+    return HTTPException(504, f"Gemini didn't answer in time.{instead}")
+
+
 @app.get("/api/filings/{accession}/summary")
 def filing_summary(accession: str, c: psycopg.Connection = Conn):
     """Gemini's plain summary of a filing. Every figure it states is checked against the filing's own XBRL."""
@@ -450,8 +460,8 @@ def filing_summary(accession: str, c: psycopg.Connection = Conn):
         read, cached, generated = client.summarize_filing(text, f["ticker"], f["form"], accession)
     except ScreenshotUnreadable as e:
         raise HTTPException(422, str(e))
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(502, f"Gemini returned HTTP {e.response.status_code} (model {GEMINI_MODEL}).")
+    except httpx.HTTPError as e:
+        raise gemini_failed(e)
     facts = c.execute("select concept, value, period_end from xbrl_facts where accession = %s and taxonomy = 'us-gaap'",
                       (accession,)).fetchall()
     return {
@@ -468,8 +478,8 @@ MAX_SCREENSHOT_BYTES = 15 * 1024 * 1024  # Gemini takes inline images up to ~20 
 
 @app.post("/api/import/screenshot")
 async def import_screenshot(file: UploadFile = File(...)):
-    if not (file.content_type or "").startswith("image/"):
-        raise HTTPException(415, "That isn't an image. Add a screenshot (PNG or JPEG).")
+    if file.content_type not in IMAGE_TYPES:
+        raise HTTPException(415, "Add the screenshot as a PNG, JPEG, WebP or HEIC image.")
     image = await file.read()
     if len(image) > MAX_SCREENSHOT_BYTES:
         raise HTTPException(413, "That screenshot is too large (over 15 MB).")
@@ -481,8 +491,7 @@ async def import_screenshot(file: UploadFile = File(...)):
         read = client.read_screenshot(image, file.content_type)
     except ScreenshotUnreadable as e:
         raise HTTPException(422, f"{e} You can type the rows instead.")
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(502, f"Gemini returned HTTP {e.response.status_code} "
-                                 f"(model {GEMINI_MODEL}). You can type the rows instead.")
+    except httpx.HTTPError as e:
+        raise gemini_failed(e, " You can type the rows instead.")
     rows = [rc.Row(r.symbol, r.shares, r.price, r.value) for r in read.rows]
     return reconciled_json(rc.reconcile(rows, read.printed_total), rows)

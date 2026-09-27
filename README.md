@@ -44,6 +44,7 @@ uv sync
 uv run python scripts/seed_sample.py
 uv run uvicorn stone.api.main:app --reload --port 8000
 uv run pytest
+uv run python scripts/check_gemini.py   # once GEMINI_API_KEY is set: reads the demo screenshot, checks it adds up
 ```
 
 ```bash
@@ -64,6 +65,7 @@ Everything else in this repo was written at the event.
 | httpx | BSD-3 | HTTP client for outside APIs |
 | python-dotenv | BSD-3 | Reading `.env` |
 | pytest | MIT | Tests |
+| Pillow | MIT-CMU | Drawing the demo screenshot (`scripts/make_demo_screenshot.py`, one-off) |
 
 ## Data sources
 
@@ -73,8 +75,14 @@ Everything else in this repo was written at the event.
 | Alpaca Market Data (IEX feed) | free paper-account key | 25 symbols per request | 2 years of daily prices (split-adjusted) |
 | FRED | free key | generous | 10-year Treasury yield (DGS10) |
 | State Street (SSGA) daily SPY holdings file | none | one file a day, cached | What SPY holds, for looking through the fund (shown with its "as of" date) |
+| Google Gemini API (`gemini-3.8-flash`, set by `GEMINI_MODEL`) | free AI Studio key | free-tier quota, cached per image and filing | Reading holdings off a screenshot (checked against its printed total); plain filing summaries (every figure checked against the filing's XBRL) |
 
 ## Research used
 
 - Boudoukh, Feldman, Kogan & Richardson, "Which News Moves Stock Prices? A Textual Analysis",
   NBER w18725, Table 3 (news-type weights).
+- Wilson (1927), "Probable Inference, the Law of Succession, and Statistical Inference", JASA 22:209
+  (the 90% range for a hit rate).
+- Newcombe (1998), "Interval estimation for the difference between independent proportions",
+  Statistics in Medicine 17:873, method 10 (the stricter test shown in Pro).
+- Benjamini & Hochberg (1995), "Controlling the False Discovery Rate", JRSS B 57:289 (the scan's 10% FDR count).

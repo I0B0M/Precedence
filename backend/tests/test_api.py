@@ -1,5 +1,7 @@
+import json
 import os
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -47,6 +49,9 @@ def test_signal_lab_returns_cases(client):
     assert h["first"]["n"] + h["second"]["n"] == 12 and isinstance(h["held_up"], bool)
     assert h["verdict"] == "too few cases to check" and h["held_up"] is False  # 12 cases can't fill two halves of 10
     assert client.get("/api/lab/ORCA/gap_down").json()["holdout"] is None  # only STRONG gets one
+    st = body["strict"]  # the stricter test's evidence for Pro, next to the label
+    assert st["p"] < 0.05 and st["diff_low"] > 0 and st["normal_periods"] > 0
+    assert client.get("/api/lab/ORCA/gap_down").json()["strict"] is None  # no cases, nothing to judge
     assert client.get("/api/lab/MRDN/moon_phase").status_code == 404
     assert client.get("/api/lab/BRD500/gap_down").status_code == 400
 
@@ -240,7 +245,26 @@ def test_screenshot_import_errors_are_plain(client, monkeypatch):
     assert r.status_code == 422 and "SAFETY" in r.json()["detail"]
     monkeypatch.setattr(m, "GeminiClient", Down)
     r = client.post("/api/import/screenshot", files=png)
-    assert r.status_code == 502 and "429" in r.json()["detail"]
+    assert r.status_code == 503 and "429" in r.json()["detail"] and "type the rows" in r.json()["detail"]
+
+    class Refused(FakeGemini):
+        def read_screenshot(self, image, mime):
+            req = httpx.Request("POST", "https://generativelanguage.googleapis.com/x")
+            raise httpx.HTTPStatusError("bad key", request=req, response=httpx.Response(403, request=req))
+
+    class Slow(FakeGemini):
+        def read_screenshot(self, image, mime):
+            raise httpx.ReadTimeout("slow", request=httpx.Request("POST", "https://generativelanguage.googleapis.com/x"))
+
+    monkeypatch.setattr(m, "GeminiClient", Refused)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 502 and "HTTP 403" in r.json()["detail"]
+    monkeypatch.setattr(m, "GeminiClient", Slow)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 504 and "in time" in r.json()["detail"]
+    svg = {"file": ("s.svg", b"<svg/>", "image/svg+xml")}  # an image, but not one Gemini reads
+    monkeypatch.setattr(m, "GeminiClient", FakeGemini)
+    assert client.post("/api/import/screenshot", files=svg).status_code == 415
     monkeypatch.setattr(m, "GeminiClient", FakeGemini)
     assert client.post("/api/import/screenshot", files={"file": ("a.pdf", b"%PDF", "application/pdf")}).status_code == 415
     big = {"file": ("s.png", b"\x89PNG" + b"0" * (m.MAX_SCREENSHOT_BYTES + 1), "image/png")}
@@ -364,3 +388,82 @@ def test_filing_summary_errors(client, monkeypatch):
     assert r.status_code == 503 and "GEMINI_API_KEY" in r.json()["detail"]
     assert client.get("/api/filings/NOPE-123/summary").status_code == 404
     assert client.get("/api/filings/SAMPLE-HLCN-4-121/summary").status_code == 400  # Form 4s aren't summarized
+
+
+# ---------- `strict` rebuilt from saved signals (fixtures exported before the field existed) ----------
+
+FIXTURES = Path(__file__).resolve().parents[2] / "frontend" / "fixtures"
+
+
+def saved(path: str) -> dict:
+    return json.loads((FIXTURES / path).read_text())["data"]
+
+
+def test_strict_rebuilt_from_a_saved_signal_matches_the_engine(client):
+    from stone.api.views import strict_from_saved
+    rebuilt = 0
+    for t in ("HLCN", "MRDN", "ORCA", "BRVE"):
+        days = [p["day"] for p in client.get(f"/api/companies/{t}").json()["prices"]]
+        for s in ("insider_cluster", "rate_jump", "gap_down"):
+            live = client.get(f"/api/lab/{t}/{s}").json()
+            again = strict_from_saved({**live, "strict": None}, days)  # as if exported before `strict` existed
+            if live["strict"] is None:
+                assert again is None
+            else:
+                assert again == pytest.approx(live["strict"])
+                rebuilt += 1
+    assert rebuilt == 5  # HLCN's insider cluster and the four rate jumps; the rest have fewer than 10 cases
+
+
+def test_strict_rebuilds_amazon_s_borderline_from_the_committed_fixtures():
+    from stone.api.views import strict_from_saved, with_strict
+    days = [p["day"] for p in saved("AMZN/company.json")["prices"]]
+    st = strict_from_saved(saved("AMZN/lab_insider_cluster.json"), days)  # 6 of 12 vs 32 of 125, STRONG
+    assert st["normal_periods"] == pytest.approx(12.9, abs=0.05) and st["p"] == pytest.approx(0.104, abs=0.001)
+    assert st["diff_low"] == pytest.approx(-0.070, abs=0.001) and st["diff_high"] == pytest.approx(0.502, abs=0.001)
+    signals = [with_strict(s, days) for s in saved("AMZN/company.json")["signals"]]
+    assert {s["signal"]: s["strict"] is not None for s in signals} == \
+        {"insider_cluster": True, "rate_jump": True, "gap_down": False}  # gap down: 3 cases, too few
+    # the market card has no prices of its own in the fixtures; the stocks' shared calendar reproduces it
+    market = strict_from_saved(saved("market_rate_jump.json"), days)
+    assert market["diff_low"] > 0 and market["p"] < 0.05
+
+
+def test_every_committed_fixture_with_ten_cases_rebuilds_exactly():
+    from stone.api.views import strict_from_saved
+    for t in ("AMZN", "BX", "AAPL", "NVDA", "JPM"):
+        days = [p["day"] for p in saved(f"{t}/company.json")["prices"]]
+        for s in ("insider_cluster", "rate_jump", "gap_down"):
+            lab = saved(f"{t}/lab_{s}.json")
+            assert (strict_from_saved(lab, days) is not None) == (lab["n"] >= 10), (t, s)
+
+
+def test_a_rebuild_that_cannot_reproduce_the_normal_days_says_nothing():
+    from stone.api.views import strict_from_saved
+    days = [p["day"] for p in saved("AMZN/company.json")["prices"]]
+    lab = saved("AMZN/lab_insider_cluster.json")
+    assert strict_from_saved({**lab, "normal_n": lab["normal_n"] + 1}, days) is None  # no match, so no guess
+    first_entry = days.index(lab["cases"][0]["entry_day"])
+    assert strict_from_saved(lab, days[:first_entry] + days[first_entry + 1:]) is None  # a case day off the calendar
+    assert strict_from_saved({**lab, "cases": None}, days) is None  # the board's firing[] carries no cases
+
+
+def test_saved_hold_outs_get_the_current_verdict():
+    from stone.api.views import holdout_from_saved, with_strict
+    amzn = saved("AMZN/lab_insider_cluster.json")  # exported before `verdict`: halves of 6 and 5 cases, held_up true
+    assert "verdict" not in amzn["holdout"] and amzn["holdout"]["held_up"] is True
+    now = with_strict(amzn, [p["day"] for p in saved("AMZN/company.json")["prices"]])["holdout"]
+    assert now["verdict"] == "too few cases to check" and now["held_up"] is False
+    assert holdout_from_saved(saved("market_rate_jump.json")["holdout"])["verdict"] == "too few cases to check"
+    assert holdout_from_saved(None) is None
+    enough = {"first": {"n": 10, "hit_rate": 0.7, "normal_rate": 0.4}, "second": {"n": 11, "hit_rate": 0.6, "normal_rate": 0.5}}
+    assert holdout_from_saved(enough)["verdict"] == "held up"
+    enough["second"]["hit_rate"] = 0.4
+    assert holdout_from_saved(enough)["verdict"] == "did not hold"
+
+
+def test_saved_hold_out_rebuilt_matches_the_live_one(client):
+    from stone.api.views import holdout_from_saved
+    live = client.get("/api/lab/MRDN/rate_jump").json()["holdout"]
+    old = {k: v for k, v in live.items() if k != "verdict"}  # as exported before `verdict`
+    assert holdout_from_saved(old) == live
