@@ -80,9 +80,9 @@ def test_gate_holds_back_a_point_that_fails_the_check():
 # ---------- experts on small cases ----------
 
 def signal(key="insider_cluster", label="STRONG", n=12, hits=6, normal=0.256, horizon=20, firing=True,
-           vs_market=False, strict=None, verdict=None) -> dict:
+           vs_market=False, strict=None, verdict=None, fdr10=None) -> dict:
     return {"signal": key, "lite": "Executives sold shares", "label": label, "n": n, "hits": hits, "horizon": horizon,
-            "normal_rate": normal, "vs_market": vs_market, "strict": strict,
+            "normal_rate": normal, "vs_market": vs_market, "strict": strict, "fdr10_survives": fdr10,
             "holdout": {"verdict": verdict} if verdict else None,
             "firing": {"known_at": "2026-09-03T16:42:02-04:00",
                        "note": "2026-09-24: 10-year yield 5.18%, up 0.24 pt in a week"} if firing else None}
@@ -107,12 +107,29 @@ def test_a_saved_hold_out_without_a_verdict_is_never_said_to_hold_up():
     assert "There are too few cases yet to check it on each half of the history." in texts(b)
 
 
-def test_strict_evidence_is_said_as_borderline_or_passing_never_changing_the_label():
-    border = company_briefing(company(signals=[signal(strict={"diff_low": -0.07})], state="WATCH"))
-    assert "A stricter test calls this borderline." in texts(border)
-    both = company_briefing(company(signals=[signal(strict={"diff_low": 0.05}, verdict="held up")], state="WATCH"))
-    assert "It also passes a stricter test, and it held up in both halves of the history." in texts(both)
-    assert texts(border)[1] == "Amazon needs a look today."
+def test_how_sure_uses_the_correction_the_landing_and_pro_use():
+    # AMZN: STRONG, but it doesn't survive the correction (the landing says 0 of 309 do); the label never changes
+    no = company_briefing(company(signals=[signal(strict={"diff_low": -0.07}, fdr10=False,
+                                                  verdict="too few cases to check")], state="WATCH"))
+    assert ("It doesn't survive the correction for testing many stocks at once, and there are too few cases yet "
+            "to check it on each half of the history.") in texts(no)
+    assert texts(no)[1] == "Amazon needs a look today."
+    mixed = company_briefing(company(signals=[signal(fdr10=False, verdict="held up")], state="WATCH"))
+    assert ("It doesn't survive the correction for testing many stocks at once, but it held up in both halves "
+            "of the history.") in texts(mixed)
+    yes = company_briefing(company(signals=[signal(fdr10=True, verdict="held up")], state="WATCH"))
+    assert ("It survives the correction for testing many stocks at once, and it held up in both halves of the "
+            "history.") in texts(yes)
+    # the stricter test alone never becomes "passes" or "borderline" in the spoken line
+    strict_only = company_briefing(company(signals=[signal(strict={"diff_low": 0.05})], state="WATCH"))
+    assert not any("stricter" in t or "passes" in t or "survive" in t for t in texts(strict_only))
+
+
+def test_the_market_s_own_test_is_said_to_be_outside_the_correction():
+    from stone.briefing.experts import confidence_line
+    line = confidence_line(signal(key="market_rate_jump", verdict="too few cases to check"), "SPY")
+    assert line.text == ("It's the market's own test, outside the correction across stocks, and "
+                         "there are too few cases yet to check it on each half of the history.")
 
 
 def test_market_relative_signals_say_worse_than_the_market():
@@ -181,7 +198,8 @@ def test_saved_portfolio_script_leads_with_what_needs_a_look(saved):
     assert t[1] == "Amazon and the S&P 500 fund need a look; the other 4 are calm."
     assert t[2].startswith("Amazon executives filed 3 or more share sales within 10 days")
     assert t[3] == "Amazon was lower 20 trading days later 6 of the last 12 times, against 26% of normal days."
-    assert t[4] == "A stricter test calls this borderline, and there are too few cases yet to check it on each half of the history."
+    # the saved fixtures predate fdr10_survives, so the correction goes unsaid here rather than guessed
+    assert t[4] == "There are too few cases yet to check it on each half of the history."
     assert "The S&P 500 fund was lower 5 trading days later 10 of the last 15 times, against 38% of normal days." in t
     assert not any("held up" in x for x in t)  # no saved result has 10+ cases in each half
     assert t[-1] == "That's everything: Precedence ran 16 tests on your holdings, and only 2 of the signals happening now have mattered before."

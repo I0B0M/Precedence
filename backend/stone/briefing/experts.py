@@ -104,7 +104,11 @@ def record_line(signal: dict, co: dict, tone: str) -> Line | None:
                           f"{nh}/{nn} normal days ({pct(normal)}); label {signal['label']}.", rate, 0.9, low, high, nh, nn)
 
 
-STRICT_WORDS = {True: "It also passes a stricter test", False: "A stricter test calls this borderline"}
+# The same test and words the landing ("0 survive") and Pro ("Doesn't survive the correction") use: the Benjamini-
+# Hochberg correction across every stock-signal pair in the latest scan (SignalResult.fdr10_survives)
+CORRECTION_WORDS = {True: "It survives the correction for testing many stocks at once",
+                    False: "It doesn't survive the correction for testing many stocks at once"}
+OUTSIDE_CORRECTION = "It's the market's own test, outside the correction across stocks"
 HOLDOUT_WORDS = {
     "held up": "it held up in both halves of the history",
     "did not hold": "it did not hold up in both halves of the history",
@@ -113,17 +117,25 @@ HOLDOUT_WORDS = {
 
 
 def confidence_line(signal: dict, ticker: str) -> Line | None:
-    """How sure we are, in one sentence: the stricter test (Pro's "borderline" evidence, which never
-    changes the label) and the backend's hold-out verdict. A saved hold-out without a verdict says
-    nothing, never "held up"."""
+    """How sure we are, in one sentence: the correction for testing many stocks at once (fdr10_survives, the
+    same result the landing and Pro show) and the backend's hold-out verdict. No correction result (fewer
+    than 10 cases, or saved data exported before it existed) says nothing about it, never "passes"; the
+    market's own test is said to be outside it. The stricter test's numbers stay in the Pro detail.
+    A saved hold-out without a verdict says nothing, never "held up"."""
     st, verdict = signal.get("strict"), (signal.get("holdout") or {}).get("verdict")
-    strict = STRICT_WORDS[st["diff_low"] > 0] if st else None
+    fdr = signal.get("fdr10_survives")
+    if fdr is not None:
+        corr, good = CORRECTION_WORDS[fdr], fdr
+    elif signal.get("signal") == "market_rate_jump":
+        corr, good = OUTSIDE_CORRECTION, None
+    else:
+        corr = good = None
     held = HOLDOUT_WORDS.get(verdict)
-    if strict and held:
-        joined = ", and " if (st["diff_low"] > 0) == (verdict == "held up") else ", but "
-        text = f"{strict}{joined}{held}."
-    elif strict or held:
-        text = f"{cap(strict or held)}."
+    if corr and held:
+        mixed = good is not None and verdict in ("held up", "did not hold") and good != (verdict == "held up")
+        text = f"{corr}{', but ' if mixed else ', and '}{held}."
+    elif corr or held:
+        text = f"{cap(corr or held)}."
     else:
         return None
     key = signal["signal"]
