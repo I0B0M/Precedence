@@ -75,3 +75,9 @@ _Avoid_: dropped, rejected
 **Grounded**:
 A line whose every printed number round-trips to a value in its evidence, at the places it prints.
 _Avoid_: verified, fact-checked
+
+### Reading unstructured sources
+
+**Reader**:
+A trained model that turns unstructured input (filing text, a press release, a brokerage screenshot) into candidate cases of a signal, or figures for a check. It never assigns a label or a state; the engine tests what it proposes like any other signal.
+_Avoid_: expert (that's a rule), agent, model on its own
