@@ -1,4 +1,10 @@
-# Precedence: judge scorecard #7
+# Precedence: judge scorecard #8
+
+> **06:25 ET: unchanged from #7.** A regression re-walk of the same build found identical results. **Overall 4/5 as shipped, 5/5 with `LITE_STRONG_WORDING = not-proven`. 0 blockers, 0 open minors.** The #7 scorecard below stands.
+
+---
+
+## (Scorecard #7, still current)
 
 **Judge:** strict Blackstone VP · **Build:** :3000 production build of `1b008db` (API same commit) · **Time:** Sep 27, 05:40 ET · **Evidence:** QA/WALK.md
 **Trend:** #1 3/5 (2 blockers) → #2–#4 4 → #5–#6 4 (5 with wording) → **#7 4/5 as shipped, 5/5 with the wording switch** (0 blockers, 0 open minors).

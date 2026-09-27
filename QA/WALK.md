@@ -1,4 +1,10 @@
-# Precedence: QA walk #7
+# Precedence: QA walk #8 (regression re-walk of walk #7)
+
+> **06:12–06:25 ET re-walk.** No code changed since walk #7 (the builder's only commit is `73a6fba`, QA docs), and :3000 still serves the 04:54 production build of `1b008db`. I re-ran the full suite: 17 pages × 4 configs, interactions, the signals matrix, home + 401(k) + BREIT. **The results are identical to walk #7**: 0 console messages, 0 failed requests, 0 overflow/clipped/under-44px/jargon, totals unchanged ($1,396,740), Lite wording unchanged. The API has been stable for five walks. Everything below is walk #7's report, still accurate.
+
+---
+
+## (Walk #7 report, still current)
 
 **When:** Sep 27, 2026, 05:24–05:40 ET
 **Walked:** http://localhost:3000. **Production build** (BUILD_ID 04:54) of `1b008db` ("VOO/IVV on their own N-PORT…"), the `precedence-build` head. The API is at the same commit.
