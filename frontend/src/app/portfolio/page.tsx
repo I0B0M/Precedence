@@ -67,7 +67,13 @@ export default function HoldingsBoard() {
   const kindOf = (sym: string) => board.rows.find((r) => r.symbol === sym)?.kind ?? (retire.has(sym) ? "retirement" : "stock");
   // Everything you own, the home estimate included. Every "share of" on this page is out of this.
   const grand = board.subtotals?.total ?? board.total;
-  const watching = board.exposure.filter((e) => e.state === "WATCH").length;
+  const watching = board.exposure.filter((e) => e.state === "WATCH").length; // Pro: every look-through row
+  // Lite counts only the rows Lite shows: what you hold, and your 401(k)/IRA funds. A stock seen only inside a fund
+  // (META via SPY) is a Pro row, so it isn't in the Lite count.
+  const liteFlagged = [
+    ...board.rows.map((r) => board.exposure.find((e) => e.symbol === r.symbol)?.state ?? null),
+    ...(board.retirement ?? []).map((r) => r.state),
+  ].filter((s) => s === "WATCH").length;
   const stockRows = board.exposure.filter((e) => kindOf(e.symbol) === "stock");
   const nextStock = stockRows.find((e) => e.state === "WATCH") ?? stockRows[0] ?? null;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);
@@ -112,7 +118,7 @@ export default function HoldingsBoard() {
           )}
           <p className="lede" style={{ color: "var(--text)" }}>
             <span className="lite-only">
-              {watching ? `${watching} thing${watching > 1 ? "s" : ""} worth a look today.` : "Nothing needs you today."}
+              {liteFlagged ? `${liteFlagged} thing${liteFlagged > 1 ? "s" : ""} worth a look today.` : "Nothing needs you today."}
             </span>
             <span className="pro-only">
               {owned} thing{owned === 1 ? "" : "s"} you own · {companies} compan{companies === 1 ? "y" : "ies"} in all · {watching} on WATCH
@@ -120,7 +126,7 @@ export default function HoldingsBoard() {
           </p>
         </div>
         <p className="note pro-only pro-add" style={{ maxWidth: "34ch" }}>
-          WATCH only when a signal that has proven itself on this stock is firing.{" "}
+          WATCH = a STRONG pattern is happening now (see Why? for how it holds up).{" "}
           {todayMove == null && (board.price_as_of ? `Values at the ${shortDate(board.price_as_of)} close.` : "Values at the latest close.")}
         </p>
       </div>

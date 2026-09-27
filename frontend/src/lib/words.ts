@@ -1,7 +1,7 @@
 import type { Label, MarketResult, SignalResult } from "./api";
 import { horizonWords } from "./format";
 
-/** The signal to talk about first: a proven one that is firing, else any firing one. */
+/** The signal to talk about first: a STRONG one that is firing, else any firing one. */
 export function headline(signals: SignalResult[]): SignalResult | null {
   return signals.find((s) => s.firing && s.label === "STRONG") ?? signals.find((s) => s.firing) ?? null;
 }
@@ -26,7 +26,7 @@ export function liteSummary(firing: SignalResult[], ticker: string): string {
 export function proSummary(firing: SignalResult[]): string {
   if (!firing.length) return "No signals firing";
   const proven = firing.filter((s) => s.label === "STRONG").length;
-  return `${firing.length} signal${firing.length > 1 ? "s" : ""} firing · ${proven ? `${proven} proven` : "none proven"}`;
+  return `${firing.length} signal${firing.length > 1 ? "s" : ""} firing · ${proven ? `${proven} STRONG` : "none STRONG"}`;
 }
 
 /** What a hit means for this signal. A rate jump hits every stock at once, so there it is measured against the market. */

@@ -57,7 +57,7 @@ export default function Learn() {
       </div>
 
       <div className="stack" style={{ gap: 16 }}>
-        <h2><span className="lite-only">Has it mattered before?</span><span className="pro-only">Real pattern, or not proven?</span></h2>
+        <h2><span className="lite-only">Has it mattered before?</span><span className="pro-only">STRONG, or NOT PROVEN?</span></h2>
         <p className="lede">The bar is where the real rate likely is. The gold line is a usual day.</p>
         <div className="learn-grid">
           <Figure label="STRONG" lite="This has mattered before." words="The whole bar is right of the line." left={58} width={26} normal={40} />
