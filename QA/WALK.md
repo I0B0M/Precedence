@@ -1,13 +1,14 @@
-# Precedence: QA walk #3
+# Precedence: QA walk #4
 
-**When:** Sep 27, 2026, 02:06–02:25 ET
-**Walked:** http://localhost:3000, frontend and API both at `975071c` (`precedence-build` head, "Stock page Pro: says prices are one exchange's feed (IEX)…").
-**How:** as in walks #1–2. Headless Chromium, fresh contexts, 390×844 and 1280×800, Lite and Pro. **17 pages** (walk #2's 15 plus `/fund/BREIT` and `/fund/BCRED`). Every button, tab and "Why?" in `<main>` clicked; every portfolio row opened; signals 6 × 3 in both modes; paper; phone menu; home (33133, $400,000, 2012-06) + 401(k) (FXAIX, $12,000) + **BREIT $50,000**; the Everything / Investments switch; all internal links.
+**When:** Sep 27, 2026, 02:56–03:15 ET
+**Walked:** http://localhost:3000, frontend and API both at `3443d83` (`precedence-build` head, "Home: coming back with holdings shows 'Your week' first…"). :3000 is **still `next dev`**: the page loads `[turbopack]_browser_dev_hmr-client` and `next-devtools`.
+**How:** as in walks #1–3. Headless Chromium, fresh contexts, 390×844 and 1280×800, Lite and Pro. 17 pages, every button, tab and "Why?" in `<main>`, every portfolio row, signals 6 × 3 in both modes, paper, phone menu, home (33133, $400,000, 2012-06) + 401(k) (FXAIX, $12,000) + BREIT $50,000, the Everything / Investments switch, the returning-user home, all internal links.
 **Not checked:** external sec.gov links, contrast ratios, keyboard-only navigation.
 
-## Automated results: clean
-Across 17 pages × 4 configs: **0 console errors**, **0 overflow**, **0 clipped text**, **0 tap targets under 44px**, **0 Lite jargon**, **0 "Stone" or developer text**. All internal links return 200.
-**One failed request:** `500 /api/companies/BX` once, during the 390-Lite portfolio load. 15 immediate retries all returned 200, and no other page load of ~90 failed. It's transient, but it's the second API hiccup in three walks.
+## Automated results: fully clean
+17 pages × 4 configs: **0 console errors**, **0 failed requests** (none this walk, including the targeted and signals runs), **0 overflow**, **0 clipped text**, **0 tap targets under 44px**, **0 Lite jargon**, **0 "Stone" or developer text**. All internal links return 200.
+
+**Numbers checked by hand.** BREIT 12-month total return: $13.8281 → $14.685 (+6.2%) plus the Sep 2025–Aug 2026 distributions (~$0.662, +4.8%) = **+11.0%**, matching the page. BCRED: $25.09 → $23.60 (−5.9%) plus ~$2.38 (+9.5%) = **+3.5%**, matching the page. Portfolio: $4,747 + ~$1.33M + $12,000 + $50,000 = **$1,396,740**, matching.
 
 ---
 
@@ -18,39 +19,33 @@ Across 17 pages × 4 configs: **0 console errors**, **0 overflow**, **0 clipped 
 
 ## MINOR (exact on-screen text)
 
-**Data honesty**
-1. **BCRED Pro shows a loss for Blackstone's flagship credit fund:** "Change in value per share (distributions not included) · −0.2% 1 month · −1.4% 3 months · **−5.9% 12 months**". BCRED pays out most of its return as distributions, so price-only makes an income fund look like it lost money. It is disclosed, but a Blackstone judge will read "−5.9%" first. Show the distribution rate or total return from the same filings, or don't lead with price-only change.
-2. **Lite still says "has mattered" on results that fail the correction:** "Insiders sold shares. This has mattered for AMZN before." and "Interest rates jumped: the whole market. This has mattered for SPY before." Pro now handles this well ("WATCH = a STRONG pattern is happening now (see Why? for how it holds up)" and "Doesn't survive the correction"). Lite asserts what Pro qualifies. The landing page already has the honest phrasing: "Has come before drops. Not a prediction."
+1. **"Has mattered" still asserts what Pro says doesn't survive the correction.** This is the fourth walk in a row, and it's now the main thing between us and a 5 on honesty.
+   - Lite rows: "Insiders sold shares. This has mattered for AMZN before." · "Interest rates jumped: the whole market. This has mattered for SPY before." (also on /funds for VOO and IVV)
+   - THIS WEEK, and the new home "Your week": "5 about what you own · **2 have mattered before**"
+   - Home hero: "And whether that kind of news has ever mattered for that stock."
+   - Pro, same stocks: "STRONG · Doesn't survive the correction · too few cases in each half".
+   The rule can stay. The words don't have to claim more than the evidence does. The landing page already says it right: "Has come before drops. Not a prediction."
+2. **A returning user sees an example, not their own total, first.** With home + 401(k) + BREIT saved (portfolio "$1,396,740"), the home page opens with "Try it with an example · Add your account" and a card reading "**EXAMPLE** · Close Sep 25, 2026 · **$4,747**". Only below that comes "YOUR WEEK · What happened to what you own". The commit says "shows 'Your week' first". On the phone, "Your week" is the third block. A judge who adds a home and taps the logo sees someone else's number.
+3. **The BREIT/BCRED Pro footnote contradicts the new lead.** The page now leads with "**Total return (distributions paid, not reinvested)** +11.0% 12 months", but the basis line underneath still says "Basis: monthly NAV, class I, **distributions not included**."
+4. The big "5" in "YOUR WEEK · THIS WEEK" is set in Calm blue. Blue means Calm everywhere else, and this number counts things that include Heads-up items.
+5. VOO / IVV: "504 holdings (SPY's file), State Street (SSGA)". Carried over. QQQ uses its own N-PORT.
+6. The stock-page IEX caveat says "Precedence hasn't measured by how much." That's honest, but a judge will ask, and three closes (BX, AMZN, SPY) against any consolidated close would answer it.
 
-**Numbers**
-3. **"5 things you own" doesn't count BREIT.** Before BREIT (BX, AMZN, SPY, FXAIX, home) it read "5 things you own · 193 companies in all · 4 on WATCH". After adding BREIT $50,000 it still reads "5 things you own".
-4. **The day-move note leaves out BREIT:** "Out of the $16,747 with a daily price. FXAIX moves with SPY. **A home has no daily price, so it's left out.**" BREIT has no daily price either, and it isn't mentioned.
-5. **BREIT is folded into "Funds $52,314"** next to SPY in the allocation bar. A private real estate fund bucketed with an S&P ETF hides the one diversification fact a Blackstone investor cares about. Consider a "Private funds" slice.
+## Fixed since walk #3 (verified today)
+- **BREIT/BCRED total return:** Lite "Total return over 12 months: +11.0%. Includes the income it paid out." / BCRED "+3.5%". Pro leads with total return, puts the value-per-share change second, and lists every distribution with its filing. BCRED's "Sep 2026 · after the latest value, so not in any return yet" is a nice touch.
+- **Lite liquidity:** "You can't always sell: withdrawals are limited each month." (BREIT), "buybacks are limited each quarter." (BCRED), also on the portfolio's BREIT row.
+- **Lite BREIT "What it means for you":** "What you entered $50,000 · About 3,405 shares · The value you entered is what counts in your total."
+- **Counts:** "6 things you own", and "BREIT is priced monthly, so it's left out." in the day note.
+- **Allocation bar:** its own "Private funds $50,000 4%" slice. Investments view: "Private funds $50,000 75%".
+- Lite BREIT price "$14.69"; Pro keeps "$14.685".
+- "What to check: every past time" is relabelled "See the cases ›", so the link says where it goes.
 
-**Classic (Lite) on the Blackstone funds**
-6. **Lite /fund/BREIT leaves out the thing a BREIT holder most needs to understand.** It shows "$14.685 · Value per share, Aug 2026 · Blackstone real estate fund. Priced monthly. · Pays income out; value per share alone isn't your return." and a chart. Pro has "**Getting money out: Repurchases are capped at 2% of the fund's value a month and 5% a quarter.**" Lite has nothing on liquidity. BCRED is the same ("may buy back up to 5% of its shares each quarter").
-7. **Lite BREIT has no "What it means for you".** Stock pages show "You own directly / Share of everything you own / A bad day could cost you". BREIT shows none of it, though the data exists (Pro portfolio row: "about 3,404.8 shares").
-8. Lite shows BREIT's price as "$14.685" (three decimals, in the gold accent colour). The precision is right for Pro. In Lite, "$14.69", set in white, would match the rest of Lite.
-
-**Actionable**
-9. **"What to check: every past time ›"** goes to /signals (the history), not to what to check *now*. The Form 4 link is "once the API sends its link" (backend request). Until then, "What to check" is a second "See the cases".
-
-**Carried over (no change)**
-10. VOO / IVV: "504 holdings (SPY's file), State Street (SSGA)". QQQ now uses its own N-PORT; VOO and IVV don't.
-
-## Fixed since walk #2 (verified today)
-- The Lite count matches the rows: "**2 things worth a look today.**" (AMZN, SPY) with the example portfolio, and "3 things…" with the 401(k) added (AMZN, SPY, FXAIX).
-- No "proven" anywhere. Pro: "WATCH = a STRONG pattern is happening now (see Why? for how it holds up)."
-- QQQ: "What's going on · **3 of its holdings have a Heads up.**" (no more "Nothing important today").
-- The allocation bar uses its own colours (teal, violet, orange, magenta), not Heads-up gold or Calm blue. The **Everything / Investments** switch works: "Stocks $2,432 4% · Funds $52,314 78% · 401(k) and IRA $12,000 18%".
-- **BREIT and BCRED** are live. They're priced from their own SEC filings ("SEC EDGAR: BREIT monthly 424B3 NAV supplements", "BCRED monthly 8-K (Item 8.01)"), with a month-by-month table each linked to sec.gov, "What it invests in", "Getting money out", and "No signals are tested on a monthly-priced fund, so it shows "Not tested"". /funds has a "Blackstone funds" section: "Not traded on an exchange. Priced once a month from their own SEC filings."
-- Stock page Pro: "Prices are from the IEX exchange's feed, one venue among many, so a close can differ a little from the consolidated close on a brokerage statement. Precedence hasn't measured by how much." That answers walk #1's question #6 honestly.
-- "What to check: every past time ›" is on Lite company pages under a firing signal.
+## New features walked
+- **Returning-user home** with a "YOUR WEEK · What happened to what you own" card and "Open your portfolio" (see MINOR #2 for its position).
 
 ---
 
 ## MISSING vs the brief
-- **Actionable, still thin.** After Heads up: "See the history", "What to check: every past time", "Paper trade". None of them tells the user what to look at today (who sold, how much of their stake).
-- **Engaging.** No digest, no "tell me when this fires".
-- **Accounts.** "Robinhood connect and screenshot reading: coming next."
-- **BREIT/BCRED returns an investor would recognise:** total return including distributions.
+- **Actionable:** after Heads up, the user can "See the cases" or "Paper trade". Nothing points at *today's* evidence, such as the Form 4 that fired: "Andrew Jassy, 3 sales, Aug 25".
+- **Accounts:** "Robinhood connect and screenshot reading: coming next."
+- **Demo freeze:** still `next dev`.
