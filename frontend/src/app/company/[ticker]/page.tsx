@@ -82,7 +82,7 @@ export default function CompanyScreen() {
               {main.n > 0 && main.hit_rate != null && <div className="bignum">{whole(main.hit_rate)}</div>}
               <p className="say-big"><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
               <HitDots cases={main.cases ?? []} vsMarket={main.vs_market} />
-              <p><b>{liteVerdict(main)}</b></p>
+              <p><b>{liteVerdict(main, co.ticker)}</b></p>
               {main.signal === "rate_jump" && <MarketCard />}
             </>
           ) : (

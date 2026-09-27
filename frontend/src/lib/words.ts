@@ -1,4 +1,4 @@
-import type { MarketResult, SignalResult } from "./api";
+import type { Label, MarketResult, SignalResult } from "./api";
 import { horizonWords, whole } from "./format";
 
 /** The signal to talk about first: a proven one that is firing, else any firing one. */
@@ -6,14 +6,21 @@ export function headline(signals: SignalResult[]): SignalResult | null {
   return signals.find((s) => s.firing && s.label === "STRONG") ?? signals.find((s) => s.firing) ?? null;
 }
 
-// Lite copy: one short sentence each, plain words, about 14 words at most. Pro copy can stay detailed.
+// Lite copy: one short line per item, 10 words at most, no labels, dates, ranges or normal rates.
+// Pro copy can stay detailed.
 
-export function liteSummary(firing: SignalResult[]): string {
-  const strong = firing.find((s) => s.label === "STRONG");
-  if (strong?.signal === "market_rate_jump") return "Rates jumped, and the market usually fell after that.";
-  if (strong) return `${strong.lite}, and that has mattered here before.`;
-  if (firing.length) return `${firing[0].lite}, but that hasn't clearly mattered here.`;
-  return "Nothing important today.";
+/** Classic's four verdicts, word for word. Classic never shows the label itself (STRONG, NOT PROVEN, WEAK). */
+export function liteVerdict(s: { label: Label }, ticker: string): string {
+  if (s.label === "STRONG") return `This has mattered for ${ticker} before.`;
+  if (s.label === "NOT PROVEN") return `No clear pattern for ${ticker}.`;
+  if (s.label === "WEAK") return "Too few times to tell.";
+  return "Not tested yet.";
+}
+
+/** One row's line: what is happening now, then the verdict. "Executives sold shares. This has mattered for AMZN before." */
+export function liteSummary(firing: SignalResult[], ticker: string): string {
+  const s = firing.find((x) => x.label === "STRONG") ?? firing[0];
+  return s ? `${s.lite}. ${liteVerdict(s, ticker)}` : "Nothing important today.";
 }
 
 export function proSummary(firing: SignalResult[]): string {
@@ -27,27 +34,19 @@ export function hitWords(s: { vs_market: boolean }): string {
   return s.vs_market ? "did worse than the whole market (SPY)" : "was lower";
 }
 
-/** "8 of the last 15 times, BX did worse than the market (normal: 51%)." */
+/** "8 of the last 15 times, BX did worse than the market." */
 export function liteHistory(s: SignalResult, ticker: string): string {
   if (s.label === "NO DATA") return s.note ?? "This data isn't loaded yet, so it wasn't tested.";
   const h = horizonWords(s.horizon);
   if (s.n === 0) return `This hasn't happened to ${ticker} in two years.`;
   const what = s.vs_market ? "did worse than the market" : `was lower ${h} later`;
   if (s.n === 1) return `Happened once, and ${ticker} ${s.hits ? what : s.vs_market ? "kept up with the market" : "wasn't lower"}.`;
-  return `${s.hits} of the last ${s.n} times, ${ticker} ${what} (normal: ${whole(s.normal_rate)}).`;
+  return `${s.hits} of the last ${s.n} times, ${ticker} ${what}.`;
 }
 
-/** Market card: "The market fell after 10 of 15 rate jumps (normal week: 38%)." */
+/** Market card: "The market fell a week after 10 of 15 rate jumps." */
 export function liteMarket(m: MarketResult): string {
-  const span = horizonWords(m.horizon).replace("a ", "");
-  return `The market fell after ${m.hits} of ${m.n} rate jumps (normal ${span}: ${whole(m.normal_rate)}).`;
-}
-
-export function liteVerdict(s: SignalResult): string {
-  if (s.label === "STRONG") return "Has mattered before.";
-  if (s.label === "NO DATA") return "";
-  if (s.label === "WEAK") return "Too few cases to tell.";
-  return "Not proven. Could be chance.";
+  return `The market fell ${horizonWords(m.horizon)} after ${m.hits} of ${m.n} rate jumps.`;
 }
 
 /** Signal keys in plain words, for places that get only the key (e.g. fund holdings). */

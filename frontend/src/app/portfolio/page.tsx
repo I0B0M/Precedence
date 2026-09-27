@@ -8,7 +8,7 @@ import { OtherAssetsRows } from "@/components/OtherAssets";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { Why } from "@/components/Why";
 import { StartFlow, TodayFunnel } from "@/components/Today";
-import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
+import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type RetirementRow, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
@@ -37,29 +37,56 @@ export default function HoldingsBoard() {
     api.portfolio(holdings, JSON.parse(extras)).then(setBoard).catch(setError);
   }, [holdings, extras]);
 
+  // 401(k)/IRA funds by ticker. They join the look-through list but have no company page and no price series.
+  const retire = new Map((board?.retirement ?? []).filter((r) => r.ticker).map((r) => [r.ticker as string, r]));
+
   // 30 trading days of closes per row, from the company endpoint (the same prices the company page charts).
-  const symbols = board?.exposure.map((e) => e.symbol).join(",") ?? "";
+  const symbols = board?.exposure.filter((e) => !retire.has(e.symbol)).map((e) => e.symbol).join(",") ?? "";
   useEffect(() => {
     if (!symbols) return;
     Promise.all(symbols.split(",").map((t) => api.company(t).then((d) => [t, d.prices.slice(-SPARK_DAYS)] as const).catch(() => null)))
       .then((pairs) => setSparks(Object.fromEntries(pairs.filter((p) => p !== null))));
   }, [symbols]);
 
+  // A mapped 401(k) fund moves with the fund it behaves like (FXAIX with SPY). Its 1-day change, unless you hold it too.
+  const standIns = [...new Set((board?.retirement ?? []).map((r) => r.behaves_like).filter((b): b is string => !!b))]
+    .filter((b) => !board?.rows.some((r) => r.symbol === b)).join(",");
+  const [standIn, setStandIn] = useState<Record<string, number | null>>({});
+  useEffect(() => {
+    if (!standIns) return;
+    Promise.all(standIns.split(",").map((b) => api.fund(b).then((f) => [b, f.price?.change_1d ?? null] as const).catch(() => [b, null] as const)))
+      .then((pairs) => setStandIn(Object.fromEntries(pairs)));
+  }, [standIns]);
+
   if (error) return <ApiProblem />;
   if (holdings && !holdings.length) return <StartFlow />;
   if (!board) return <Loading what="what you own" />;
 
+  // What a look-through row is: one of your rows' kinds, a 401(k)/IRA fund, or a stock you hold only inside a fund.
+  const kindOf = (sym: string) => board.rows.find((r) => r.symbol === sym)?.kind ?? (retire.has(sym) ? "retirement" : "stock");
+  // Everything you own, the home estimate included. Every "share of" on this page is out of this.
+  const grand = board.subtotals?.total ?? board.total;
   const watching = board.exposure.filter((e) => e.state === "WATCH").length;
-  const stockRows = board.exposure.filter((e) => board.rows.find((r) => r.symbol === e.symbol)?.kind !== "etf");
+  const stockRows = board.exposure.filter((e) => kindOf(e.symbol) === "stock");
   const nextStock = stockRows.find((e) => e.state === "WATCH") ?? stockRows[0] ?? null;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);
+  const owned = board.rows.length + (board.retirement?.length ?? 0) + (board.properties?.length ?? 0);
   // Companies you hold, directly or inside funds, in all: stock rows plus the small slices folded inside each fund.
-  const companies = board.exposure.filter((e) => board.rows.find((r) => r.symbol === e.symbol)?.kind !== "etf").length
-    + board.exposure.reduce((a, e) => a + e.children.length, 0);
-  // Today's move in dollars, from each row's own 1-day change. Only when every row has one, so it's never a partial sum.
-  const allChanges = board.rows.length > 0 && board.rows.every((r) => r.change != null);
-  const todayMove = allChanges ? board.rows.reduce((a, r) => a + r.value - r.value / (1 + (r.change as number)), 0) : null;
-  const todayRel = todayMove != null && board.total - todayMove ? todayMove / (board.total - todayMove) : null;
+  const companies = stockRows.length + board.exposure.reduce((a, e) => a + e.children.length, 0);
+  // Today's move over everything with a daily price: each holding's own 1-day change, and each mapped 401(k)/IRA fund
+  // at the change of the fund it behaves like. A home has no daily price, so it's left out. Only when every priced
+  // thing has a change, so it's never a partial sum.
+  const changeOf = (sym: string) => board.rows.find((r) => r.symbol === sym)?.change ?? standIn[sym] ?? null;
+  const priced = [
+    ...board.rows.map((r) => ({ value: r.value, change: r.change })),
+    ...(board.retirement ?? []).filter((r) => r.behaves_like).map((r) => ({ value: r.amount, change: changeOf(r.behaves_like as string) })),
+  ];
+  const pricedNow = priced.reduce((a, x) => a + x.value, 0);
+  const todayMove = priced.length > 0 && priced.every((x) => x.change != null)
+    ? priced.reduce((a, x) => a + x.value - x.value / (1 + (x.change as number)), 0) : null;
+  const todayRel = todayMove != null && pricedNow - todayMove ? todayMove / (pricedNow - todayMove) : null;
+  const mapped = (board.retirement ?? []).filter((r) => r.behaves_like && r.ticker);
+  const unpriced = (board.retirement ?? []).filter((r) => !r.behaves_like);
   return (
     <section>
       <div className="pf-head">
@@ -74,12 +101,20 @@ export default function HoldingsBoard() {
               <span className="mute pro-only"> {board.price_as_of ? `on ${shortDate(board.price_as_of)}` : "at the latest close"}</span>
             </p>
           )}
+          {todayMove != null && (mapped.length > 0 || unpriced.length > 0 || (board.properties?.length ?? 0) > 0) && (
+            <p className="note pro-only pro-add">
+              Out of the {money(pricedNow)} with a daily price.
+              {mapped.map((r) => ` ${r.ticker} moves with ${r.behaves_like}.`).join("")}
+              {(board.properties?.length ?? 0) > 0 && " A home has no daily price, so it's left out."}
+              {unpriced.length > 0 && ` ${unpriced.map((r) => r.fund).join(", ")}: no price, left out.`}
+            </p>
+          )}
           <p className="lede" style={{ color: "var(--text)" }}>
             <span className="lite-only">
               {watching ? `${watching} thing${watching > 1 ? "s" : ""} worth a look today.` : "Nothing needs you today."}
             </span>
             <span className="pro-only">
-              {board.rows.length} holding{board.rows.length === 1 ? "" : "s"} · {companies} compan{companies === 1 ? "y" : "ies"} in all · {watching} on WATCH
+              {owned} thing{owned === 1 ? "" : "s"} you own · {companies} compan{companies === 1 ? "y" : "ies"} in all · {watching} on WATCH
             </span>
           </p>
         </div>
@@ -98,15 +133,15 @@ export default function HoldingsBoard() {
           const e = board.exposure.find((x) => x.symbol === r.symbol);
           return e ? (
             <HoldingRow key={`own-${r.symbol}`} e={e} row={r} value={r.value} open={open === r.symbol} onToggle={() => setOpen(open === r.symbol ? null : r.symbol)}
-              spark={sparks[r.symbol]} fund={board.funds.find((f) => f.symbol === r.symbol)} portfolio={board.total} />
+              spark={sparks[r.symbol]} fund={board.funds.find((f) => f.symbol === r.symbol)} grand={grand} invest={board.total} />
           ) : null;
         })}
       </div>
       <div className="rows pro-only pro-add">
         {board.exposure.map((e) => (
-          <HoldingRow key={e.symbol} e={e} row={board.rows.find((r) => r.symbol === e.symbol)} open={open === e.symbol}
-            onToggle={() => setOpen(open === e.symbol ? null : e.symbol)} spark={sparks[e.symbol]}
-            fund={board.funds.find((f) => f.symbol === e.symbol)} portfolio={board.total} lookThrough />
+          <HoldingRow key={e.symbol} e={e} row={board.rows.find((r) => r.symbol === e.symbol)} kind={kindOf(e.symbol)} open={open === e.symbol}
+            onToggle={() => setOpen(open === e.symbol ? null : e.symbol)} spark={sparks[e.symbol]} retirement={retire.get(e.symbol)}
+            fund={board.funds.find((f) => f.symbol === e.symbol)} grand={grand} invest={board.total} lookThrough />
         ))}
       </div>
 
@@ -123,7 +158,7 @@ export default function HoldingsBoard() {
         {board.unknown.length > 0 && <p className="badline">No data yet for {board.unknown.join(", ")}.</p>}
       </div>
 
-      <OtherAssetsRows />
+      <OtherAssetsRows rows={board.retirement ?? []} />
 
       {status?.data === "sample" && (
         <div className="row-flex" style={{ marginTop: 20 }}>
@@ -144,11 +179,12 @@ type Row = PortfolioOut["rows"][number];
 
 /** One board row. Lite passes `value` (the holding's full value as entered); the Pro look-through list shows what
  *  each exposure row stands for, and a fund's "shown as its stocks" note. */
-function HoldingRow({ e, row, value, open, onToggle, spark, fund, portfolio, lookThrough = false }: {
-  e: ExposureRow; row?: Row; value?: number; open: boolean; onToggle: () => void; spark?: CompanyDetail["prices"];
-  fund?: FundInfo; portfolio: number; lookThrough?: boolean;
+function HoldingRow({ e, row, kind = row?.kind, value, open, onToggle, spark, fund, retirement, grand, invest, lookThrough = false }: {
+  e: ExposureRow; row?: Row; kind?: string; value?: number; open: boolean; onToggle: () => void; spark?: CompanyDetail["prices"];
+  fund?: FundInfo; retirement?: RetirementRow; grand: number; invest: number; lookThrough?: boolean;
 }) {
   const id = `panel-${lookThrough ? "lt" : "own"}-${e.symbol}`;
+  const fundLike = kind === "etf" || kind === "retirement";
   return (
     <div className={`hitem${open ? " open" : ""}`}>
       <button type="button" className="hrow" aria-expanded={open} aria-controls={id} onClick={onToggle}>
@@ -156,7 +192,7 @@ function HoldingRow({ e, row, value, open, onToggle, spark, fund, portfolio, loo
           <span className="tk">{e.symbol}</span>
           <span className="nm">{e.name}</span>
           <span className="say">
-            <span className="lite-only">{row?.kind === "crypto" ? "Crypto: no signals for it yet." : row?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
+            <span className="lite-only">{kind === "crypto" ? "Crypto: no signals for it yet." : fundLike && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing, e.symbol)}</span>
             <span className="pro-only">{proSummary(e.firing)}</span>
           </span>
         </span>
@@ -171,7 +207,7 @@ function HoldingRow({ e, row, value, open, onToggle, spark, fund, portfolio, loo
                 {row?.change != null ? `${pct(row.change)} at the last close` : ""}
               </small>
             </>
-          ) : row?.kind === "etf" && e.direct - e.total >= 1 ? (
+          ) : fundLike && e.direct - e.total >= 1 ? (
             // A looked-through fund: show what you own, and say how much of it appears as its stocks.
             <>
               {money(e.direct)}
@@ -181,7 +217,7 @@ function HoldingRow({ e, row, value, open, onToggle, spark, fund, portfolio, loo
             <>
               {money(e.total)}
               <small className={row?.change != null && row.change < 0 ? "down" : "up"}>
-                {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{whole(e.share_of_total)} of total</span>}
+                {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{whole(grand ? e.total / grand : null)} of total</span>}
               </small>
             </>
           )}
@@ -192,7 +228,7 @@ function HoldingRow({ e, row, value, open, onToggle, spark, fund, portfolio, loo
         </span>
       </button>
       <div className="hpanel" id={id} inert={!open}>
-        <div><Panel e={e} kind={row?.kind} fund={fund} portfolio={portfolio} /></div>
+        <div><Panel e={e} kind={kind} fund={fund} retirement={retirement} grand={grand} invest={invest} /></div>
       </div>
     </div>
   );
@@ -210,13 +246,19 @@ function FundLine({ f }: { f: FundInfo }) {
 }
 
 /** Opens in place under a row: what's going on, and what it means for you in dollars. */
-function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fund?: FundInfo; portfolio: number }) {
+function Panel({ e, kind, fund, retirement, grand, invest }: {
+  e: ExposureRow; kind?: string; fund?: FundInfo; retirement?: RetirementRow; grand: number; invest: number;
+}) {
   const viaEtf = Object.values(e.via_etf).reduce((a, b) => a + b, 0);
-  const isFund = kind === "etf";
+  const isRetire = kind === "retirement"; // a 401(k)/IRA fund: no company page; its fund page is the one it behaves like
+  const isFund = kind === "etf" || isRetire;
   const isCrypto = kind === "crypto"; // state null ("Not tested"); no company page, no signals
   // A fund row stands for only part of the fund (the rest shows as its stocks), so judge the whole fund from `direct`.
-  const share = isFund ? (portfolio ? e.direct / portfolio : null) : e.share_of_total;
+  const dollars = isFund ? e.direct : e.total;
+  const share = grand ? dollars / grand : null;
+  const investShare = invest && invest !== grand ? dollars / invest : null;
   const badDay = isFund ? (e.bad_day_return != null ? e.bad_day_return * e.direct : null) : e.bad_day_loss;
+  const like = retirement?.behaves_like ?? null;
   const [allKids, setAllKids] = useState(false);
   const kids = allKids ? e.children : e.children.slice(0, 6);
   return (
@@ -224,7 +266,10 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
       <div className="stack" style={{ gap: 8 }}>
         <h3 className="pro-only">What&apos;s going on</h3>
         {isFund && (
-          <p className="pro-only pro-add">{fund?.as_of ? `Holdings as of ${shortDate(fund.as_of)}.` : "Holdings not loaded yet."}</p>
+          <p className="pro-only pro-add">
+            {isRetire ? `A ${retirement?.account ?? "retirement"} fund. ${retirement?.note ?? ""}`
+              : fund?.as_of ? `Holdings as of ${shortDate(fund.as_of)}.` : "Holdings not loaded yet."}
+          </p>
         )}
         {isCrypto && <p>Crypto isn&apos;t covered by our signals yet, so there&apos;s nothing tested to report.</p>}
         {!isCrypto && (!isFund || e.firing.length > 0) && (
@@ -234,7 +279,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
                 {e.firing.map((s) => (
                   <div key={s.signal} className="list-row">
                     <span>
-                      <span className="lite-only"><b>{s.lite}.</b> <span className="mute">{liteVerdict(s)}</span></span>
+                      <span className="lite-only"><b>{s.lite}.</b> <span className="mute">{liteVerdict(s, e.symbol)}</span></span>
                       <span className="pro-only">{s.pro}</span>
                     </span>
                     <span className="pro-only"><LabelTag label={s.label} /> <Why signal={s} what={`${e.symbol} ${s.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" /></span>
@@ -270,14 +315,16 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
               source="Fund holdings files (SPY: State Street)" /></dd></>)}
           {isFund && e.direct > e.total && (<><dt className="pro-only">Shown as its stocks</dt><dd className="pro-only">{money(e.direct - e.total)}</dd></>)}
           <dt className="pro-only">Share of everything you own</dt><dd className="pro-only">{whole(share)}</dd>
+          {investShare != null && <><dt className="pro-only">Share of your investments</dt><dd className="pro-only">{whole(investShare)}</dd></>}
           <dt>A bad day could cost you</dt>
           <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span>
             <Why what={`${e.symbol} bad day`} source="Daily closes (Alpaca IEX)"
-              rows={[["Basis", "5th-percentile daily return over the past year"], ["That day", pct(e.bad_day_return)], ["Applied to", money(isFund ? e.direct : e.total)]]} /></dd>
+              rows={[["Basis", "5th-percentile daily return over the past year"], ["That day", pct(e.bad_day_return)], ["Applied to", money(dollars)]]} /></dd>
         </dl>
         <p className="note pro-only pro-add">Bad day: the worst 1 in 20 days, past year{isFund ? ", whole fund" : ""}.</p>
-        {isFund && <Link className="linkb" href={`/fund/${e.symbol}`}>What&apos;s inside {e.symbol} ›</Link>}
-        {kind !== "etf" && !isCrypto && <Link className="linkb" href={`/company/${e.symbol}`}>Open {e.symbol} ›</Link>}
+        {kind === "etf" && <Link className="linkb" href={`/fund/${e.symbol}`}>What&apos;s inside {e.symbol} ›</Link>}
+        {isRetire && like && <Link className="linkb" href={`/fund/${like}`}>{e.symbol} behaves like {like === "SPY" ? "the S&P 500" : like} ›</Link>}
+        {!isFund && !isCrypto && <Link className="linkb" href={`/company/${e.symbol}`}>Open {e.symbol} ›</Link>}
       </div>
     </div>
   );

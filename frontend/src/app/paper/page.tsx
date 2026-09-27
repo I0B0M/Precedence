@@ -169,7 +169,7 @@ export default function PracticeScreen() {
                     <span>
                       <b>{sym}</b> <span className="mute">{sharesText(sh)} share{sh === 1 ? "" : "s"}</span>
                       {s.seeded && sym in s.seeded && <span className="copied">from your portfolio</span>}
-                      {e && <span className="note" style={{ display: "block" }}>{c?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>}
+                      {e && <span className="note" style={{ display: "block" }}>{c?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing, sym)}</span>}
                     </span>
                     <span className="row-flex" style={{ gap: 8, flexWrap: "nowrap" }}>
                       <span>{money(sh * (c?.last_close ?? 0))}</span>

@@ -84,7 +84,7 @@ export default function FundScreen() {
 
       <div className="box">
         <h3>What&apos;s going on</h3>
-        <p className="say-big">{f.fund_firing.length ? liteSummary(f.fund_firing) : "Nothing important today."}</p>
+        <p className="say-big">{f.fund_firing.length ? liteSummary(f.fund_firing, f.symbol) : "Nothing important today."}</p>
         <MarketCard onlyFor={f.symbol} />
       </div>
 

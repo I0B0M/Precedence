@@ -22,7 +22,7 @@ async function fromExisting(symbol: string): Promise<FundView> {
   const inside: FundHolding[] = price > 0 ? [
     ...p.exposure.filter((e) => e.symbol !== symbol).map((e) => ({
       ticker: e.symbol, name: e.name, weight: (e.via_etf[symbol] ?? 0) / price, in_stone: true, state: e.state,
-      firing: e.firing.map((s) => ({ signal: s.signal, label: s.label })), lite_line: e.firing.length ? liteSummary(e.firing) : null,
+      firing: e.firing.map((s) => ({ signal: s.signal, label: s.label })), lite_line: e.firing.length ? liteSummary(e.firing, e.symbol) : null,
     })),
     ...(self?.children ?? []).map((c) => ({
       ticker: c.symbol, name: c.name, weight: c.total / price, in_stone: true, state: null, firing: [], lite_line: null,

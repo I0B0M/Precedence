@@ -165,7 +165,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
             <p className="note">{r.hits} of {r.n} times, it {hitWords(r)}</p>
             <Why signal={r} what={`${ticker} ${r.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" asOf={cases[cases.length - 1]?.exit_day ?? null} />
           </div>
-          <div className="lab-after">
+          <div className="lab-after pro-only pro-add">
             <div className="bignum mute">{whole(r.normal_rate)}</div>
             <p className="note">in a normal {span}: {r.normal_hits} of {r.normal_n}</p>
           </div>
@@ -191,8 +191,8 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       )}
 
       <div className={`verdict ${tone}`} role="status">
-        <LabelTag label={r.label} />
-        <p><b className="lite-only">{r.label === "NOT PROVEN" ? "Could be chance." : r.label === "NO DATA" ? liteHistory(r, ticker) : liteVerdict(r)}</b><b className="pro-only">{liteVerdict(r)}</b></p>
+        <span className="pro-only"><LabelTag label={r.label} /></span>
+        <p><b>{r.label === "NO DATA" ? liteHistory(r, ticker) : liteVerdict(r, ticker)}</b></p>
       </div>
 
       {r.holdout && (
@@ -202,7 +202,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       {r.firing && (
         <p className={r.label === "STRONG" ? "watchline" : "okline"}>
           <b>Happening now</b>
-          <span className="lite-only"> ({shortDate(r.firing.known_at)}). {r.label === "STRONG" ? `That's why ${ticker} is Heads up.` : `Not proven here, so ${ticker} stays Calm.`}</span>
+          <span className="lite-only"> ({shortDate(r.firing.known_at)}). {r.label === "STRONG" ? `That's why ${ticker} is Heads up.` : `No clear pattern, so ${ticker} stays Calm.`}</span>
           <span className="pro-only">: {r.firing.note}. {r.label === "STRONG" ? "This is why the stock is on WATCH." : "Not proven for this stock, so it stays CALM."}</span>
         </p>
       )}
