@@ -10,6 +10,7 @@ import { wordsReached } from "@/lib/briefing/spoken";
 import type { Line, Script } from "@/lib/briefing/types";
 import { money, pct, shortDate } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
+import "@/app/briefing/briefing.css";
 import { useMode } from "@/lib/mode";
 import { SIGNAL_WORDS } from "@/lib/words";
 import type { OrbState } from "./orb/palette";
@@ -56,12 +57,13 @@ function subscribeVoices(cb: () => void) {
 const readVoiceName = () => (hasVoice() ? pickVoice(window.speechSynthesis.getVoices())?.name ?? null : null);
 
 /** Brief: "summarize complex information" · "more accessible … engaging" · "understanding what they own". */
-export function Stage() {
+/** fallback: what to brief on when nothing is saved (the landing passes the example). Saved holdings always win. */
+export function Stage({ fallback }: { fallback?: Holding[] } = {}) {
   const { mode } = useMode();
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [holdings] = useHoldings(status ? (status.data === "sample" ? SAMPLE_PORTFOLIO : SAVED ? SAVED_EXAMPLE : NO_HOLDINGS) : null);
+  const [holdings] = useHoldings(status ? (status.data === "sample" ? SAMPLE_PORTFOLIO : SAVED ? SAVED_EXAMPLE : fallback ?? NO_HOLDINGS) : null);
 
   // Where the narration is, tied to the script it belongs to: a new script starts idle at line 0.
   const [pos, setPos] = useState<{ script: Script | null; play: PlayStatus; index: number; fraction: number; level: number }>(
@@ -167,7 +169,7 @@ export function Stage() {
             <p className="bf-cap dim">Precedence can&apos;t reach its data right now. <button type="button" className="bf-link" onClick={() => window.location.reload()}>Try again</button></p>
           )}
           {phase === "no-holdings" && (
-            <p className="bf-cap dim">Nothing to brief you on yet. <Link className="bf-link" href="/">Add what you own</Link> and come back.</p>
+            <p className="bf-cap dim">Nothing to brief you on yet. <Link className="bf-link" href="/import">Add what you own</Link> and come back.</p>
           )}
           {phase === "ready" && play === "idle" && (
             <p className="bf-cap dim">{lines.length} things to say about what you own{script?.as_of ? `, at the close on ${shortDate(script.as_of)}` : ""}. Press play.</p>

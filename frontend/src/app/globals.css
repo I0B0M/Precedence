@@ -396,6 +396,9 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
 /* ---------- chart ---------- */
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 
+/* The briefing on the portfolio, between the total and the allocation bar. */
+.pf-briefing { margin: 8px 0 28px; }
+
 /* Small uppercase label line, in gold. */
 .kicker { font-family: var(--label); font-weight: 900; font-size: 13px; line-height: 20px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Allocation } from "@/components/Allocation";
 import { OwnMap } from "@/components/OwnMap";
 import { RiskCard } from "@/components/RiskCard";
+import { Stage } from "@/components/briefing/Stage";
 import { maybeAutoTour, startTour } from "@/lib/tour";
 import { BadgeKey, StateBadge, Verdict } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
@@ -140,11 +141,11 @@ export default function HoldingsBoard() {
         </p>
       </div>
 
+      <div className="pf-briefing"><Stage /></div>
       <Allocation board={board} />
       <OwnMap board={board} />
       {holdings && holdings.length > 0 && <RiskCard holdings={holdings} />}
       <div className="row-flex" style={{ gap: 20 }}>
-        <Link className="linkb" href="/briefing">Hear today&apos;s briefing ›</Link>
         <button type="button" className="linkb" onClick={startTour}>Take the tour</button>
       </div>
 

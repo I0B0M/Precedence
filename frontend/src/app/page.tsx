@@ -6,6 +6,7 @@ import { StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { Mark } from "@/components/landing/Art";
 import { HeroLoop } from "@/components/landing/Loops";
+import { Stage } from "@/components/briefing/Stage";
 import { api, SAVED, SAVED_EXAMPLE, type CompanyDetail, type PortfolioOut } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { useHoldings } from "@/lib/holdings";
@@ -112,6 +113,17 @@ export default function Home() {
             <span className="note pro-only">Prices from Alpaca (IEX); badges from our tests on SEC and FRED data.</span>
           </Link>
           )}
+        </div>
+      </section>
+
+      {/* ---- the briefing: yours when you've added holdings, the example until then ---- */}
+      <section id="briefing" className="home-band" aria-label="Briefing">
+        <div className="home-inner">
+          <div className="home-head">
+            <span className="kicker">Briefing</span>
+            <h2>{returning ? "Hear what's happening to what you own" : "Hear the example, read out loud"}</h2>
+          </div>
+          <Stage fallback={EXAMPLE} />
         </div>
       </section>
 
