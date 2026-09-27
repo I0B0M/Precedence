@@ -51,7 +51,8 @@ export function OtherAssetsForms() {
       msg = { ok: true, text: `About ${money(estimate.estimate)} · Estimate` };
     } catch (e) {
       const status = e instanceof ApiError ? e.status : 0;
-      msg = status === 400 || status === 422
+      // 400/422: the address couldn't be used; 502: the geocoder didn't answer. The API's own words say which.
+      msg = status === 400 || status === 422 || status === 502
         ? { ok: false, text: `${(e as ApiError).message} Saved without an estimate.` }
         : { ok: false, text: "Estimate coming soon. Saved." };
     }
@@ -66,10 +67,13 @@ export function OtherAssetsForms() {
     setFundBusy(true);
     setFundMsg(null);
     const rows = await Promise.all(fundRows.map(async (f) => {
+      // One retry: the first lookup of a fund can fail while the backend fetches it from the SEC.
       let lookup: FundLookup | null = null;
-      try {
-        lookup = await api.lookupFund(f.name.trim());
-      } catch {}
+      for (let attempt = 0; attempt < 2 && !lookup; attempt++) {
+        try {
+          lookup = await api.lookupFund(f.name.trim());
+        } catch {}
+      }
       return { account, name: f.name.trim(), amount: num(f.amount)!, lookup };
     }));
     addRetirement(rows);
@@ -84,7 +88,7 @@ export function OtherAssetsForms() {
         <h3>Add a home</h3>
         <label className="list-head" htmlFor="h-place">Home address</label>
         <input id="h-place" className="field" value={place} autoComplete="street-address"
-          onChange={(e) => { setPlace(e.target.value); setHomeMsg(null); }} placeholder="1 Brickell Ave, Miami, FL" />
+          onChange={(e) => { setPlace(e.target.value); setHomeMsg(null); }} placeholder="3900 Main Hwy, Miami, FL 33133" />
         <label className="list-head" htmlFor="h-price">What you paid</label>
         <input id="h-price" className="field" inputMode="decimal" value={price} onChange={(e) => { setPrice(e.target.value); setHomeMsg(null); }} placeholder="$" />
         <label className="list-head" htmlFor="h-when">When you bought it</label>
