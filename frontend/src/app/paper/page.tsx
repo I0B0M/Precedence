@@ -63,18 +63,21 @@ export default function PracticeScreen() {
   }, [stored, stale, cos]);
 
   const price = useMemo(() => new Map((cos ?? []).map((c) => [c.ticker, c])), [cos]);
-  const posKey = s ? JSON.stringify(s.positions) : "";
+  // Keyed by the seeded (starting) holdings, not the live practice positions: in the saved-data demo the board
+  // is a file per exact holding, one per symbol/share combo, and a practice trade's share count never has one.
+  // A badge is a per-symbol fact anyway, so the seeded quantities answer it just as well as the traded ones.
+  const seedKey = s?.seeded ? JSON.stringify(s.seeded) : "";
 
   // CALM / WATCH for what practice holds, from the same endpoint as the board.
   useEffect(() => {
-    if (!s) return;
-    const holdings = Object.entries(s.positions).map(([sym, sh]) => ({ symbol: sym, shares: sh }));
+    if (!s?.seeded) return;
+    const holdings = Object.entries(s.seeded).map(([sym, sh]) => ({ symbol: sym, shares: sh }));
     if (!holdings.length) return;
-    const key = posKey;
+    const key = seedKey;
     api.portfolio(holdings).then((data) => setBoardFor({ key, data })).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posKey]);
-  const board = boardFor?.key === posKey ? boardFor.data : null;
+  }, [seedKey]);
+  const board = boardFor?.key === seedKey ? boardFor.data : null;
 
   if (error) return <ApiProblem />;
   if (!s || !cos) return <Loading what="practice" />;
