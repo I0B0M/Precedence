@@ -34,5 +34,10 @@ def load() -> Settings:
     )
 
 
+def readers_on() -> bool:
+    """Whether the Readers' signals (stone.readers) run next to the built-in three. Off by default."""
+    return os.getenv("STONE_READERS", "0") == "1"
+
+
 class NotConnected(RuntimeError):
     """Raised when a source is called before its key is set."""

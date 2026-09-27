@@ -1,0 +1,22 @@
+# Render blueprint for the backend (docs/v2-plan.md: the fallback when no DigitalOcean credit is
+# available). Free tier sleeps when idle; the first request after that takes about 30 s, which is
+# acceptable only for the `live` Netlify context, never for production (saved mode).
+services:
+  - type: web
+    name: stone-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    healthCheckPath: /api/status
+    envVars:
+      - key: DATABASE_URL
+        sync: false   # Neon's connection string, set in the dashboard
+      - key: SEC_USER_AGENT
+        sync: false
+      - key: FRED_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: STONE_READERS
+        value: "0"

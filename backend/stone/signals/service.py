@@ -4,8 +4,16 @@ from datetime import datetime
 
 import psycopg
 
+from stone import config
 from stone.signals import engine
 from stone.sources.prices import Bar
+
+NEWS_READER = "finbert_tone"  # stone.readers.finbert.FinBertTone.key
+
+
+def active_specs() -> dict[str, engine.Spec]:
+    """The signals that run: the built-in three, plus the Readers' when STONE_READERS=1."""
+    return {**engine.SPECS, **(engine.READER_SPECS if config.readers_on() else {})}
 
 # The whole market, for signals judged against it: SPY on real data, the sample's index fund in sample mode.
 MARKET_TICKERS = ("SPY", "BRD500")
@@ -51,19 +59,34 @@ def insider_loaded(conn: psycopg.Connection, ticker: str) -> bool:
     return conn.execute("select exists (select 1 from insider_trades where ticker = %s) as e", (ticker,)).fetchone()["e"]
 
 
-def missing_data(conn: psycopg.Connection, ticker: str, spec: engine.Spec) -> engine.Result | None:
+def load_readings(conn: psycopg.Connection, ticker: str) -> list[tuple[str, datetime, str, float]]:
+    """What the FinBERT Reader recorded for this stock's filings (scripts/read_filings.py)."""
+    rows = conn.execute(
+        """select accession, accepted_at, form, negative from readings
+           where ticker = %s and reader = %s order by accepted_at""", (ticker, NEWS_READER)).fetchall()
+    return [(r["accession"], r["accepted_at"], r["form"], float(r["negative"])) for r in rows]
+
+
+def missing_data(conn: psycopg.Connection, ticker: str, spec: engine.Spec,
+                 readings: list | None = None) -> engine.Result | None:
     if spec.key == engine.INSIDER.key and not insider_loaded(conn, ticker):
         return engine.no_data(spec, f"Insider filings (Form 4) are not loaded for {ticker} yet, so this wasn't tested.")
+    if spec.key == engine.NEWS.key and not (readings if readings is not None else load_readings(conn, ticker)):
+        return engine.no_data(spec, f"No filing text has been read for {ticker} yet (scripts/read_filings.py), "
+                                    "so this wasn't tested.")
     return None
 
 
-def events_for(spec_key: str, bars: list[Bar], rates: list[tuple], sales: list) -> list[engine.Event]:
+def events_for(spec_key: str, bars: list[Bar], rates: list[tuple], sales: list,
+               readings: list | None = None) -> list[engine.Event]:
     if spec_key == engine.INSIDER.key:
         return engine.detect_insider_clusters(sales)
     if spec_key == engine.RATES.key:
         return engine.detect_rate_jumps(rates)
     if spec_key == engine.GAP.key:
         return engine.detect_gap_downs(bars)
+    if spec_key == engine.NEWS.key:
+        return engine.detect_news_tone(readings or [])
     raise KeyError(spec_key)
 
 
@@ -73,18 +96,21 @@ def run_all(conn: psycopg.Connection, ticker: str, rates: list[tuple] | None = N
     rates = load_rates(conn) if rates is None else rates
     market = load_market(conn)[1] if market is None else market
     sales = load_sales(conn, ticker)
-    return {key: missing_data(conn, ticker, spec)
-            or engine.test_signal(spec, bars, events_for(key, bars, rates, sales), market)
-            for key, spec in engine.SPECS.items()}
+    specs = active_specs()
+    readings = load_readings(conn, ticker) if engine.NEWS.key in specs else []
+    return {key: missing_data(conn, ticker, spec, readings)
+            or engine.test_signal(spec, bars, events_for(key, bars, rates, sales, readings), market)
+            for key, spec in specs.items()}
 
 
 def run_one(conn: psycopg.Connection, ticker: str, spec_key: str) -> engine.Result:
     bars = load_bars(conn, ticker)
-    spec = engine.SPECS[spec_key]
-    if (missing := missing_data(conn, ticker, spec)) is not None:
+    spec = active_specs()[spec_key]
+    readings = load_readings(conn, ticker) if spec_key == engine.NEWS.key else []
+    if (missing := missing_data(conn, ticker, spec, readings)) is not None:
         return missing
     market = load_market(conn)[1] if spec.vs_market else None
-    return engine.test_signal(spec, bars, events_for(spec_key, bars, load_rates(conn), load_sales(conn, ticker)),
+    return engine.test_signal(spec, bars, events_for(spec_key, bars, load_rates(conn), load_sales(conn, ticker), readings),
                               market)
 
 

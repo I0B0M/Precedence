@@ -56,10 +56,15 @@ RATES = Spec("rate_jump", "Interest rates jumped",
 GAP = Spec("gap_down", "The stock dropped 5% at the open",
            "Gap down: opened 5% or more below the prior close", 20)
 SPECS = {s.key: s for s in (INSIDER, RATES, GAP)}
+# Proposed by a Reader (stone.readers), tested here like any other signal. Runs only with STONE_READERS=1.
+NEWS = Spec("news_tone", "A filing read as bad news",
+            "8-K read by FinBERT with negative tone of 0.70 or more (a Reader proposes, the engine tests)", 5)
+READER_SPECS = {NEWS.key: NEWS}
+NEWS_TONE_THRESHOLD = 0.70
 # The same rate jumps, tested on the market itself: was SPY lower afterwards?
 MARKET_RATES = Spec("market_rate_jump", "Interest rates jumped: the whole market",
                     "SPY after the 10-year yield (FRED DGS10) rose 0.15 pt or more in a week", 5)
-ALL_SPECS = {**SPECS, MARKET_RATES.key: MARKET_RATES}
+ALL_SPECS = {**SPECS, **READER_SPECS, MARKET_RATES.key: MARKET_RATES}
 
 
 @dataclass(frozen=True)
@@ -293,6 +298,17 @@ def detect_insider_clusters(sales: list[tuple[str, datetime]], min_filings: int 
         count = sum(1 for t in filings[: j + 1] if t > start)
         if count >= min_filings:
             out.append(Event(at, f"{at.date()}: {count} insider sale filings in {window_days} days"))
+    return out
+
+
+def detect_news_tone(readings: list[tuple[str, datetime, str, float]],
+                     threshold: float = NEWS_TONE_THRESHOLD) -> list[Event]:
+    """readings: (accession, accepted_at, form, negative share) from a Reader, one per filing read.
+    A case is a filing whose negative tone reaches the threshold, timed at SEC acceptance."""
+    out = []
+    for acc, at, form, negative in sorted(readings, key=lambda r: r[1]):
+        if negative >= threshold:
+            out.append(Event(at, f"{at.date()}: {form} read as bad news (negative tone {negative:.0%}, {acc})"))
     return out
 
 

@@ -1,0 +1,35 @@
+# Rebuilds the saved demo data (frontend/public/saved) from the committed fixtures and commits the
+# result if anything changed (docs/v2-plan.md: the deterministic half of the nightly batch; the
+# model Readers run on a developer's machine). Manual only until after the ShellHacks demo: enable
+# the schedule below when the demo numbers may change again.
+name: Refresh saved data
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "15 7 * * 1-5"   # 07:15 UTC on weekdays, after the previous close is in
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Build the saved data
+        working-directory: backend
+        run: |
+          uv sync --frozen
+          uv run python scripts/build_saved.py
+      - name: Commit if changed
+        run: |
+          git config user.name "Bryan"
+          git config user.email "bryan2@arch-te.com"
+          git add frontend/public/saved
+          git diff --cached --quiet && echo "nothing changed" && exit 0
+          git commit -m "Saved data: refreshed by the nightly job"
+          git push

@@ -92,6 +92,11 @@ Everything else in this repo was written at the event.
 | TradingView Lightweight Charts | Apache-2.0 | Pro candles on the company page (keeps TradingView's attribution logo) |
 | d3-hierarchy | ISC | The "What you really own" treemap layout |
 | driver.js | MIT | The guided tour |
+| three.js | MIT | The Briefing tab's orb (renderer ported from Eno, MIT) |
+| Vitest | MIT | Frontend unit tests (`npm test`) |
+| Hugging Face Transformers, PyTorch | Apache-2.0, BSD-3 | Optional, v2: the FinBERT tone Reader (`scripts/read_filings.py`); not installed by default |
+| ProsusAI/finbert (model) | see its model card | Optional, v2: reads 8-K text as negative/neutral/positive |
+| Ollama | MIT | Optional, v2: a local model for filing summaries (`STONE_SUMMARY_MODEL=ollama:<model>`) |
 
 ## Data sources
 
@@ -112,3 +117,13 @@ Everything else in this repo was written at the event.
 - Newcombe (1998), "Interval estimation for the difference between independent proportions",
   Statistics in Medicine 17:873, method 10 (the stricter test shown in Pro).
 - Benjamini & Hochberg (1995), "Controlling the False Discovery Rate", JRSS B 57:289 (the scan's 10% FDR count).
+
+## After the hackathon (v2)
+
+`docs/v2-plan.md` is the accepted plan: trained finance models come in only as **Readers** that
+propose cases for the same engine to test (`docs/adr/0002-readers-propose-the-engine-tests.md`);
+accuracy means calibration (`scripts/calibration_check.py`), reading accuracy
+(`scripts/eval_screenshots.py`) and grounded narration, never price prediction. The first Reader,
+FinBERT tone on 8-K text, is wired in behind `STONE_READERS=1`; a local summarizer through Ollama
+sits behind `STONE_SUMMARY_MODEL`. The backend ships as `backend/Dockerfile` with `render.yaml`
+and `.do/app.yaml`; Netlify's `live` branch context points the frontend at it.

@@ -2,6 +2,7 @@
 filing summary, once a key is set), the SEC (a filing's document for a summary) and the Census
 geocoder (home estimate)."""
 
+import os
 from datetime import timedelta
 from functools import lru_cache
 from typing import Literal
@@ -32,6 +33,7 @@ from stone.sources.private_funds import month_back
 from stone.sources.gemini import MODEL as GEMINI_MODEL
 from stone.sources.gemini import IMAGE_TYPES, GeminiClient, ScreenshotUnreadable, first_sentences
 from stone.sources.gemini import connected as gemini_connected
+from stone.sources.ollama import OllamaClient
 from stone.sources import census
 from stone.sources.fhfa import SOURCE as HPI_SOURCE
 from stone.sources.sec import SecClient
@@ -552,13 +554,13 @@ def market_rate_jump(c: psycopg.Connection = Conn):
 
 @app.get("/api/lab/signals")
 def lab_signals():
-    return [{"key": s.key, "lite": s.lite, "pro": s.pro, "horizon": s.horizon} for s in engine.SPECS.values()]
+    return [{"key": s.key, "lite": s.lite, "pro": s.pro, "horizon": s.horizon} for s in service.active_specs().values()]
 
 
 @app.get("/api/lab/{ticker}/{signal}")
 def lab(ticker: str, signal: str, c: psycopg.Connection = Conn):
     co = company_or_404(c, ticker)
-    if signal not in engine.SPECS:
+    if signal not in service.active_specs():
         raise HTTPException(404, f"Unknown signal {signal}")
     if co["kind"] != "stock":
         raise HTTPException(400, "Signals run on stocks, not funds")
@@ -851,6 +853,18 @@ def gemini_failed(e: httpx.HTTPError, instead: str = "") -> HTTPException:
     return HTTPException(504, f"Gemini didn't answer in time.{instead}")
 
 
+def summarizer(settings: config.Settings) -> "GeminiClient | OllamaClient":
+    """Which model writes filing summaries: Ollama when STONE_SUMMARY_MODEL is "ollama:<model>"
+    (docs/v2-plan.md, milestone M3), else Gemini. Either way every figure is checked against XBRL."""
+    choice = os.getenv("STONE_SUMMARY_MODEL", "")
+    if choice.startswith("ollama:"):
+        return OllamaClient(settings, choice.split(":", 1)[1], os.getenv("OLLAMA_URL"))
+    try:
+        return GeminiClient(settings)
+    except NotConnected:
+        raise HTTPException(503, "Filing summaries aren't connected yet (GEMINI_API_KEY is not set).")
+
+
 @app.get("/api/filings/{accession}/summary")
 def filing_summary(accession: str, c: psycopg.Connection = Conn):
     """Gemini's plain summary of a filing. Every figure it states is checked against the filing's own XBRL."""
@@ -861,17 +875,15 @@ def filing_summary(accession: str, c: psycopg.Connection = Conn):
         raise HTTPException(404, f"No filing {accession}")
     if f["form"] not in SUMMARY_FORMS:
         raise HTTPException(400, "Summaries cover 10-K, 10-Q and 8-K filings.")
-    try:
-        client = GeminiClient(config.load())
-    except NotConnected:
-        raise HTTPException(503, "Filing summaries aren't connected yet (GEMINI_API_KEY is not set).")
+    client = summarizer(config.load())
     text = filing_text(f["cik"], accession, f["primary_doc"], f["source"])
     try:
         read, cached, generated = client.summarize_filing(text, f["ticker"], f["form"], accession)
     except ScreenshotUnreadable as e:
         raise HTTPException(422, str(e))
     except httpx.HTTPError as e:
-        raise gemini_failed(e)
+        raise HTTPException(502, f"The local model ({client.model_name}, Ollama) didn't answer: {e}") \
+            if isinstance(client, OllamaClient) else gemini_failed(e)
     facts = c.execute("select concept, value, period_end from xbrl_facts where accession = %s and taxonomy = 'us-gaap'",
                       (accession,)).fetchall()
     return {
@@ -879,7 +891,7 @@ def filing_summary(accession: str, c: psycopg.Connection = Conn):
         "url": filing_url(f["cik"], accession, f["primary_doc"], f["source"]),
         "summary_lite": first_sentences(read.summary, 3),
         "figures": check_figures(read.figures, facts),
-        "model": GEMINI_MODEL, "generated_at": generated.isoformat(), "cached": cached,
+        "model": getattr(client, "model_name", GEMINI_MODEL), "generated_at": generated.isoformat(), "cached": cached,
     }
 
 

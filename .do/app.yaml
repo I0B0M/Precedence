@@ -1,0 +1,34 @@
+# DigitalOcean App Platform spec for the backend (docs/v2-plan.md, milestone M1). Create with:
+#   doctl apps create --spec .do/app.yaml
+# Secrets are entered in the App Platform UI (or `doctl apps update`), never in this file.
+name: stone-api
+region: nyc
+services:
+  - name: api
+    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    github:
+      repo: I0B0M/Stone
+      branch: main
+      deploy_on_push: true
+    http_port: 8000
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    health_check:
+      http_path: /api/status
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: SEC_USER_AGENT
+        scope: RUN_TIME
+        type: SECRET
+      - key: FRED_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: GEMINI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: STONE_READERS
+        scope: RUN_TIME
+        value: "0"

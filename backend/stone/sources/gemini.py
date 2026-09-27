@@ -194,13 +194,17 @@ def first_sentences(text: str, n: int) -> str:
     return " ".join(parts[:n])
 
 
-def parse_summary_response(doc: dict) -> FilingRead:
+def filing_read(body: dict) -> FilingRead:
+    """The summary and its figures from the model's JSON, whichever model wrote it."""
     from stone.figures import KINDS
-    body = answer_json(doc, "filing")
     figures = [{"label": f.get("label", ""), "kind": f.get("kind") if f.get("kind") in KINDS else "other",
                 "text_value": f.get("text_value", ""), "value": f.get("value"), "period_end": f.get("period_end")}
                for f in body.get("figures", []) if isinstance(f, dict)]
     return FilingRead(str(body.get("summary", "")).strip(), figures)
+
+
+def parse_summary_response(doc: dict) -> FilingRead:
+    return filing_read(answer_json(doc, "filing"))
 
 
 def connected(settings: Settings) -> bool:
@@ -209,6 +213,8 @@ def connected(settings: Settings) -> bool:
 
 
 class GeminiClient:
+    model_name = MODEL
+
     def __init__(self, settings: Settings, offline: bool = False):
         if not connected(settings) and not offline:
             raise NotConnected("GEMINI_API_KEY is not set")

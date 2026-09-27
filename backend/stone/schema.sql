@@ -201,3 +201,19 @@ begin
     end if;
 end
 $$;
+
+-- What a Reader (stone.readers) recorded for a filing's text. A Reader only proposes; the engine tests.
+create table if not exists readings (
+    ticker      text not null,
+    accession   text not null,
+    reader      text not null,          -- e.g. finbert_tone
+    form        text not null,
+    accepted_at timestamptz not null,   -- copied from filings, so the engine needs no join
+    negative    double precision not null,
+    neutral     double precision not null,
+    positive    double precision not null,
+    sentences   integer not null,
+    model       text not null,          -- e.g. ProsusAI/finbert
+    read_at     timestamptz not null default now(),
+    primary key (ticker, accession, reader)
+);

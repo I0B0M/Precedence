@@ -6,7 +6,7 @@ from datetime import datetime
 
 import psycopg
 
-from stone.signals import engine, service
+from stone.signals import engine, service, service
 
 FDR_Q = 0.10
 
@@ -41,7 +41,7 @@ def run(conn: psycopg.Connection, stocks: list[str], run_at: datetime, as_of) ->
                 tested_pairs.append((t, key, p))
             if r.label == engine.STRONG:
                 strong.append((t, key, r))
-    tested = len(engine.SPECS) * len(stocks) - counts[engine.NO_DATA]  # pairs without data weren't tested
+    tested = len(service.active_specs()) * len(stocks) - counts[engine.NO_DATA]  # pairs without data weren't tested
     eligible = counts[engine.STRONG] + counts[engine.NOT_PROVEN]
     held = sum(1 for *_, r in strong if r.holdout and r.holdout.held_up)
     # Benjamini-Hochberg at a 10% false discovery rate across every tested pair; the STRONG rule itself is unchanged

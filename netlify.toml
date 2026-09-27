@@ -9,3 +9,11 @@
   NEXT_PUBLIC_STONE_SAVED = "1"
   NODE_VERSION = "22"
   # GEMINI_API_KEY for the Gemini features is set in Netlify's site settings, never in this file.
+
+# The `live` branch: the same app against a real backend (docs/v2-plan.md, milestone M1). Production
+# above never depends on a server; only a deploy of the branch named `live` reads these values.
+# STONE_API_URL is the backend's public origin; set the real one in Netlify's site settings for the
+# branch, which overrides this placeholder.
+[context.live.environment]
+  NEXT_PUBLIC_STONE_SAVED = "0"
+  STONE_API_URL = "https://stone-api.example.invalid"
