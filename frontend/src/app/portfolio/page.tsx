@@ -70,7 +70,8 @@ export default function HoldingsBoard() {
           {todayMove != null && (
             <p className="sc-change">
               <span className={todayMove < 0 ? "down" : "up"}>{todayMove < 0 ? "−" : "+"}{money(Math.abs(todayMove))} ({pct(todayRel)})</span>
-              <span className="mute"> {board.price_as_of ? `on ${shortDate(board.price_as_of)}` : "at the latest close"}</span>
+              <span className="mute lite-only"> at the last close</span>
+              <span className="mute pro-only"> {board.price_as_of ? `on ${shortDate(board.price_as_of)}` : "at the latest close"}</span>
             </p>
           )}
           <p className="lede" style={{ color: "var(--text)" }}>
@@ -82,8 +83,8 @@ export default function HoldingsBoard() {
             </span>
           </p>
         </div>
-        <p className="note" style={{ maxWidth: "34ch" }}>
-          <span className="pro-only">WATCH only when a signal that has proven itself on this stock is firing. </span>
+        <p className="note pro-only pro-add" style={{ maxWidth: "34ch" }}>
+          WATCH only when a signal that has proven itself on this stock is firing.{" "}
           {board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in our price data."}
         </p>
       </div>
@@ -91,57 +92,26 @@ export default function HoldingsBoard() {
       <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
 
       {watching > 0 && <BadgeKey />}
-      <div className="rows">
-        {board.exposure.map((e) => {
-          const row = board.rows.find((r) => r.symbol === e.symbol);
-          const isOpen = open === e.symbol;
-          const spk = sparks[e.symbol];
-          return (
-            <div key={e.symbol} className={`hitem${isOpen ? " open" : ""}`}>
-              <button type="button" className="hrow" aria-expanded={isOpen} aria-controls={`panel-${e.symbol}`}
-                onClick={() => setOpen(isOpen ? null : e.symbol)}>
-                <span className="who">
-                  <span className="tk">{e.symbol}</span>
-                  <span className="nm">{e.name}</span>
-                  <span className="say">
-                    <span className="lite-only">{row?.kind === "crypto" ? "Crypto: no signals for it yet." : row?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
-                    <span className="pro-only">{proSummary(e.firing)}</span>
-                  </span>
-                </span>
-                <span className={`sp ${spk && spk.length > 1 && spk[spk.length - 1].close < spk[0].close ? "down" : "up"}`}>
-                  {spk ? <Spark closes={spk.map((p) => p.close)} /> : <span className="spark" />}
-                </span>
-                <span className="val">
-                  {row?.kind === "etf" && e.direct - e.total >= 1 ? (
-                    // A looked-through fund: show what you own, and say how much of it appears as its stocks.
-                    <>
-                      {money(e.direct)}
-                      <small className="mute">{money(e.direct - e.total)} of it shown as its stocks on this list</small>
-                    </>
-                  ) : (
-                    <>
-                      {money(e.total)}
-                      <small className={row?.change != null && row.change < 0 ? "down" : "up"}>
-                        {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{whole(e.share_of_total)} of total</span>}
-                      </small>
-                    </>
-                  )}
-                </span>
-                <span className="hend">
-                  <StateBadge state={e.state} />
-                  <span className="chev" aria-hidden>›</span>
-                </span>
-              </button>
-              <div className="hpanel" id={`panel-${e.symbol}`} inert={!isOpen}>
-                <div><Panel e={e} kind={row?.kind} fund={board.funds.find((f) => f.symbol === e.symbol)} portfolio={board.total} /></div>
-              </div>
-            </div>
-          );
+      {/* Lite: only what you entered, one row each at its full value. Pro: the look-through list (stocks inside your funds too). */}
+      <div className="rows lite-only">
+        {board.rows.map((r) => {
+          const e = board.exposure.find((x) => x.symbol === r.symbol);
+          return e ? (
+            <HoldingRow key={`own-${r.symbol}`} e={e} row={r} value={r.value} open={open === r.symbol} onToggle={() => setOpen(open === r.symbol ? null : r.symbol)}
+              spark={sparks[r.symbol]} fund={board.funds.find((f) => f.symbol === r.symbol)} portfolio={board.total} />
+          ) : null;
         })}
+      </div>
+      <div className="rows pro-only pro-add">
+        {board.exposure.map((e) => (
+          <HoldingRow key={e.symbol} e={e} row={board.rows.find((r) => r.symbol === e.symbol)} open={open === e.symbol}
+            onToggle={() => setOpen(open === e.symbol ? null : e.symbol)} spark={sparks[e.symbol]}
+            fund={board.funds.find((f) => f.symbol === e.symbol)} portfolio={board.total} lookThrough />
+        ))}
       </div>
 
       <div className="stack" style={{ gap: 6, marginTop: 14 }}>
-        <div className="stack pro-only" style={{ gap: 6 }}>
+        <div className="stack pro-only pro-add" style={{ gap: 6 }}>
         {board.funds.map((f) => <FundLine key={f.symbol} f={f} />)}
         {splitFunds.length > 0 && (
           <p className="note">
@@ -170,6 +140,64 @@ export default function HoldingsBoard() {
   );
 }
 
+type Row = PortfolioOut["rows"][number];
+
+/** One board row. Lite passes `value` (the holding's full value as entered); the Pro look-through list shows what
+ *  each exposure row stands for, and a fund's "shown as its stocks" note. */
+function HoldingRow({ e, row, value, open, onToggle, spark, fund, portfolio, lookThrough = false }: {
+  e: ExposureRow; row?: Row; value?: number; open: boolean; onToggle: () => void; spark?: CompanyDetail["prices"];
+  fund?: FundInfo; portfolio: number; lookThrough?: boolean;
+}) {
+  const id = `panel-${lookThrough ? "lt" : "own"}-${e.symbol}`;
+  return (
+    <div className={`hitem${open ? " open" : ""}`}>
+      <button type="button" className="hrow" aria-expanded={open} aria-controls={id} onClick={onToggle}>
+        <span className="who">
+          <span className="tk">{e.symbol}</span>
+          <span className="nm">{e.name}</span>
+          <span className="say">
+            <span className="lite-only">{row?.kind === "crypto" ? "Crypto: no signals for it yet." : row?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
+            <span className="pro-only">{proSummary(e.firing)}</span>
+          </span>
+        </span>
+        <span className={`sp ${spark && spark.length > 1 && spark[spark.length - 1].close < spark[0].close ? "down" : "up"}`}>
+          {spark ? <Spark closes={spark.map((p) => p.close)} /> : <span className="spark" />}
+        </span>
+        <span className="val">
+          {value != null ? (
+            <>
+              {money(value)}
+              <small className={row?.change != null && row.change < 0 ? "down" : "up"}>
+                {row?.change != null ? `${pct(row.change)} at the last close` : ""}
+              </small>
+            </>
+          ) : row?.kind === "etf" && e.direct - e.total >= 1 ? (
+            // A looked-through fund: show what you own, and say how much of it appears as its stocks.
+            <>
+              {money(e.direct)}
+              <small className="mute">{money(e.direct - e.total)} of it shown as its stocks on this list</small>
+            </>
+          ) : (
+            <>
+              {money(e.total)}
+              <small className={row?.change != null && row.change < 0 ? "down" : "up"}>
+                {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{whole(e.share_of_total)} of total</span>}
+              </small>
+            </>
+          )}
+        </span>
+        <span className="hend">
+          <StateBadge state={e.state} />
+          <span className="chev" aria-hidden>›</span>
+        </span>
+      </button>
+      <div className="hpanel" id={id} inert={!open}>
+        <div><Panel e={e} kind={row?.kind} fund={fund} portfolio={portfolio} /></div>
+      </div>
+    </div>
+  );
+}
+
 function FundLine({ f }: { f: FundInfo }) {
   return (
     <p className="note">
@@ -194,9 +222,9 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
   return (
     <div className="hdetail">
       <div className="stack" style={{ gap: 8 }}>
-        <h3>What&apos;s going on</h3>
+        <h3 className="pro-only">What&apos;s going on</h3>
         {isFund && (
-          <p>{fund?.as_of ? `A fund. Its holdings are from ${shortDate(fund.as_of)}.` : "A fund. Its holdings aren't loaded yet, so it's shown as one line."}</p>
+          <p className="pro-only pro-add">{fund?.as_of ? `A fund. Its holdings are from ${shortDate(fund.as_of)}.` : "A fund. Its holdings aren't loaded yet, so it's shown as one line."}</p>
         )}
         {isCrypto && <p>Crypto isn&apos;t covered by our signals yet, so there&apos;s nothing tested to report.</p>}
         {!isCrypto && (!isFund || e.firing.length > 0) && (
@@ -217,7 +245,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
           </>
         )}
         {e.children.length > 0 && (
-          <div className="list">
+          <div className="list pro-only pro-add">
             <p className="list-head">Smaller holdings inside {e.symbol} (under 1% of what you own each)</p>
             {kids.map((k) => (
               <Link key={k.symbol} className="list-row" href={`/company/${k.symbol}`}>
@@ -234,16 +262,20 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
         )}
       </div>
       <div className="stack" style={{ gap: 8 }}>
-        <h3>What it means for you</h3>
+        <h3 className="pro-only">What it means for you</h3>
         <dl className="kv">
           <dt>You own directly</dt><dd>{money(e.direct)}</dd>
-          {viaEtf > 0 && (<><dt>Inside your funds</dt><dd>{money(viaEtf)}</dd></>)}
-          {isFund && e.direct > e.total && (<><dt>Of that, shown as its stocks on this list</dt><dd>{money(e.direct - e.total)}</dd></>)}
-          <dt>Share of everything you own</dt><dd>{whole(share)}</dd>
+          {viaEtf > 0 && (<><dt>Inside your funds</dt><dd>{money(viaEtf)}
+            <Why what={`${e.symbol} inside your funds`} rows={Object.entries(e.via_etf).map(([etf, v]) => [`Via ${etf}`, money(v)] as [string, string])}
+              source="Fund holdings files (SPY: State Street)" /></dd></>)}
+          {isFund && e.direct > e.total && (<><dt className="pro-only">Of that, shown as its stocks on this list</dt><dd className="pro-only">{money(e.direct - e.total)}</dd></>)}
+          <dt className="pro-only">Share of everything you own</dt><dd className="pro-only">{whole(share)}</dd>
           <dt>A bad day could cost you</dt>
-          <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span></dd>
+          <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span>
+            <Why what={`${e.symbol} bad day`} source="Daily closes (Alpaca IEX)"
+              rows={[["Basis", "5th-percentile daily return over the past year"], ["That day", pct(e.bad_day_return)], ["Applied to", money(isFund ? e.direct : e.total)]]} /></dd>
         </dl>
-        <p className="note">&quot;A bad day&quot; is the 1-in-20 worst day of the past year{isFund ? ", for the whole fund" : ""}.</p>
+        <p className="note pro-only pro-add">&quot;A bad day&quot; is the 1-in-20 worst day of the past year{isFund ? ", for the whole fund" : ""}.</p>
         {isFund && <Link className="linkb" href={`/fund/${e.symbol}`}>What&apos;s inside {e.symbol} ›</Link>}
         {kind !== "etf" && !isCrypto && <Link className="linkb" href={`/company/${e.symbol}`}>Open {e.symbol} ›</Link>}
       </div>
