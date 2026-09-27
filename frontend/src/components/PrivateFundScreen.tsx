@@ -6,7 +6,7 @@ import { StateBadge } from "@/components/bits";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { Why } from "@/components/Why";
 import { dateTimeET, money, pct } from "@/lib/format";
-import { isPrivateFund, PRIVATE_LITE, privateFund, type PrivateFundPage } from "@/lib/private-funds";
+import { isPrivateFund, PRIVATE_LIQUIDITY, PRIVATE_LITE, privateFund, shortQuote, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
 
 const monthYear = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
@@ -85,10 +85,13 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
 
       <div className="stack pro-only pro-add" style={{ gap: 16 }}>
         {p.invests_in && (
-          <p><b>What it invests in:</b> &ldquo;{p.invests_in.text}&rdquo; <a href={p.invests_in.url} target="_blank" rel="noopener noreferrer">sec.gov</a></p>
+          <p><b>What it invests in:</b>{" "}
+            {shortQuote(p.invests_in.text) ? <>&ldquo;{p.invests_in.text}&rdquo; </> : null}
+            <a href={p.invests_in.url} target="_blank" rel="noopener noreferrer">{shortQuote(p.invests_in.text) ? "sec.gov" : "Read it on sec.gov"}</a></p>
         )}
-        {p.liquidity_note && (
-          <p><b>Getting money out:</b> {p.liquidity_note}{p.liquidity_url && <> <a href={p.liquidity_url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}</p>
+        {(p.liquidity_note || p.liquidity_url) && isPrivateFund(p.symbol) && (
+          <p><b>Getting money out:</b> {PRIVATE_LIQUIDITY[p.symbol.toUpperCase() as PrivateFundKey]}
+            {p.liquidity_url && <> <a href={p.liquidity_url} target="_blank" rel="noopener noreferrer">Read the terms on sec.gov</a></>}</p>
         )}
         <p className="note">Basis: {p.returns.basis}. Source: {p.source}. No signals are tested on a monthly-priced fund, so it shows &quot;Not tested&quot;.</p>
 

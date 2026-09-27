@@ -11,6 +11,16 @@ export const PRIVATE_LITE: Record<PrivateFundKey, string> = {
   BCRED: "Blackstone private credit fund. Priced monthly.",
 };
 
+/** Pro: each fund's repurchase limit in our own words (from the terms quoted in its 10-Q), next to a link to the filing.
+ *  The filing's own sentence is longer than a short quote, so it isn't reproduced. */
+export const PRIVATE_LIQUIDITY: Record<PrivateFundKey, string> = {
+  BREIT: "Repurchases are capped at 2% of the fund's value a month and 5% a quarter.",
+  BCRED: "The fund may buy back up to 5% of its shares each quarter, at its Board's discretion.",
+};
+
+/** A filing quote is shown only when it's one short sentence (25 words or fewer). */
+export const shortQuote = (t: string | null | undefined) => !!t && t.trim().split(/\s+/).length <= 25;
+
 export const isPrivateFund = (s: string): s is PrivateFundKey => (PRIVATE_FUNDS as readonly string[]).includes(s.toUpperCase());
 
 export interface PrivateFundIn { kind: "private_fund"; fund: PrivateFundKey; amount: number }
