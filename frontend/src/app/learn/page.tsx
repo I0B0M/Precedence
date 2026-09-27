@@ -7,10 +7,11 @@ import { api, type Today } from "@/lib/api";
 import { shortDate } from "@/lib/format";
 
 const SOURCES = [
-  { name: "SEC EDGAR", lite: "What companies file: reports, news, insider sales.", pro: "10-K, 10-Q, 8-K, Form 4 and XBRL facts, timed by SEC acceptance." },
-  { name: "FRED", lite: "The 10-year Treasury rate.", pro: "DGS10, dated when it was published, not the day it describes." },
-  { name: "Alpaca (IEX)", lite: "Daily stock prices.", pro: "Daily open and close from the IEX feed; entries at the next open." },
-  { name: "State Street", lite: "What's inside SPY.", pro: "SSGA's daily SPY holdings file, used for the fund look-through." },
+  { name: "SEC EDGAR", liteName: "The SEC", lite: "What companies file: reports, news, insider sales.", pro: "10-K, 10-Q, 8-K, Form 4 and XBRL facts, timed by SEC acceptance." },
+  { name: "FRED", liteName: "The St. Louis Fed", lite: "The 10-year Treasury rate.", pro: "DGS10, dated when it was published, not the day it describes." },
+  { name: "Alpaca (IEX)", liteName: "Daily prices", lite: "Daily stock prices.", pro: "Daily open and close from the IEX feed; entries at the next open." },
+  { name: "State Street", liteName: "The fund's own file", lite: "What's inside SPY.", pro: "SSGA's daily SPY holdings file, used for the fund look-through." },
+  { name: "SEC N-PORT", liteName: "Fund filings", lite: "What's inside QQQ.", pro: "Invesco QQQ's quarterly N-PORT filing to the SEC, published about two months after its date." },
 ];
 
 // Brief: "more accessible" · "summarize complex information"
@@ -38,7 +39,7 @@ export default function Learn() {
         <div className="learn-grid">
           {SOURCES.map((s) => (
             <div key={s.name} className="learn-tile">
-              <b>{s.name}</b>
+              <b><span className="lite-only">{s.liteName}</span><span className="pro-only">{s.name}</span></b>
               <p><span className="lite-only">{s.lite}</span><span className="pro-only">{s.pro}</span></p>
               {asOf[s.name] && <span className="note">Latest: {shortDate(asOf[s.name] as string)}</span>}
             </div>
