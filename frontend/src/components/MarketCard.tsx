@@ -18,7 +18,7 @@ export function MarketCard({ where, onlyFor }: { where: "above" | "below" | "sel
   return (
     <div className="market">
       <p className="lite-only">
-        {liteMarket(m)}{where !== "self" && <span className="note" style={{ display: "block" }}>So each stock is judged against the market.</span>}
+        {liteMarket(m)}
       </p>
       <div className="pro-only stack" style={{ gap: 10 }}>
         <div className="row-flex" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "nowrap" }}>

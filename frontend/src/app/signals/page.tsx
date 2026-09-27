@@ -36,8 +36,8 @@ export default function SignalLab() {
       const t = q.get("t"), s = q.get("s");
       const tOk = !!t && st.some((c) => c.ticker === t), sOk = !!s && sp.some((x) => x.key === s);
       setUnavailable([
-        ...(t && !tOk ? [`${t} isn't available in the Lab, which tests single stocks we have data for.`] : []),
-        ...(s && !sOk ? [`"${s}" isn't a signal the Lab can test.`] : []),
+        ...(t && !tOk ? [`No signals for ${t}. Pick a stock we cover.`] : []),
+        ...(s && !sOk ? [`"${s}" isn't a signal we test.`] : []),
       ]);
       // With no link params, open on the demo story (BX + rate jump) when the API has both.
       setTicker(t ? (tOk ? t : null) : st.find((c) => c.ticker === DEFAULT.t)?.ticker ?? st[0]?.ticker ?? null);
@@ -54,7 +54,7 @@ export default function SignalLab() {
   }, [ticker, signal]);
 
   if (error) return <ApiProblem />;
-  if (!stocks.length || !specs.length) return <Loading what="the Lab" />;
+  if (!stocks.length || !specs.length) return <Loading what="signals" />;
   const quick = QUICK.filter((t) => stocks.some((c) => c.ticker === t));
   const key = `${ticker}|${signal}`;
 
@@ -64,7 +64,6 @@ export default function SignalLab() {
         <span className="kicker">Signals</span>
         <h1><span className="lite-only">Has this mattered before?</span><span className="pro-only">Signal history</span></h1>
         <p className="lede">
-          <span className="lite-only">Pick a stock and a kind of news. See every time it happened.</span>
           <span className="pro-only">Two years per stock. Entry at the next open after the event was public; hit = lower after the horizon.
             A rate jump hits every stock on the same days, so there hit = did worse than SPY over the same days.
             Compared with the same stock&apos;s normal days, measured the same way; 90% Wilson range.</span>
@@ -114,7 +113,7 @@ export default function SignalLab() {
           <div className="card">
             <h3>Not available</h3>
             {unavailable.map((u) => <p key={u}>{u}</p>)}
-            <p className="mute">Pick {!ticker ? "a stock" : ""}{!ticker && !signal ? " and " : ""}{!signal ? "a kind of news" : ""} above to run a test.</p>
+            <p className="mute">Pick {!ticker ? "a stock" : ""}{!ticker && !signal ? " and " : ""}{!signal ? "a kind of news" : ""} above.</p>
           </div>
         )
       ) : result?.key !== key ? <Loading what={`${ticker} and that news`} /> : <LabResult key={key} r={result.r} ticker={ticker} />}
@@ -193,7 +192,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
 
       <div className={`verdict ${tone}`} role="status">
         <LabelTag label={r.label} />
-        <p><b>{liteVerdict(r)}</b> <span className="lite-only">{liteHistory(r, ticker)}</span></p>
+        <p><b className="lite-only">{r.label === "NOT PROVEN" ? "Could be chance." : r.label === "NO DATA" ? liteHistory(r, ticker) : liteVerdict(r)}</b><b className="pro-only">{liteVerdict(r)}</b></p>
       </div>
 
       {r.holdout && (
@@ -202,8 +201,9 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
 
       {r.firing && (
         <p className={r.label === "STRONG" ? "watchline" : "okline"}>
-          <b>Happening now:</b> {r.firing.note}.{" "}
-          {r.label === "STRONG" ? "This is why the stock is on WATCH." : "Not proven for this stock, so it stays CALM."}
+          <b>Happening now</b>
+          <span className="lite-only"> ({shortDate(r.firing.known_at)}). {r.label === "STRONG" ? `That's why ${ticker} is Heads up.` : `Not proven here, so ${ticker} stays Calm.`}</span>
+          <span className="pro-only">: {r.firing.note}. {r.label === "STRONG" ? "This is why the stock is on WATCH." : "Not proven for this stock, so it stays CALM."}</span>
         </p>
       )}
 
@@ -244,15 +244,13 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       <div className="lite-only">
         {cases.length > 0 && (
           <p className="note">
-            Most recent, {ticker}&apos;s own move{r.vs_market ? " (and the market's)" : ""}:{" "}
+            Last {Math.min(3, cases.length)}:{" "}
             {cases.slice(-3).reverse().map((c) =>
               `${shortDate(c.entry_day)} ${pct(c.ret)}${r.vs_market && c.market_ret != null ? ` (SPY ${pct(c.market_ret)})` : ""}`).join(" · ")}
           </p>
         )}
       </div>
-      <p className="note">Prices from the daily bars in our database; events timed from SEC acceptance and FRED release.</p>
       <div className="next-step">
-        <p>Try a trade in {ticker} with pretend money.</p>
         <Link className="btn t-go" href={`/paper?t=${ticker}`}>Paper trade {ticker}</Link>
       </div>
       <Link className="linkb" href={`/company/${ticker}`}>Open {ticker} ›</Link>

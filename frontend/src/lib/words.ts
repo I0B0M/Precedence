@@ -33,7 +33,7 @@ export function liteHistory(s: SignalResult, ticker: string): string {
   const h = horizonWords(s.horizon);
   if (s.n === 0) return `This hasn't happened to ${ticker} in two years.`;
   const what = s.vs_market ? "did worse than the market" : `was lower ${h} later`;
-  if (s.n === 1) return `It happened once; ${ticker} ${s.hits ? what : `then ${s.vs_market ? "kept up with the market" : "wasn't lower"}`}.`;
+  if (s.n === 1) return `Happened once, and ${ticker} ${s.hits ? what : s.vs_market ? "kept up with the market" : "wasn't lower"}.`;
   return `${s.hits} of the last ${s.n} times, ${ticker} ${what} (normal: ${whole(s.normal_rate)}).`;
 }
 
@@ -44,10 +44,10 @@ export function liteMarket(m: MarketResult): string {
 }
 
 export function liteVerdict(s: SignalResult): string {
-  if (s.label === "STRONG") return s.signal === "market_rate_jump" ? "A real pattern for the market." : "A real pattern for this stock.";
+  if (s.label === "STRONG") return "Has mattered before.";
   if (s.label === "NO DATA") return "";
-  if (s.label === "WEAK") return "Too few times to be sure.";
-  return "Not clearly different from normal.";
+  if (s.label === "WEAK") return "Too few cases to tell.";
+  return "Not proven. Could be chance.";
 }
 
 /** Signal keys in plain words, for places that get only the key (e.g. fund holdings). */
