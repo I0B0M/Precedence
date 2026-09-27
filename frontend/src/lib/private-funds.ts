@@ -20,6 +20,12 @@ export const PRIVATE_LIQUIDITY: Record<PrivateFundKey, string> = {
   BCRED: "The fund may buy back up to 5% of its shares each quarter, at its Board's discretion.",
 };
 
+/** Classic: getting money out, in plain words. The filing link is Pro only. */
+export const PRIVATE_WITHDRAW: Record<PrivateFundKey, string> = {
+  BREIT: "You can't always sell: withdrawals are limited each month.",
+  BCRED: "You can't always sell: buybacks are limited each quarter.",
+};
+
 /** A filing quote is shown only when it's one short sentence (25 words or fewer). */
 export const shortQuote = (t: string | null | undefined) => !!t && t.trim().split(/\s+/).length <= 25;
 

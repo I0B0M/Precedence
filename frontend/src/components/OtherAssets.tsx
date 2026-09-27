@@ -6,7 +6,7 @@ import { StateBadge } from "@/components/bits";
 import { Why } from "@/components/Why";
 import { api, ApiError, type FundLookup, type HomeEstimate, type RetirementRow } from "@/lib/api";
 import { SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
-import { navMoney, PRIVATE_FUNDS, PRIVATE_LITE, type PrivateFundKey, type PrivateFundRow } from "@/lib/private-funds";
+import { navMoney, PRIVATE_FUNDS, PRIVATE_LITE, PRIVATE_WITHDRAW, type PrivateFundKey, type PrivateFundRow } from "@/lib/private-funds";
 import { approxMoney, money, pct } from "@/lib/format";
 import { addCrypto, addPrivateFund, addProperty, addRetirement, portfolioExtras, removeOther, useOtherAssets, type Property, type RetirementFund } from "@/lib/other-assets";
 
@@ -272,6 +272,7 @@ export function OtherAssetsRows({ rows, privateRows = [] }: { rows?: RetirementR
                   <span className="tk">{pf.fund}</span><span className="nm">{b?.name ?? pf.fund}</span>
                   <span className="say">
                     <Link href={`/fund/${pf.fund}`}>{PRIVATE_LITE[pf.fund]} ›</Link>
+                    <span className="lite-only note" style={{ display: "block" }}>{PRIVATE_WITHDRAW[pf.fund]}</span>
                     {b?.nav != null && (
                       <span className="pro-only note" style={{ display: "block" }}>
                         {navMoney(b.nav)} a share (Class {b.share_class}){b.nav_as_of ? `, ${shortMonth(b.nav_as_of)}` : ""}

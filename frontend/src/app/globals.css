@@ -285,6 +285,7 @@ td.num, th.num { text-align: right; }
 .clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 td a { color: var(--text); text-underline-offset: 3px; text-decoration-color: var(--mark); }
 .bignum { font-weight: 400; font-size: clamp(44px, 7vw, 64px); letter-spacing: -0.03em; color: var(--gold); line-height: 1.02; }
+.bignum.price { color: var(--text); }   /* a price is white everywhere, as on the stock page; gold stays for results */
 
 /* One dot per past case. Filled = it came true. They fill in, one after another. */
 .hitdots { display: flex; flex-wrap: wrap; gap: 6px; }

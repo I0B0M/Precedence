@@ -90,7 +90,7 @@ function FundScreen() {
         </div>
         {f.price && (
           <div className="co-price">
-            <div className="bignum">{money(f.price.last_close, true)}</div>
+            <div className="bignum price">{money(f.price.last_close, true)}</div>
             <p>
               {f.price.change_1d != null && <span className={f.price.change_1d < 0 ? "down" : "up"}>{pct(f.price.change_1d)} · </span>}
               <span className="mute">close {shortDate(f.price.as_of)}</span>

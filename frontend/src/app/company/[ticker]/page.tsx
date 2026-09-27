@@ -97,7 +97,7 @@ export default function CompanyScreen() {
                 const f4 = main.signal === "insider_cluster" && s0 ? s0.url ?? filingUrl(s0.accession) : null;
                 return f4
                   ? <a className="linkb" href={f4} target="_blank" rel="noopener noreferrer">What to check: who sold and how much ›</a>
-                  : inLab(main.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${main.signal}`}>What to check: every past time ›</Link>;
+                  : inLab(main.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${main.signal}`}>See each past time this happened ›</Link>;
               })()}
               {main.signal === "rate_jump" && <MarketCard />}
             </>

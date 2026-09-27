@@ -13,7 +13,6 @@ import { api, type CompanyDetail, type ExposureRow, type FundInfo, type Portfoli
 import { money, pct, sharePct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
-import type { PrivateFundRow } from "@/lib/private-funds";
 import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
@@ -78,7 +77,8 @@ export default function HoldingsBoard() {
   const stockRows = board.exposure.filter((e) => kindOf(e.symbol) === "stock");
   const nextStock = stockRows.find((e) => e.state === "WATCH") ?? stockRows[0] ?? null;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);
-  const owned = board.rows.length + (board.retirement?.length ?? 0) + (board.properties?.length ?? 0);
+  const privateRows = board.private_funds ?? []; // BREIT / BCRED: in the total, priced monthly, not in the day change
+  const owned = board.rows.length + (board.retirement?.length ?? 0) + (board.properties?.length ?? 0) + privateRows.length;
   // Companies you hold, directly or inside funds, in all: stock rows plus the small slices folded inside each fund.
   const companies = stockRows.length + board.exposure.reduce((a, e) => a + e.children.length, 0);
   // Today's move over everything with a daily price: each holding's own 1-day change, and each mapped 401(k)/IRA fund
@@ -109,11 +109,12 @@ export default function HoldingsBoard() {
               <span className="mute pro-only"> {board.price_as_of ? `on ${shortDate(board.price_as_of)}` : "at the latest close"}</span>
             </p>
           )}
-          {todayMove != null && (mapped.length > 0 || unpriced.length > 0 || (board.properties?.length ?? 0) > 0) && (
+          {todayMove != null && (mapped.length > 0 || unpriced.length > 0 || (board.properties?.length ?? 0) > 0 || privateRows.length > 0) && (
             <p className="note pro-only pro-add">
               Out of the {money(pricedNow)} with a daily price.
               {mapped.map((r) => ` ${r.ticker} moves with ${r.behaves_like}.`).join("")}
               {(board.properties?.length ?? 0) > 0 && " A home has no daily price, so it's left out."}
+              {privateRows.length > 0 && ` ${privateRows.map((r) => r.fund).join(" and ")} ${privateRows.length > 1 ? "are" : "is"} priced monthly, so ${privateRows.length > 1 ? "they're" : "it's"} left out.`}
               {unpriced.length > 0 && ` ${unpriced.map((r) => r.fund).join(", ")}: no price, left out.`}
             </p>
           )}
@@ -168,7 +169,7 @@ export default function HoldingsBoard() {
         {board.unknown.length > 0 && <p className="badline">No data yet for {board.unknown.join(", ")}.</p>}
       </div>
 
-      <OtherAssetsRows rows={board.retirement ?? []} privateRows={(board as PortfolioOut & { private_funds?: PrivateFundRow[] }).private_funds ?? []} />
+      <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} />
 
       {status?.data === "sample" && (
         <div className="row-flex" style={{ marginTop: 20 }}>

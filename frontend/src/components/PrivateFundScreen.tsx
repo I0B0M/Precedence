@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { Why } from "@/components/Why";
-import { dateTimeET, pct } from "@/lib/format";
-import { isPrivateFund, navMoney, PRIVATE_LIQUIDITY, PRIVATE_LITE, PRIVATE_RETURN_NOTE, privateFund, shortQuote, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
+import { dateTimeET, money, pct } from "@/lib/format";
+import { isPrivateFund, navMoney, PRIVATE_LIQUIDITY, PRIVATE_LITE, PRIVATE_RETURN_NOTE, PRIVATE_WITHDRAW, privateFund, shortQuote, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
+import { useOtherAssets } from "@/lib/other-assets";
 
 const monthYear = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
@@ -30,6 +31,7 @@ function NavLine({ points }: { points: { as_of: string; nav: number }[] }) {
 export function PrivateFundScreen({ symbol }: { symbol: string }) {
   const [f, setF] = useState<{ symbol: string; page: PrivateFundPage } | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const mine = useOtherAssets().privateFunds.filter((x) => x.fund === symbol.toUpperCase());
   useEffect(() => {
     let live = true;
     privateFund(symbol).then((page) => live && setF({ symbol, page })).catch((e) => live && setError(e));
@@ -56,7 +58,8 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
         </div>
         {p.nav && (
           <div className="co-price">
-            <div className="bignum">{navMoney(p.nav.value)}</div>
+            {/* Lite rounds to cents; Pro shows the filing's own precision ($14.685). */}
+            <div className="bignum price"><span className="lite-only">{money(p.nav.value, true)}</span><span className="pro-only">{navMoney(p.nav.value)}</span></div>
             <p className="mute">
               Value per share, {monthYear(p.nav.as_of)}
               <Why what={`${p.symbol} monthly value`} source={p.source} asOf={p.nav.as_of}
@@ -70,6 +73,7 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
         <h3>What&apos;s going on</h3>
         <p className="say-big">{lite}</p>
         <p className="lite-only">{PRIVATE_RETURN_NOTE}</p>
+        {isPrivateFund(symbol) && <p className="lite-only">{PRIVATE_WITHDRAW[symbol.toUpperCase() as PrivateFundKey]}</p>}
         {/* Pro only: the change in value per share. Distributions are left out, so it is never called a return. */}
         <p className="pro-only pro-add list-head" style={{ marginBottom: 0 }}>Change in value per share (distributions not included)</p>
         <div className="versus perf pro-only pro-add" style={{ gap: 10 }}>
@@ -85,6 +89,22 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
         <NavLine points={p.history} />
         <p className="note">Monthly value{p.history.length ? `, ${monthYear(p.history[0].as_of)} to ${monthYear(p.history[p.history.length - 1].as_of)}` : ""}.</p>
       </div>
+
+      {mine.length > 0 && (() => {
+        const amount = mine.reduce((a, x) => a + x.amount, 0);
+        const shares = p.nav ? amount / p.nav.value : null;
+        return (
+          <div className="box">
+            <h3>What it means for you</h3>
+            <dl className="kv">
+              <dt>What you entered</dt><dd>{money(amount)}</dd>
+              {shares != null && <><dt>About</dt><dd>{shares.toLocaleString("en-US", { maximumFractionDigits: 0 })} shares
+                <Why what={`${p.symbol} shares`} rows={[["Worked out", `${money(amount)} ÷ ${navMoney(p.nav!.value)} (Class ${p.nav!.share_class}, ${monthYear(p.nav!.as_of)})`]]} source={p.source} /></dd></>}
+            </dl>
+            <p className="note">The value you entered is what counts in your total.</p>
+          </div>
+        );
+      })()}
 
       <div className="stack pro-only pro-add" style={{ gap: 16 }}>
         {p.invests_in && (

@@ -10,6 +10,8 @@ import { approxMoney, money, sharePct as share } from "@/lib/format";
 const PARTS = [
   { key: "stocks", label: "Stocks", color: "#009aa8" },
   { key: "funds", label: "Funds", color: "#7c60bd" },
+  // A kind of fund, so the Funds violet with diagonal stripes: told apart by texture, not a sixth meaning-free hue.
+  { key: "private", label: "Private funds", color: "repeating-linear-gradient(45deg, #7c60bd 0 3px, var(--bg) 3px 6px)" },
   { key: "retirement", label: "401(k) and IRA", color: "#bd7138" },
   { key: "home", label: "Home (estimate)", color: "#ac4e87" },
 ] as const;
@@ -21,8 +23,8 @@ export function Allocation({ board }: { board: PortfolioOut }) {
   const sum = (kind: string) => board.rows.filter((r) => r.kind === kind).reduce((a, r) => a + r.value, 0);
   const value: Record<(typeof PARTS)[number]["key"], number> = {
     stocks: sum("stock"),
-    // BREIT / BCRED are funds too: their entered amount joins this part (subtotals.private_funds, when the API sends it).
-    funds: sum("etf") + ((board.subtotals as { private_funds?: number } | undefined)?.private_funds ?? 0),
+    funds: sum("etf"),
+    private: board.subtotals?.private_funds ?? 0, // BREIT / BCRED at the amount entered
     retirement: board.subtotals?.retirement ?? 0,
     home: board.subtotals?.home_estimate ?? 0,
   };
