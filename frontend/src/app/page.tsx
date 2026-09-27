@@ -151,7 +151,7 @@ export default function Landing() {
           <Link className="lp-pill lp-btn-white" href="/learn"><span>What the badges mean</span></Link>
           <div className="lp-learn-card" aria-hidden="true">
             <h4>The badges</h4>
-            {[["Calm", "Nothing with a track record happened", "#2563eb"], ["Heads up", "Something that has mattered before happened", "#d4af37"], ["Not tested", "Not enough past cases to say", "#a0a0a0"]].map(([t, s, c]) => (
+            {[["Calm", "Nothing with a track record is happening.", "#2563eb"], ["Heads up", "Has come before drops. Not a prediction.", "#d4af37"], ["Not tested", "We haven’t tested this one.", "#a0a0a0"]].map(([t, s, c]) => (
               <div className="lp-lrow" key={t}><div className="lp-lthumb" style={{ color: c }}>●</div><div><strong>{t}</strong><small>{s}</small></div><span>›</span></div>
             ))}
           </div>
