@@ -120,13 +120,15 @@ export default function HoldingsBoard() {
       {watching > 0 && <BadgeKey />}
       {/* Lite: only what you entered, one row each at its full value, a link to its own page. Pro: the look-through
        *  list too (stocks inside your funds), each still one clean row and one link. */}
-      {/* Grouped: stocks, then funds, each under its own header. */}
+      {/* Grouped: stocks, then funds (with a 401(k)/IRA fund and a private fund, below), each under its own header. */}
       {([["stock", "Stocks"], ["etf", "Funds"]] as const).map(([kind, label]) => {
         const group = board.rows.filter((r) => (kind === "etf" ? r.kind === "etf" : r.kind !== "etf"));
-        return group.length > 0 && (
-          <div key={kind} className="stack lite-only" style={{ gap: 10, marginTop: 14 }}>
-            <span className="ticker">{label}</span>
-            <div className="rows">
+        const moreFunds = kind === "etf" && ((board.retirement?.length ?? 0) > 0 || privateRows.length > 0);
+        return (group.length > 0 || moreFunds) && (
+          <div key={kind} className="stack" style={{ gap: 10, marginTop: 14 }}>
+            {/* Pro lists stocks and funds in its own look-through list, so there this header only heads the 401(k)/private rows. */}
+            <span className={`ticker${moreFunds ? "" : " lite-only"}`}>{label}</span>
+            <div className="rows lite-only">
               {group.map((r) => {
                 const e = board.exposure.find((x) => x.symbol === r.symbol);
                 return e ? (
@@ -134,6 +136,7 @@ export default function HoldingsBoard() {
                 ) : null;
               })}
             </div>
+            {kind === "etf" && <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="funds" title={null} />}
           </div>
         );
       })}
@@ -161,7 +164,8 @@ export default function HoldingsBoard() {
         {board.unknown.length > 0 && <p className="badline">No data yet for {board.unknown.join(", ")}.</p>}
       </div>
 
-      <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} />
+      <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="home" title="Real estate" />
+      <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="rest" />
 
       {status?.data === "sample" && (
         <div className="row-flex" style={{ marginTop: 20 }}>

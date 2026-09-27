@@ -737,6 +737,7 @@ html[data-mode="pro"] .ownmap.pro-only { display: flex !important; }
 .home-pin { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -20px 0 0 -9px; background: var(--gold); border: 2px solid var(--bg); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
 .home-attr { position: absolute; right: 0; bottom: 0; font-size: 11px; line-height: 1; padding: 4px 6px; background: rgba(0, 0, 0, 0.7); color: var(--text); text-decoration: none; }
 @media (max-width: 640px) { .home-item .home-body { grid-template-columns: minmax(0, 1fr); } }
+.home-pic { display: block; width: 100%; max-width: 300px; height: auto; border-radius: var(--r-ctl); border: 1px solid var(--sep); }
 
 /* ---- the stock page's top: Worst days · Best days, After news like this, Recent news (company/[ticker]/Moves.tsx) ---- */
 .moves { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 32px; }

@@ -241,17 +241,32 @@ function HomeRow({ p }: { p: Property }) {
           ) : <p>Estimate coming soon.</p>}
           <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`} style={{ alignSelf: "flex-start" }}>Remove</button>
         </div>
-        {e?.lat != null && e?.lon != null && <HomeMap lat={e.lat} lon={e.lon} place={place} />}
+        {e?.lat != null && e?.lon != null ? <HomeMap lat={e.lat} lon={e.lon} place={place} /> : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="home-pic" src="/house.svg" alt="" width={240} height={180} />
+        )}
       </div>
     </div>
   );
 }
 
 /** Board: a home, 401(k) / IRA funds (and crypto, when shown). One line each in Lite; the working in Pro.
- *  `rows`: the board's own retirement rows, so the page doesn't ask the portfolio endpoint twice. */
-export function OtherAssetsRows({ rows, privateRows = [] }: { rows?: RetirementRow[]; privateRows?: PrivateFundRow[] } = {}) {
+ *  `rows`: the board's own retirement rows, so the page doesn't ask the portfolio endpoint twice.
+ *  `show`: one kind only, so the board can put each under its own header (funds: 401(k)/IRA and private funds;
+ *  home; rest: crypto and wallets); `title`: that header, or null for none (the page already shows one). */
+export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yours" }: {
+  rows?: RetirementRow[]; privateRows?: PrivateFundRow[]; show?: "funds" | "home" | "rest"; title?: string | null;
+} = {}) {
   const all = useOtherAssets();
-  const v = { ...all, crypto: SHOW_CRYPTO ? all.crypto : [], privateFunds: SHOW_PRIVATE_FUNDS ? all.privateFunds : [] };
+  const keep = (k: "funds" | "home" | "rest") => !show || show === k;
+  const v = {
+    ...all,
+    properties: keep("home") ? all.properties : [],
+    retirement: keep("funds") ? all.retirement : [],
+    privateFunds: keep("funds") && SHOW_PRIVATE_FUNDS ? all.privateFunds : [],
+    crypto: keep("rest") && SHOW_CRYPTO ? all.crypto : [],
+    wallets: keep("rest") ? all.wallets : [],
+  };
   // Ask the stateless portfolio endpoint about just these rows, so each fund's badge is the backend's own state.
   const extras = portfolioExtras(v);
   const key = JSON.stringify(extras);
@@ -265,8 +280,8 @@ export function OtherAssetsRows({ rows, privateRows = [] }: { rows?: RetirementR
 
   if (!v.properties.length && !v.retirement.length && !v.crypto.length && !v.privateFunds.length && !v.wallets.length) return null;
   return (
-    <div className="stack" style={{ gap: 10, marginTop: 24 }}>
-      <span className="ticker">Also yours</span>
+    <div className="stack" style={{ gap: 10, marginTop: title ? 24 : 0 }}>
+      {title && <span className="ticker">{title}</span>}
       <div className="rows">
         {v.properties.map((p) => <HomeRow key={p.id} p={p} />)}
         {v.retirement.map((r) => {

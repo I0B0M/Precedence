@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="A house">
+  <!-- A simple house for the home card: drawn for Precedence, no outside image. -->
+  <rect width="240" height="180" rx="16" fill="#101014"/>
+  <circle cx="190" cy="42" r="16" fill="#d4af37" opacity="0.85"/>
+  <rect x="0" y="150" width="240" height="30" rx="0" fill="#17171a"/>
+  <path d="M40 92 L120 34 L200 92" fill="none" stroke="#d4af37" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="58" y="88" width="124" height="64" fill="#1c1c22" stroke="#a8a8ae" stroke-width="2"/>
+  <rect x="152" y="46" width="14" height="28" fill="#1c1c22" stroke="#a8a8ae" stroke-width="2"/>
+  <rect x="108" y="112" width="26" height="40" rx="2" fill="#2563eb"/>
+  <circle cx="128" cy="133" r="2" fill="#d4af37"/>
+  <rect x="72" y="104" width="24" height="20" rx="2" fill="#7aa2ff" opacity="0.55" stroke="#a8a8ae" stroke-width="1.5"/>
+  <rect x="146" y="104" width="24" height="20" rx="2" fill="#7aa2ff" opacity="0.55" stroke="#a8a8ae" stroke-width="1.5"/>
+  <path d="M84 104 V124 M72 114 H96 M158 104 V124 M146 114 H170" stroke="#a8a8ae" stroke-width="1.2"/>
+  <path d="M20 152 C 26 136, 40 136, 44 152 Z M196 152 C 202 132, 220 132, 224 152 Z" fill="#30d158" opacity="0.5"/>
+</svg>
