@@ -23,12 +23,12 @@ export interface OrbBehavior {
 }
 
 export const ORB_BEHAVIOR: Record<OrbStateName, OrbBehavior> = {
-  idle: { yaw: 6, pulseHz: 0.25, depth: 0.08, flow: 0.06, sparkle: 0.2, ring: 1.0 },
-  thinking: { yaw: 18, pulseHz: 1.6, depth: 0.12, flow: 0.85, sparkle: 0.8, ring: 1.15 },
-  speaking: { yaw: 6, pulseHz: 0.5, depth: 0.06, flow: 1.0, sparkle: 0.65, ring: 1.1 },
-  paused: { yaw: 2, pulseHz: 0.15, depth: 0.05, flow: 0.03, sparkle: 0.08, ring: 0.6 },
-  needs: { yaw: 0, pulseHz: 0.5, depth: 0.15, flow: 0.1, sparkle: 0.1, ring: 1.45 },
-  failed: { yaw: 2, pulseHz: 0.8, depth: 0.1, flow: 0.15, sparkle: 0.05, ring: 0.85 },
+  idle: { yaw: 8, pulseHz: 0.25, depth: 0.14, flow: 0.1, sparkle: 0.32, ring: 1.0 },
+  thinking: { yaw: 20, pulseHz: 1.6, depth: 0.18, flow: 0.9, sparkle: 0.9, ring: 1.15 },
+  speaking: { yaw: 8, pulseHz: 0.5, depth: 0.12, flow: 1.0, sparkle: 0.78, ring: 1.1 },
+  paused: { yaw: 3, pulseHz: 0.15, depth: 0.08, flow: 0.05, sparkle: 0.14, ring: 0.6 },
+  needs: { yaw: 0, pulseHz: 0.5, depth: 0.2, flow: 0.12, sparkle: 0.16, ring: 1.45 },
+  failed: { yaw: 3, pulseHz: 0.8, depth: 0.14, flow: 0.18, sparkle: 0.08, ring: 0.85 },
 };
 
 export interface OrbColor {
@@ -53,12 +53,12 @@ export const TINT_GLOW: Record<OrbTint, number> = {
 };
 
 export const VISUALS = {
-  noise_scale: 1.8, facet_drift: 0.02, pulse_swell: 0.034, speech_swell: 0.09,
-  fresnel: 2.4, glow: 1.0, body_alpha: 0.86, exposure: 1.1,
-  edge_width: 0.0045, edge_glow: 0.9, core_size: 0.3, core_glow: 1.0,
-  ring_scale: 1.34, ring_power: 3.0, ring_strength: 0.54,
-  corona_count: 2400, corona_drift: 0.35, corona_size: 3.6,
-  cluster_radius: 0.52, cluster_focus: 2.2, field_share: 0.22,
+  noise_scale: 1.8, facet_drift: 0.028, pulse_swell: 0.034, speech_swell: 0.11,
+  fresnel: 3.0, glow: 1.25, body_alpha: 0.86, exposure: 1.2,
+  edge_width: 0.0055, edge_glow: 1.15, core_size: 0.3, core_glow: 1.2,
+  ring_scale: 1.34, ring_power: 3.0, ring_strength: 0.68,
+  corona_count: 3400, corona_drift: 0.42, corona_size: 3.9,
+  cluster_radius: 0.6, cluster_focus: 2.2, field_share: 0.28,
   hue_spread: 1.0, hue_phase: 0.22, state_tint: 0.0, core_heat: 0.7,
 } as const;
 

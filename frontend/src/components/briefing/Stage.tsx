@@ -73,8 +73,10 @@ function subscribePhone(cb: () => void) {
 const readPhone = () => !!window.matchMedia?.(PHONE).matches;
 
 /** fallback: what to brief on when nothing is saved (the landing passes the example). Saved holdings always win.
- *  compact: the landing hero's strip, a small orb beside the caption and Play, with the full briefing one link away. */
-export function Stage({ fallback, compact = false }: { fallback?: Holding[]; compact?: boolean } = {}) {
+ *  compact: the landing hero's strip, the orb as centrepiece with the caption and Play under it, the full
+ *  briefing one link away. onFocusChange: which ticker (if any) the current line is about — the landing uses
+ *  this to light up its own chips; nothing here needs it, so it's a no-op unless a caller passes one. */
+export function Stage({ fallback, compact = false, onFocusChange }: { fallback?: Holding[]; compact?: boolean; onFocusChange?: (ticker: string | null) => void } = {}) {
   const { mode } = useMode();
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -163,6 +165,12 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
   const current = pos.script === script && script ? pos : { play: "idle" as PlayStatus, index: 0, fraction: 0, level: 0 };
   const { play, index: lineIndex, fraction, level } = current;
   const line = lines[lineIndex] ?? null;
+  const focusTicker = play !== "idle" ? line?.ticker ?? null : null;
+  useEffect(() => {
+    onFocusChange?.(focusTicker);
+    return () => onFocusChange?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusTicker]);
   const canSpeak = browserVoice || (recorded > 0 && hasAudio());
   const voiceTitle = !canSpeak ? "This browser has no voice; captions only"
     : spoken[lineIndex]?.recording ? "Voice: Kokoro, an open-weight speech model, recorded ahead of time"
@@ -192,7 +200,7 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
       <div className="bf-stage">
         <div className="bf-glow" aria-hidden />
         <div className="bf-orbwrap">
-          <Orb state={orbState} size={compact ? 132 : phone ? 150 : 340} />
+          <Orb state={orbState} size={compact ? (phone ? 200 : 340) : phone ? 150 : 340} big={compact} />
         </div>
 
         <div className="bf-caption" aria-live="polite" aria-atomic="true">

@@ -145,11 +145,55 @@
 }
 
 /* Compact: the landing hero's strip. A small orb on the left; the caption, Play and a link to the full briefing beside it. */
+/* The hero's version: the orb is the centrepiece, up top; the caption, Play/Voice and the "see every line" note
+   stack under it, all centred, instead of sitting beside a small strip-sized orb. */
 .bf.bf-compact { display: block; }
-.bf.bf-compact .bf-stage { min-height: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "orb cap" "orb ctl" "orb more";
-  align-items: center; justify-items: start; column-gap: 16px; row-gap: 6px; padding: 14px 18px 14px 12px; }
-.bf.bf-compact .bf-orbwrap { grid-area: orb; width: auto; }
-.bf.bf-compact .bf-caption { grid-area: cap; min-height: 3.1em; max-width: none; justify-content: flex-start; text-align: left; }
-.bf.bf-compact .bf-cap { font-size: 1rem; line-height: 1.4; text-align: left; }
-.bf.bf-compact .bf-controls { grid-area: ctl; justify-content: flex-start; margin: 0; }
-.bf.bf-compact .bf-more { grid-area: more; margin: 0; text-align: left; }
+.bf.bf-compact .bf-stage { min-height: 0; display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 4px; background: none; border: 0; }
+.bf.bf-compact .bf-glow { display: none; }
+.bf.bf-compact .bf-orbwrap { width: auto; margin-bottom: 4px; }
+.bf.bf-compact .bf-caption { min-height: 3.1em; max-width: 46ch; justify-content: center; text-align: center; }
+.bf.bf-compact .bf-cap { font-size: 1.05rem; line-height: 1.4; text-align: center; }
+.bf.bf-compact .bf-controls { justify-content: center; margin: 0; }
+.bf.bf-compact .bf-more { margin: 0; text-align: center; }
+
+/* The orb's own motion: a slow float/drift/tilt loop, plus a speech-level pulse (--pulse, set inline). transform
+   only, so it's cheap, and it's the one thing this page animates continuously. */
+.orb-motion { display: inline-block; transform: scale(var(--pulse, 1)); transition: transform 120ms linear; }
+.orb-motion.orb-big {
+  animation: orb-float 9s ease-in-out infinite;
+  transform: scale(var(--pulse, 1)) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+}
+@keyframes orb-float {
+  0% { translate: 0 0; }
+  25% { translate: 3% -6%; }
+  50% { translate: 0 -2%; }
+  75% { translate: -3% -7%; }
+  100% { translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb-motion.orb-big { animation: none; transform: scale(var(--pulse, 1)); }
+}
+
+/* The hero: the orb as centrepiece, with a handful of real-number chips hovering around it, thin gold lines
+   running to the matching row in the portfolio card. */
+.hero-orb-wrap { position: relative; display: flex; justify-content: center; }
+.hero-orb-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 0; }
+.hero-orb-lines line { stroke: var(--gold); stroke-width: 1; opacity: 0.35; transition: opacity 200ms var(--ease); }
+.hero-orb-lines line.lit { opacity: 0.85; }
+.orb-chip {
+  position: absolute; z-index: 1; display: flex; align-items: center; gap: 6px;
+  background: var(--group); border: 1px solid var(--edge-c); border-radius: 999px;
+  padding: 5px 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease), transform 200ms var(--ease);
+  animation: orb-chip-float 7s ease-in-out infinite;
+}
+.orb-chip b { color: var(--gold); font-weight: 700; }
+.orb-chip.lit { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 2px 14px rgba(212, 175, 55, 0.45); transform: scale(1.06); }
+@keyframes orb-chip-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+@media (prefers-reduced-motion: reduce) { .orb-chip { animation: none; } }
+@media (max-width: 860px) {
+  .hero-orb-lines { display: none; } /* the card sits below the fold on a phone; nothing to point a line at yet */
+  .orb-chip { display: none; } /* no room to float them without clipping; the big orb carries the hero alone here */
+}
