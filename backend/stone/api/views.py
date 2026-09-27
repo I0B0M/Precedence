@@ -37,7 +37,9 @@ def result_json(r: engine.Result, with_cases: bool = True, fdr10: dict[str, bool
                           "normal_n": h.normal_n, "label": h.label}
         out["holdout"] = {"first": half(r.holdout.first), "second": half(r.holdout.second),
                           "held_up": r.holdout.held_up,
-                          "verdict": r.holdout.verdict}  # "held up" | "did not hold" | "too few cases to check"
+                          "verdict": r.holdout.verdict,  # "held up" | "did not hold" | "too few cases to check"
+                          "split_day": r.holdout.split_day.isoformat() if r.holdout.split_day else None,
+                          "excluded": excluded_json(r.holdout, r.horizon)}
     else:
         out["holdout"] = None
     if with_cases:
@@ -46,6 +48,21 @@ def result_json(r: engine.Result, with_cases: bool = True, fdr10: dict[str, bool
                          "hit": c.hit, "note": c.note}
                         for c in r.cases]
     return out
+
+
+def excluded_json(h: engine.Holdout, horizon: int) -> dict:
+    """The full-history cases neither half holds, and why. The reason is only given when it is true of every one."""
+    ex, split = h.excluded, h.split_day
+    crosses = bool(ex) and split is not None and all(c.entry_day < split <= c.exit_day for c in ex)
+    reason = None
+    if crosses:
+        reason = (f"{'Its' if len(ex) == 1 else 'Their'} {horizon}-trading-day window starts before the split "
+                  f"({split.isoformat()}) and ends after it, so neither half has the whole window to measure.")
+    elif ex:
+        reason = "Not in either half's run of the test."
+    return {"n": len(ex), "hits": sum(c.hit for c in ex), "reason": reason,
+            "cases": [{"known_at": c.known_at.isoformat(), "entry_day": c.entry_day.isoformat(),
+                       "exit_day": c.exit_day.isoformat(), "hit": c.hit} for c in ex]}
 
 
 WITH_MARKET_BAND = 0.005  # within half a percentage point of the market's one-day move = "with the market"

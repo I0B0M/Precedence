@@ -505,3 +505,35 @@ def test_fund_lookup_endpoint(client):
     f = client.get("/api/funds/lookup?q=fxaix").json()
     assert f["query"] == "fxaix" and f["ticker"] == "FXAIX" and f["behaves_like"] == "SPY"
     assert client.get("/api/funds/lookup?q=VBTLX").json()["behaves_like"] is None
+
+
+def test_status_says_whether_summaries_can_run_so_pages_can_skip_the_call(client, monkeypatch):
+    acc = db.connect(os.environ["DATABASE_URL"]).execute(
+        "select accession from filings where form = '10-Q' limit 1").fetchone()["accession"]
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    s = client.get("/api/status").json()
+    assert s["summaries"] is False and s["screenshots"] is False
+    r = client.get(f"/api/filings/{acc}/summary")
+    assert r.status_code == 503 and "GEMINI_API_KEY" in r.json()["detail"]  # the same rule the flag reports
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-real")
+    s = client.get("/api/status").json()
+    assert s["summaries"] is True and s["screenshots"] is True
+
+
+def test_fund_page_names_holdings_we_dont_track_from_the_issuers_file(client):
+    from stone.ingest import store
+    conn = db.connect(os.environ["DATABASE_URL"])
+    as_of = conn.execute("select max(as_of) as d from etf_holdings where etf = 'BRD500'").fetchone()["d"]
+    store.upsert_etf_holdings(conn, "BRD500", as_of, {"ZZZZ": 0.02, "HLCN": 0.041}, "sample",
+                              {"ZZZZ": "ZED CORP CL A", "HLCN": "HALCYON ISSUER NAME"})
+    store.upsert_etf_holdings(conn, "BRD500", as_of, {"ZZZZ": 0.02}, "sample")  # a later file without names
+    conn.commit()
+    try:
+        by = {h["ticker"]: h for h in client.get("/api/funds/BRD500").json()["holdings"]}
+        assert by["ZZZZ"]["name"] == "ZED CORP CL A" and by["ZZZZ"]["in_stone"] is False  # kept, not wiped
+        tracked = conn.execute("select name from companies where ticker = 'HLCN'").fetchone()["name"]
+        assert by["HLCN"]["name"] == tracked  # a stock we track keeps its own name
+    finally:
+        conn.execute("delete from etf_holdings where holding = 'ZZZZ'")
+        conn.execute("update etf_holdings set name = null where etf = 'BRD500'")
+        conn.commit()

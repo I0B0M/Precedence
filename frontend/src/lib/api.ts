@@ -36,7 +36,10 @@ export interface SignalResult {
   fdr10_survives?: boolean | null;
   // held up only with 10+ cases in each half, each beating its own normal rate
   holdout: { first: Half; second: Half; held_up: boolean;
-    verdict?: "held up" | "did not hold" | "too few cases to check" } | null;
+    verdict?: "held up" | "did not hold" | "too few cases to check";
+    split_day?: string | null; // the second half's first trading day
+    // cases in neither half: first.n + second.n + excluded.n = n. reason is null only when n is 0
+    excluded?: HoldoutExcluded } | null;
   cases?: Case[];
 }
 
@@ -48,7 +51,7 @@ export interface MarketResult extends SignalResult {
 /** GET /api/funds/{symbol}: what's in a fund, how it's doing, what's next. */
 export interface FundHolding {
   ticker: string;
-  name: string | null; // null when Stone doesn't track the stock
+  name: string | null; // tracked: the company's name; untracked: the issuer's (State Street) name; null if neither
   weight: number; // share of the fund, 0..1
   in_stone: boolean; // Stone has prices and signals for it
   state: State | null; // null when not tracked
@@ -100,6 +103,14 @@ export interface FilingSummary {
   cached: boolean;
 }
 
+/** Full-history cases the hold-out halves can't hold, e.g. a window that starts before the split and ends after it. */
+export interface HoldoutExcluded {
+  n: number;
+  hits: number;
+  reason: string | null; // e.g. "Its 20-trading-day window starts before the split (2025-09-09) and ends after it, …"
+  cases: { known_at: string; entry_day: string; exit_day: string; hit: boolean }[];
+}
+
 export interface Half {
   n: number;
   hits: number;
@@ -124,6 +135,8 @@ export interface Scan {
 export interface Status {
   data: "empty" | "sample" | "real" | "mixed";
   companies_by_source: Record<string, number>;
+  summaries?: boolean; // false: /api/filings/{acc}/summary answers 503, so don't call it
+  screenshots?: boolean; // false: /api/import/screenshot answers 503 (same key as summaries)
 }
 
 export interface CompanyRow {

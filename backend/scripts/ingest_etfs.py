@@ -21,6 +21,6 @@ for etf in SUPPORTED:
           f"{sum(h.weights.values()):.1%}; top {', '.join(f'{t} {w:.1%}' for t, w in top)}")
     if conn:
         db.apply_schema(conn)
-        store.upsert_etf_holdings(conn, etf, h.as_of, h.weights, h.source)
+        store.upsert_etf_holdings(conn, etf, h.as_of, h.weights, h.source, h.names)
         conn.commit()
         print("  loaded into etf_holdings")
