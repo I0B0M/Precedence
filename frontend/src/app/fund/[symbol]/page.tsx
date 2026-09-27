@@ -187,7 +187,7 @@ export default function FundScreen() {
                 {f.holdings.map((h, i) => (
                   <tr key={h.ticker}>
                     <td className="num">{i + 1}</td>
-                    <td>{h.in_stone ? <Link href={`/company/${h.ticker}`}><b>{h.ticker}</b></Link> : <b>{label(h)}</b>}<div className="note">{h.name ?? ""}{h.in_stone ? "" : `${h.name ? " · " : ""}not tracked by Precedence`}</div></td>
+                    <td>{h.in_stone ? <Link href={`/company/${h.ticker}`}><b>{h.ticker}</b></Link> : <b>{label(h)}</b>}<div className="note">{h.name ?? ""}{h.legal_name && h.legal_name !== h.name ? ` (${h.legal_name})` : ""}{h.in_stone ? "" : `${h.name ? " · " : ""}not tracked by Precedence`}</div></td>
                     <td className="num nowrap">{w(h.weight)}</td>
                     <td><StateBadge state={h.state} /></td>
                     <td>{h.firing.length ? h.firing.map((s) => `${SIGNAL_WORDS[s.signal] ?? s.signal} (${s.label === "NO DATA" ? "not loaded" : s.label})`).join("; ") : <span className="mute">—</span>}</td>

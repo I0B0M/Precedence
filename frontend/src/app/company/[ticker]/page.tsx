@@ -74,6 +74,9 @@ export default function CompanyScreen() {
         signals={d.signals}
         initialSignal={main?.signal}
       />
+      {co.legal_name && co.legal_name !== co.name && (
+        <p className="note pro-only pro-add">SEC name: {co.legal_name}{co.cik ? ` · CIK ${co.cik}` : ""}</p>
+      )}
       <TodayMove ticker={co.ticker} />
       {d.state === "WATCH" && <BadgeKey />}
 
