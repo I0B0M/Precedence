@@ -1,0 +1,11 @@
+# The live demo: the Next.js frontend only, reading the saved data in frontend/public/saved
+# (real responses from the fixtures, built by backend/scripts/build_saved.py). No backend, no database.
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NEXT_PUBLIC_STONE_SAVED = "1"
+  NODE_VERSION = "22"
+  # GEMINI_API_KEY for Ask Stone is set in Netlify's site settings, never in this file.
