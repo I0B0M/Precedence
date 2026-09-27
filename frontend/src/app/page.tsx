@@ -168,7 +168,7 @@ export default function Home() {
           <article className="card home-card">
             <h3>Funds</h3>
             <p className="mute">Look inside the fund, down to every company. All {spy ? spy.total_holdings_count : "…"} SPY companies, with the Heads up names flagged.</p>
-            <Link className="btn" href="/funds">See the funds</Link>
+            <Link className="btn" href="/fund/SPY">Open SPY</Link>
             <FundsPanel />
           </article>
         </div>

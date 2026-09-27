@@ -75,7 +75,6 @@ export default function HoldingsBoard() {
     ...(board.retirement ?? []).map((r) => r.state),
   ].filter((s) => s === "WATCH").length;
   const stockRows = board.exposure.filter((e) => kindOf(e.symbol) === "stock");
-  const nextStock = stockRows.find((e) => e.state === "WATCH") ?? stockRows[0] ?? null;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);
   const privateRows = board.private_funds ?? []; // BREIT / BCRED: in the total, priced monthly, not in the day change
   const owned = board.rows.length + (board.retirement?.length ?? 0) + (board.properties?.length ?? 0) + privateRows.length;
@@ -177,11 +176,6 @@ export default function HoldingsBoard() {
         </div>
       )}
 
-      {nextStock && (
-        <div className="next-step">
-          <Link className="btn t-go" href={`/company/${nextStock.symbol}`}>Look at {nextStock.symbol} →</Link>
-        </div>
-      )}
     </section>
   );
 }

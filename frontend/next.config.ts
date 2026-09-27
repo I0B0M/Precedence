@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/lab", destination: "/signals", permanent: false },
       { source: "/practice", destination: "/paper", permanent: false },
+      // Everything you own, funds included, lives in Portfolio; a fund row opens its own /fund page.
+      { source: "/funds", destination: "/portfolio", permanent: false },
     ];
   },
   async rewrites() {

@@ -49,7 +49,7 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
 
   return (
     <section className="stack" style={{ gap: 28 }}>
-      <Link href="/funds" className="linkb">‹ Funds</Link>
+      <Link href="/portfolio" className="linkb">‹ Everything you own</Link>
 
       <header className="co-head">
         <div className="stack" style={{ gap: 4 }}>
