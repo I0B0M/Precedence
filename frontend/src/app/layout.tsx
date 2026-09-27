@@ -5,6 +5,9 @@ import { Header } from "@/components/Header";
 import { SampleBanner } from "@/components/SampleBanner";
 import { ModeProvider } from "@/lib/mode";
 import "./globals.css";
+// The home page's styles load with the site's, not as a route file: every page links home, so Next preloaded a
+// separate home.css everywhere and warned that it went unused. All its classes are prefixed home-.
+import "./home.css";
 
 const epilogue = Epilogue({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-epilogue" });
 const alegreya = Alegreya({ subsets: ["latin"], weight: ["400"], variable: "--font-alegreya" });
