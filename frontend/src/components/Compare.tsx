@@ -30,7 +30,7 @@ function ratioWords(hit: number | null, normal: number | null): string | null {
   return "Less often than usual.";
 }
 
-function Dots({ n, filled, tone }: { n: number; filled: number; tone: "event" | "normal" }) {
+export function Dots({ n, filled, tone }: { n: number; filled: number; tone: "event" | "normal" }) {
   return (
     <span className="cmp-dots" aria-hidden>
       {Array.from({ length: n }, (_, i) => <i key={i} className={i < filled ? tone : undefined} />)}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Scan, type Today } from "@/lib/api";
 import { Why } from "@/components/Why";
 import { useMode } from "@/lib/mode";
@@ -89,9 +89,18 @@ export function TodayMarket({ t }: { t: Today }) {
 type Stage = { n: number; label: string };
 
 /** The mockup's moment, with real numbers: the big number counts down stage by stage, leaving a struck-through trail.
- *  With prefers-reduced-motion it shows the final stage straight away. */
-function Countdown({ stages }: { stages: Stage[] }) {
+ *  With prefers-reduced-motion it shows the final stage straight away.
+ *  plain: the landing's version, each number with its words in both modes, dots for the step, starting once it's on screen. */
+function Countdown({ stages, plain = false }: { stages: Stage[]; plain?: boolean }) {
   const last = stages.length - 1;
+  const box = useRef<HTMLDivElement>(null);
+  const [seen, setSeen] = useState(!plain);
+  useEffect(() => {
+    if (seen || !box.current || typeof IntersectionObserver === "undefined") return setSeen(true);
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setSeen(true); io.disconnect(); } }, { threshold: 0.5 });
+    io.observe(box.current);
+    return () => io.disconnect();
+  }, [seen]);
   const reduce = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const [done, setDone] = useState(() => (reduce() ? last : 0)); // last stage fully reached
   const [label, setLabel] = useState(() => (reduce() ? last : 0)); // stage whose words are showing
@@ -99,7 +108,7 @@ function Countdown({ stages }: { stages: Stage[] }) {
 
   // Timers, not requestAnimationFrame: rAF pauses in a background tab, which would leave the count stuck mid-way.
   useEffect(() => {
-    if (done >= last) return;
+    if (!seen || done >= last) return;
     let step: ReturnType<typeof setTimeout> | undefined;
     const hold = setTimeout(() => {
       const from = stages[done].n, to = stages[done + 1].n, t0 = Date.now();
@@ -113,20 +122,46 @@ function Countdown({ stages }: { stages: Stage[] }) {
       tick();
     }, 1300);
     return () => { clearTimeout(hold); clearTimeout(step); };
-  }, [done, last, stages]);
+  }, [seen, done, last, stages]);
 
   return (
-    <div className="countdown">
+    <div className={`countdown${plain ? " countdown-plain" : ""}`} ref={box}>
       <p className="sr-only">{stages.map((st) => `${st.n} ${st.label}`).join(". ")}.</p>
       <div aria-hidden>
-        {label > 0 && (
+        {!plain && label > 0 && (
           <p className="trail pro-only">{stages.slice(0, label).map((st, i) => <span key={i}><s>{st.n}</s> → </span>)}</p>
         )}
         <p className="countdown-now">
           <span className="bignum">{shown}</span>
-          <span className="pro-only">{stages[label].label}</span>
+          <span className={plain ? "countdown-label" : "pro-only"}>{stages[label].label}</span>
         </p>
+        {plain && <p className="countdown-dots">{stages.map((_, i) => <i key={i} className={i <= label ? "on" : undefined} />)}</p>}
       </div>
+    </div>
+  );
+}
+
+/** The landing: this week's count stepping down to what has come before drops, for your holdings or the example.
+ *  Real counts from /api/today, the same numbers as the board's funnel; plain words in Lite and Pro. */
+export function WeekCountdown({ symbols, example }: { symbols: string[]; example: boolean }) {
+  const t = useToday(symbols);
+  const stages = useMemo<Stage[]>(() => {
+    if (!t?.day || !t.holdings) return [];
+    const h = t.holdings, w = t.week;
+    const mine = w && h.week_filings ? h.week_filings : h.filings;
+    const all = w ? w.filings.count + (w.rate?.jumps.length ?? 0) : t.market.filings.count + (t.market.rate ? 1 : 0);
+    const out: Stage[] = [
+      { n: all, label: w ? `new this week (${span(w.start, w.end)}) across the companies Precedence follows` : `new in our data for ${shortDate(t.day)}` },
+      { n: mine.count + h.signals.firing, label: example ? "about the example portfolio" : "about what you own" },
+      { n: h.signals.strong_firing, label: h.signals.strong_firing === 1 ? "has come before drops" : "have come before drops" },
+    ];
+    return out.filter((x) => Number.isFinite(x.n));
+  }, [t, example]);
+  if (!t?.holdings || !stages.length) return null;
+  return (
+    <div className="week-count">
+      <Countdown stages={stages} plain />
+      <p className="note">Filings from SEC EDGAR; signals from our engine on prices, SEC filings and FRED, as of {shortDate(t.holdings.signals.as_of ?? t.day ?? "")}.</p>
     </div>
   );
 }

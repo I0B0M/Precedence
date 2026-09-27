@@ -6,18 +6,14 @@ import { StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { HeroLoop } from "@/components/landing/Loops";
 import { Stage } from "@/components/briefing/Stage";
+import { Features } from "@/components/landing/Features";
+import { WeekCountdown } from "@/components/Today";
 import { api, EXAMPLE_PORTFOLIO, type CompanyDetail, type PortfolioOut } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { useHoldings } from "@/lib/holdings";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 
 // The three tiles below the hero: the rest of what Precedence does, one line each (owner's trim).
-const TILES: [string, string, string][] = [
-  ["Signals", "Every past time, and what followed.", "/signals?t=BX&s=rate_jump"],
-  ["Stock pages", "Chart, filings and financials for one stock.", "/company/BX"],
-  ["Paper trading", "Try a trade with pretend money.", "/paper"],
-];
-
 // Brief: "more accessible … engaging" · "understanding what they own". Trimmed to the hero, the portfolio
 // card and 3 tiles (owner's call) — the bands that used to run below are gone.
 export default function Home() {
@@ -114,16 +110,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---- the rest of what Precedence does, one tile each ---- */}
+      {/* ---- this week, counted down: everything new, then what's about what you own, then what has come before drops ---- */}
+      <section className="home-band" aria-label="This week">
+        <div className="home-inner">
+          <WeekCountdown symbols={(returning ? mine! : EXAMPLE_PORTFOLIO).map((h) => h.symbol)} example={!returning} />
+        </div>
+      </section>
+
+      {/* ---- the rest of what Precedence does, one card each ---- */}
       <section className="home-band" aria-label="More">
         <div className="home-inner">
-          <div className="tiles">
-            {TILES.map(([t, s, href]) => (
-              <Link key={t} className="tile" href={href} style={{ textDecoration: "none" }}>
-                <b>{t}</b><span>{s}</span>
-              </Link>
-            ))}
-          </div>
+          <Features />
         </div>
       </section>
     </div>
