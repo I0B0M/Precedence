@@ -193,7 +193,7 @@ export default function FundScreen() {
           </div>
           <p className="note">
             Weights from {fileWords ?? "the fund's holdings file"}{f.holdings_as_of ? `, as of ${shortDate(f.holdings_as_of)}` : ""}; {w(f.looked_through_share)} of the fund
-            is in companies Precedence tracks. Holdings under 1% of the fund aren&apos;t tested, so they show &quot;Not tested&quot;.
+            is in companies Precedence tracks. Stocks Precedence doesn&apos;t track show &quot;Not tested&quot;.
             {f.built_from === "existing endpoints" && " Built from our portfolio look-through until the fund endpoint ships."}
           </p>
         </div>

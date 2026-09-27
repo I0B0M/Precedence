@@ -117,7 +117,7 @@ function Countdown({ stages }: { stages: Stage[] }) {
 
   return (
     <div className="countdown">
-      <p className="sr-only">{stages.map((st) => `${st.n} ${st.label}`).join(", then ")}.</p>
+      <p className="sr-only">{stages.map((st) => `${st.n} ${st.label}`).join(". ")}.</p>
       <div aria-hidden>
         {label > 0 && (
           <p className="trail pro-only">{stages.slice(0, label).map((st, i) => <span key={i}><s>{st.n}</s> → </span>)}</p>

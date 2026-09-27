@@ -14,6 +14,12 @@ import { liteSummary } from "@/lib/words";
 type Side = "buy" | "sell";
 type Draft = { side: Side; symbol: string; shares: number; price: number; day: string };
 
+/** "from your portfolio", or how practice changed it: "10 from your portfolio + 2 practice". */
+function seedWords(now: number, seed: number): string {
+  if (Math.abs(now - seed) < 1e-9) return "from your portfolio";
+  return now > seed ? `${sharesText(seed)} from your portfolio + ${sharesText(now - seed)} practice`
+    : `${sharesText(seed)} from your portfolio, ${sharesText(seed - now)} sold in practice`;
+}
 const sharesText = (n: number) => (Number.isInteger(n) ? n.toLocaleString("en-US") : n.toLocaleString("en-US", { maximumFractionDigits: 4 }));
 
 /** "Priced at Friday's close." Names the day only when the close is from an earlier day. */
@@ -96,7 +102,7 @@ export default function PracticeScreen() {
   return (
     <section className="stack" style={{ gap: 24 }}>
       <div className="practice-banner" role="note">Practice money. Not real. No order is ever sent.</div>
-      <h1>Trade with {money(PRACTICE_CASH)} of pretend money</h1>
+      <h1>{Object.keys(s.seeded ?? {}).length ? <>Your holdings plus {money(PRACTICE_CASH)} of pretend cash</> : <>Trade with {money(PRACTICE_CASH)} of pretend money</>}</h1>
 
       <div className="pf-head" style={{ margin: 0 }}>
         <div className="stack" style={{ gap: 4 }}>
@@ -137,7 +143,7 @@ export default function PracticeScreen() {
                   <Why what={`${symbol} price`} source="Alpaca (IEX feed) daily close" asOf={pick.as_of}
                     rows={[["Used as", "the fill price for practice trades; no order is sent anywhere"]]} /></> : "—"}</dd>
                 <dt>{side === "buy" ? "Estimated cost" : "Estimated proceeds"}</dt>
-                <dd className="t-total">{pick?.last_close != null && shares > 0 ? money(shares * pick.last_close) : "—"}</dd>
+                <dd className="t-total">{pick?.last_close != null && shares > 0 && !problem ? money(shares * pick.last_close) : "—"}</dd>
               </dl>
               {symbol && problem && <p className="note down">{problem}</p>}
               <button className="btn t-go" type="button" disabled={!!problem} onClick={review}>Review trade</button>
@@ -170,7 +176,7 @@ export default function PracticeScreen() {
                   <Link key={sym} href={c?.kind === "etf" ? `/fund/${sym}` : `/company/${sym}`} className="list-row" style={{ alignItems: "center" }}>
                     <span>
                       <b>{sym}</b> <span className="mute">{sharesText(sh)} share{sh === 1 ? "" : "s"}</span>
-                      {s.seeded && sym in s.seeded && <span className="copied">from your portfolio</span>}
+                      {s.seeded?.[sym] != null && <>{" "}<span className="copied">{seedWords(sh, s.seeded[sym])}</span></>}
                       {e && <span className="note" style={{ display: "block" }}>{c?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing, sym)}</span>}
                     </span>
                     <span className="row-flex" style={{ gap: 8, flexWrap: "nowrap" }}>
@@ -203,7 +209,7 @@ export default function PracticeScreen() {
         {confirmReset ? (
           <>
             <span>Start over from what you own plus {money(PRACTICE_CASH)}?</span>
-            <button className="btn small" type="button" onClick={() => { resetPractice(readHoldings() ?? []); setConfirmReset(false); setDraft(null); setDone(null); }}>Yes, reset</button>
+            <button className="btn small" type="button" onClick={() => { resetPractice(readHoldings() ?? []); setConfirmReset(false); setDraft(null); setDone(null); setSymbol(""); setQty("1"); }}>Yes, reset</button>
             <button className="btn light small" type="button" onClick={() => setConfirmReset(false)}>Keep it</button>
           </>
         ) : (

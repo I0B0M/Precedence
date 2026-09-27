@@ -87,12 +87,12 @@ export const SIGNAL_WORDS: Record<string, string> = {
 export const FORM_WORDS: Record<string, string> = {
   "10-K": "Annual report",
   "10-Q": "Quarterly report",
-  "8-K": "Company news (8-K)",
+  "8-K": "Company news",
   "10-K/A": "Annual report (corrected)",
   "10-Q/A": "Quarterly report (corrected)",
   "8-K/A": "Company news (corrected)",
   "4": "Insider trade",
   "4/A": "Insider trade (corrected)",
-  "S-1": "Offering document (S-1)",
+  "S-1": "Offering document",
   "DEF 14A": "Shareholder meeting notice",
 };

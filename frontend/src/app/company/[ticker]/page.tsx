@@ -10,7 +10,7 @@ import { MarketCard } from "@/components/MarketCard";
 import { TodayMove } from "@/components/TodayMove";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
-import { bigMoney, money, pct, shortDate, timeET, whole } from "@/lib/format";
+import { bigMoney, money, pct, sharePct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { portfolioExtras } from "@/lib/other-assets";
 import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
@@ -125,7 +125,7 @@ export default function CompanyScreen() {
                 {Object.values(mine.via_etf).some((v) => v > 0) && (
                   <><dt>Inside your funds</dt><dd>{money(Object.values(mine.via_etf).reduce((a, b) => a + b, 0))}</dd></>
                 )}
-                <dt>Share of everything you own</dt><dd>{whole(myShare)}</dd>
+                <dt>Share of everything you own</dt><dd>{sharePct(myShare)}</dd>
                 <dt>A bad day could cost you</dt><dd className="down">{money(myBadDay)}</dd>
               </dl>
             ) : (

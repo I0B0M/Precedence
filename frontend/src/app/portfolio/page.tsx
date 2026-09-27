@@ -10,7 +10,7 @@ import { ApiProblem, Loading } from "@/components/Problem";
 import { Why } from "@/components/Why";
 import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type RetirementRow, type Status } from "@/lib/api";
-import { money, pct, shortDate, whole } from "@/lib/format";
+import { money, pct, sharePct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
@@ -220,7 +220,7 @@ function HoldingRow({ e, row, kind = row?.kind, value, open, onToggle, spark, fu
             <>
               {money(e.total)}
               <small className={row?.change != null && row.change < 0 ? "down" : "up"}>
-                {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{whole(grand ? e.total / grand : null)} of total</span>}
+                {row?.change != null ? `${pct(row.change)} ${row.kind === "crypto" ? "in 24h" : "today"}` : <span className="mute">{sharePct(grand ? e.total / grand : null)} of total</span>}
               </small>
             </>
           )}
@@ -317,8 +317,8 @@ function Panel({ e, kind, fund, retirement, grand, invest }: {
             <Why what={`${e.symbol} inside your funds`} rows={Object.entries(e.via_etf).map(([etf, v]) => [`Via ${etf}`, money(v)] as [string, string])}
               source="Fund holdings files (SPY: State Street)" /></dd></>)}
           {isFund && e.direct > e.total && (<><dt className="pro-only">Shown as its stocks</dt><dd className="pro-only">{money(e.direct - e.total)}</dd></>)}
-          <dt className="pro-only">Share of everything you own</dt><dd className="pro-only">{whole(share)}</dd>
-          {investShare != null && <><dt className="pro-only">Share of your investments</dt><dd className="pro-only">{whole(investShare)}</dd></>}
+          <dt className="pro-only">Share of everything you own</dt><dd className="pro-only">{sharePct(share)}</dd>
+          {investShare != null && <><dt className="pro-only">Share of your investments</dt><dd className="pro-only">{sharePct(investShare)}</dd></>}
           <dt>A bad day could cost you</dt>
           <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span>
             <Why what={`${e.symbol} bad day`} source="Daily closes (Alpaca IEX)"

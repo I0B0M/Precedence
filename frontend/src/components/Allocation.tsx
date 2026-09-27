@@ -1,8 +1,5 @@
 import type { PortfolioOut } from "@/lib/api";
-import { approxMoney, money, pct, whole } from "@/lib/format";
-
-/** A share that never reads "0%" for real money: 99%, 1%, 0.3%, under 0.1%. */
-const share = (v: number) => (v >= 0.01 ? whole(v) : v >= 0.001 ? pct(v, false) : "under 0.1%");
+import { approxMoney, money, sharePct as share } from "@/lib/format";
 
 // Categorical order is fixed: stocks, funds, 401(k)/IRA, home. Checked with the dataviz palette validator on the dark
 // surface (#0b0b0c): lightness band, chroma, contrast and normal-vision separation pass; plum next to blue is 7.7 ΔE for

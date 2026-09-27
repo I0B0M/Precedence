@@ -35,6 +35,13 @@ export function whole(v: number | null | undefined): string {
   return v == null ? "—" : Math.round(v * 100) + "%";
 }
 
+/** A share of a total that never reads "0%" for real money: 99%, 1%, 0.3%, under 0.1%. */
+export function sharePct(v: number | null | undefined): string {
+  if (v == null || Number.isNaN(v)) return "—";
+  if (v <= 0) return "0%";
+  return v >= 0.01 ? whole(v) : v >= 0.001 ? `${(v * 100).toFixed(1)}%` : "under 0.1%";
+}
+
 /** Trading-day horizon in plain words. */
 export function horizonWords(days: number): string {
   if (days === 5) return "a week";
