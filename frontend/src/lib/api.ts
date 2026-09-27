@@ -51,7 +51,8 @@ export interface MarketResult extends SignalResult {
 /** GET /api/funds/{symbol}: what's in a fund, how it's doing, what's next. */
 export interface FundHolding {
   ticker: string;
-  name: string | null; // tracked: the company's name; untracked: the issuer's (State Street) name; null if neither
+  name: string | null; // display name, cleaned ("Micron Technology"); from the issuer's file when untracked; null if neither
+  legal_name?: string | null; // exactly as SEC (tracked) or the issuer's file (untracked) prints it; always sent
   weight: number; // share of the fund, 0..1
   in_stone: boolean; // Stone has prices and signals for it
   state: State | null; // null when not tracked
@@ -141,7 +142,8 @@ export interface Status {
 
 export interface CompanyRow {
   ticker: string;
-  name: string;
+  name: string; // display name, cleaned: "AT&T", "Costco Wholesale", "McDonald's"
+  legal_name?: string; // as SEC lists it: "At&T Inc.", "Costco Wholesale Corp /New", "Mcdonalds Corp"; always sent
   sector: string | null;
   kind: "stock" | "etf";
   source: string;
@@ -184,7 +186,7 @@ export interface InsiderSale {
 }
 
 export interface CompanyDetail {
-  company: { ticker: string; name: string; sector: string | null; kind: "stock" | "etf"; cik: number | null; source: string };
+  company: { ticker: string; name: string; legal_name?: string; sector: string | null; kind: "stock" | "etf"; cik: number | null; source: string };
   last: { close: number; day: string; change: number | null } | null;
   prices: { day: string; open: number; close: number }[];
   filings: Filing[];
@@ -202,7 +204,8 @@ export interface Holding {
 
 export interface ExposureRow {
   symbol: string;
-  name: string;
+  name: string; // display name, cleaned
+  legal_name?: string;
   sector: string | null;
   direct: number; // dollars held directly (for a fund: the whole fund)
   via_etf: Record<string, number>; // dollars inside your funds (stocks only)
@@ -250,7 +253,7 @@ export interface PropertyRow {
 
 export interface PortfolioOut {
   total: number; // what the exposure rows add up to: investments + mapped retirement funds
-  rows: { symbol: string; name: string; kind: string; shares: number; price: number; value: number; change: number | null;
+  rows: { symbol: string; name: string; legal_name?: string; kind: string; shares: number; price: number; value: number; change: number | null;
     renamed_from?: string | null }[]; // e.g. "SPLG" when valued as SPYM (renamed 2025-10-31)
   exposure: ExposureRow[];
   unknown: string[];
@@ -352,7 +355,8 @@ export interface SourceRef {
  *  sources. Nothing in it says why the price moved; don't add a cause in the UI either. */
 export interface CompanyToday {
   ticker: string;
-  name: string;
+  name: string; // display name, cleaned
+  legal_name?: string;
   as_of: string; // the stock's last trading day in the price data
   close: number | null;
   prev_close: number | null;

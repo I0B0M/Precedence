@@ -530,9 +530,10 @@ def test_fund_page_names_holdings_we_dont_track_from_the_issuers_file(client):
     conn.commit()
     try:
         by = {h["ticker"]: h for h in client.get("/api/funds/BRD500").json()["holdings"]}
-        assert by["ZZZZ"]["name"] == "ZED CORP CL A" and by["ZZZZ"]["in_stone"] is False  # kept, not wiped
+        assert by["ZZZZ"]["legal_name"] == "ZED CORP CL A" and by["ZZZZ"]["in_stone"] is False  # kept, not wiped
+        assert by["ZZZZ"]["name"] == "Zed Class A"  # cleaned for display
         tracked = conn.execute("select name from companies where ticker = 'HLCN'").fetchone()["name"]
-        assert by["HLCN"]["name"] == tracked  # a stock we track keeps its own name
+        assert by["HLCN"]["legal_name"] == tracked  # a stock we track keeps its own name, not the issuer's
     finally:
         conn.execute("delete from etf_holdings where holding = 'ZZZZ'")
         conn.execute("update etf_holdings set name = null where etf = 'BRD500'")
