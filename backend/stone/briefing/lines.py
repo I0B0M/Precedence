@@ -6,10 +6,11 @@ aren't in its evidence, so a wrong field or a slipped rounding can never be spok
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 
 MAX_WORDS = 28  # one breath: the narration tab speaks each line as one caption
+MAX_PRO_WORDS = 40  # Pro's caption shows the working, so it may run longer; it is read, not spoken
 TONES = ("watch", "calm", "note")
 CITE = re.compile(r"^(signal:[a-z_]+|market:rate_jump|filing:[0-9A-Za-z-]+|price:\d{4}-\d{2}-\d{2}"
                   r"|rate:\d{4}-\d{2}-\d{2}|risk:[a-z_]+|fact:[a-z_]+|portfolio:[a-z_]+|company:[A-Z0-9.]+)$")
@@ -29,6 +30,13 @@ class Line:
     ticker: str | None = None
     title: str | None = None  # a short label for the caption chip, e.g. "Amazon · Heads up"
     link: str | None = None  # the in-app page that shows the working
+    pro: str | None = None  # Pro's caption: the same point with the working (counts, ranges, p)
+    pro_evidence: tuple[float, ...] = ()  # the numbers only Pro prints; Pro may also print `evidence`
+
+
+def with_pro(line: "Line | None", pro: str, *evidence: float) -> "Line | None":
+    """The line with Pro's caption; every number `pro` prints must be in `evidence` or the line's own."""
+    return None if line is None else replace(line, pro=pro, pro_evidence=tuple(evidence))
 
 
 @dataclass(frozen=True)
@@ -83,8 +91,10 @@ _NOT_CLAIMS = [
     re.compile(r"\b\d+-(?:year|K|Q)(?:/A)?\b"),
     re.compile(r"\bForm \d\b"),
     re.compile(r"S&P 500"),
+    re.compile(r"\bDGS10\b"),  # FRED's 10-year Treasury series
 ]
-_NUMBER = re.compile(r"(\$?)(\d[\d,]*(?:\.\d+)?)(%| (?:million|billion|trillion)\b)?")
+# A number glued to letters is part of a name, not a claim: "BRD500", "DGS10".
+_NUMBER = re.compile(r"(?<![A-Za-z0-9])(\$?)(\d[\d,]*(?:\.\d+)?)(%| (?:million|billion|trillion)\b)?")
 _SCALE = {" million": 1e6, " billion": 1e9, " trillion": 1e12}
 
 
@@ -137,4 +147,12 @@ def check(line: Line, names: tuple[str, ...] = ()) -> list[str]:
         problems.append("cites nothing")
     problems += [f"bad cite {c}" for c in line.cites if not CITE.match(c)]
     problems += [f"{t} is not in its evidence" for t in claims(line.text, names) if not grounded(t, line.evidence)]
+    if line.pro is not None:
+        pro_words = len(line.pro.split())
+        if pro_words > MAX_PRO_WORDS:
+            problems.append(f"pro: {pro_words} words, over {MAX_PRO_WORDS}")
+        if sentence_ends(line.pro) != 1 or not line.pro.rstrip().endswith((".", "!", "?")):
+            problems.append("pro: not exactly one sentence")
+        known = line.evidence + line.pro_evidence
+        problems += [f"pro: {t} is not in its evidence" for t in claims(line.pro, names) if not grounded(t, known)]
     return problems

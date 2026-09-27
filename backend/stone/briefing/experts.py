@@ -14,12 +14,14 @@ import re
 from dataclasses import replace
 from datetime import date, timedelta
 
-from stone.briefing.lines import MAX_WORDS, MONTHS, Line, Point, day_words, money, pct
+from stone.briefing.lines import MAX_WORDS, MONTHS, Line, Point, day_words, money, pct, with_pro
 
 STRONG, WEAK, NOT_PROVEN = "STRONG", "WEAK", "NOT PROVEN"
 MARKET_FUND = "SPY"
 FILINGS_DAYS = 7  # a filing is "new" for a week after it's accepted
 _RATE_NOTE = re.compile(r"(\d{4}-\d{2}-\d{2}): 10-year yield (\d+\.\d+)%, up (\d+\.\d+) pt")
+_CLUSTER_NOTE = re.compile(r": (\d+) insider sale filings in (\d+) days")
+_GAP_NOTE = re.compile(r"(\d{4}-\d{2}-\d{2}): opened (\d+\.\d+)% below the prior close")
 FORM_WORDS = {"8-K": "a company news update", "10-Q": "its quarterly report", "10-K": "its annual report",
               "S-1": "a registration for new shares"}
 
@@ -52,19 +54,30 @@ def event_line(signal: dict, co: dict, tone: str) -> Line:
     when = f", most recently on {day_words(firing['known_at'])}" if firing.get("known_at") else ""
     cites = [f"signal:{key}"]
     evidence: tuple[float, ...] = ()
+    pro: tuple = ()
     if key == "insider_cluster":
         what, evidence = f"{name} executives filed 3 or more share sales within 10 days{when}", (3, 10)
+        if (m := _CLUSTER_NOTE.search(firing.get("note") or "")) and firing.get("known_at"):
+            count, days = int(m.group(1)), int(m.group(2))
+            pro = (f"Form 4: {count} filings with an open-market sale (code S) in {days} days, the latest accepted "
+                   f"{day_words(firing['known_at'])}; the signal needs 3 in 10 days.", count, days)
     elif key == "gap_down":
         what, evidence = f"{name} opened 5% or more below the prior close{when}", (0.05,)
+        if m := _GAP_NOTE.match(firing.get("note") or ""):
+            drop = float(m.group(2))
+            pro = (f"Opened {drop:.1f}% below the prior close on {day_words(m.group(1))}; the signal needs 5%.", drop)
     elif (rj := rate_jump(firing.get("note"))) is not None:
         day, level, rise = rj
         what, evidence = f"rates jumped: the 10-year Treasury yield reached {level:.2f}%, up {rise:.2f} points in a week", (level, rise)
         cites.append(f"rate:{day}")
+        pro = (f"FRED DGS10 {level:.2f}% on {day_words(day)}, up {rise:.2f} pt on a week earlier; the signal needs "
+               f"0.15 pt, counted as known the next weekday afternoon.", 0.15)
     else:
         what = "rates jumped: the 10-year Treasury yield rose 0.15 points or more in a week"
         evidence = (0.15,)
-    return Line(f"{ticker}:{key}:event", tone, f"{cap(what)}.", evidence, tuple(cites), ticker,
+    line = Line(f"{ticker}:{key}:event", tone, f"{cap(what)}.", evidence, tuple(cites), ticker,
                 link=signal_link(ticker, key))
+    return with_pro(line, *pro) if pro else line
 
 
 def signal_link(ticker: str, key: str) -> str:
@@ -81,8 +94,14 @@ def record_line(signal: dict, co: dict, tone: str) -> Line | None:
     moved = (f"did worse than the market over the next {h} trading days" if signal.get("vs_market")
              else f"was lower {h} trading days later")
     text = f"{name} {moved} {hits} of the last {n} times, against {pct(normal)} of normal days."
-    return Line(f"{ticker}:{key}:record", tone, text, (h, hits, n, normal), (f"signal:{key}",), ticker,
+    line = Line(f"{ticker}:{key}:record", tone, text, (h, hits, n, normal), (f"signal:{key}",), ticker,
                 link=signal_link(ticker, key))
+    rate, low, high, nh, nn = (signal.get(k) for k in ("hit_rate", "low", "high", "normal_hits", "normal_n"))
+    if None in (rate, low, high, nh, nn):
+        return line
+    pro_moved = f"worse than SPY over {h} days" if signal.get("vs_market") else f"lower after {h} days"
+    return with_pro(line, f"{hits}/{n} {pro_moved} ({pct(rate)}, 90% Wilson range {pct(low)} to {pct(high)}) vs "
+                          f"{nh}/{nn} normal days ({pct(normal)}); label {signal['label']}.", rate, 0.9, low, high, nh, nn)
 
 
 STRICT_WORDS = {True: "It also passes a stricter test", False: "A stricter test calls this borderline"}
@@ -108,15 +127,25 @@ def confidence_line(signal: dict, ticker: str) -> Line | None:
     else:
         return None
     key = signal["signal"]
-    return Line(f"{ticker}:{key}:confidence", "note", text, (), (f"signal:{key}",), ticker,
+    line = Line(f"{ticker}:{key}:confidence", "note", text, (), (f"signal:{key}",), ticker,
                 link=signal_link(ticker, key))
+    parts, evidence = [], []
+    if st and all(st.get(k) is not None for k in ("normal_periods", "diff_low", "diff_high", "p")):
+        parts.append(f"Newcombe range for the difference over {st['normal_periods']:.1f} separate normal periods: "
+                     f"{st['diff_low'] * 100:+.0f} to {st['diff_high'] * 100:+.0f} points, one-sided p {st['p']:.2f}")
+        evidence += [st["normal_periods"], st["diff_low"], st["diff_high"], st["p"]]
+    halves = signal.get("holdout") or {}
+    if held and halves.get("first") and halves.get("second"):
+        a, b = halves["first"], halves["second"]
+        parts.append(f"hold-out halves {a['hits']}/{a['n']} and {b['hits']}/{b['n']}, each needing 10 cases")
+        evidence += [a["hits"], a["n"], b["hits"], b["n"], 10]
+    return with_pro(line, cap("; ".join(parts)) + ".", *evidence) if parts else line
 
 
 def proven_point(signal: dict, co: dict, salience: int, title: str) -> Point:
     """A STRONG signal firing now: what happened, how it went before, and how sure we are."""
     ticker = co["ticker"]
-    head = event_line(signal, co, "watch")
-    head = Line(head.id, head.tone, head.text, head.evidence, head.cites, ticker, title, head.link)
+    head = replace(event_line(signal, co, "watch"), title=title)
     lines = [head, record_line(signal, co, "watch"), confidence_line(signal, ticker)]
     return Point(f"{ticker}:{signal['signal']}", "signals", salience, tuple(line for line in lines if line))
 
@@ -166,11 +195,9 @@ def market_expert(market: dict | None, held: bool) -> list[Point]:
     else:
         salience, tone, title = 45, "calm", "The market"
     head = event_line(market, co, tone)
-    head = Line(f"market:{head.id}", tone, head.text, head.evidence, (*head.cites, "market:rate_jump"), co["ticker"],
-                title, head.link)
+    head = replace(head, id=f"market:{head.id}", cites=(*head.cites, "market:rate_jump"), title=title)
     record = record_line(market, co, tone)
-    lines = [head, record and Line(f"market:{record.id}", record.tone, record.text, record.evidence,
-                                   ("market:rate_jump",), record.ticker, link=record.link)]
+    lines = [head, record and replace(record, id=f"market:{record.id}", cites=("market:rate_jump",))]
     if market["label"] == STRONG:
         lines.append(confidence_line(market, co["ticker"]))
     else:
@@ -216,7 +243,10 @@ def facts_expert(co: dict) -> list[Point]:
     text = f"In the quarter to {day_words(end)}, {' and '.join(parts)}."
     line = Line(f"{c['ticker']}:facts", "note", text, tuple(evidence), tuple(cites), c["ticker"],
                 "Latest figures", f"/company/{c['ticker']}")
-    return [Point(f"{c['ticker']}:facts", "figures", 30, (line,))]
+    shown = [f for f in (rev, ni) if f]
+    concepts = " and ".join(f"{f['concept']} {money(f['value'])}" for f in shown)
+    pro = f"XBRL {concepts}, from the {shown[0]['form']} for the quarter to {day_words(end)}."
+    return [Point(f"{c['ticker']}:facts", "figures", 30, (with_pro(line, pro),))]
 
 
 def filings_expert(co: dict, as_of: str) -> list[Point]:
@@ -295,13 +325,26 @@ def risk_expert(risk: dict | None) -> list[Point]:
     if mine.get("worst_day_dollars") is not None:
         worst += f", about {money(mine['worst_day_dollars'])} at today's value"
         evidence.append(mine["worst_day_dollars"])
-    lines = [Line("risk:worst_day", "note", f"{worst}.", tuple(evidence), ("risk:worst_day", "risk:worst_day_dollars"),
-                  None, "Your mix", "/")]
+    first = Line("risk:worst_day", "note", f"{worst}.", tuple(evidence), ("risk:worst_day", "risk:worst_day_dollars"),
+                 None, "Your mix", "/")
+    mkt, sym = risk.get("market") or {}, risk.get("market_symbol") or MARKET_FUND
+    if all(v is not None for v in (mine.get("volatility"), mkt.get("volatility"), mine.get("sharpe"), mkt.get("sharpe"))):
+        first = with_pro(first, f"QuantStats on {risk['days']} daily closes: volatility {pct(mine['volatility'], 1)} vs "
+                                f"{pct(mkt['volatility'], 1)} for {sym}, Sharpe {mine['sharpe']:.2f} vs {mkt['sharpe']:.2f} "
+                                f"at a 0% risk-free rate.", risk["days"], mine["volatility"], mkt["volatility"],
+                         mine["sharpe"], mkt["sharpe"], 0)
+    lines = [first]
     if mine.get("beta") is not None and mine.get("max_drawdown") is not None:
-        lines.append(Line("risk:beta", "note",
-                          f"It swings about {mine['beta']:.1f} times as much as the market, and its deepest fall "
-                          f"was {pct(mine['max_drawdown'], 1)}.", (mine["beta"], mine["max_drawdown"]),
-                          ("risk:beta", "risk:max_drawdown"), None, "Your mix", "/"))
+        beta = Line("risk:beta", "note",
+                    f"It swings about {mine['beta']:.1f} times as much as the market, and its deepest fall "
+                    f"was {pct(mine['max_drawdown'], 1)}.", (mine["beta"], mine["max_drawdown"]),
+                    ("risk:beta", "risk:max_drawdown"), None, "Your mix", "/")
+        if mine.get("drawdown_start") and mine.get("drawdown_bottom") and mkt.get("max_drawdown") is not None:
+            beta = with_pro(beta, f"Beta {mine['beta']:.2f} vs {sym}; max drawdown {pct(mine['max_drawdown'], 1)} from "
+                                  f"{day_words(mine['drawdown_start'], risk['end'])} to "
+                                  f"{day_words(mine['drawdown_bottom'], risk['end'])}, {sym} "
+                                  f"{pct(mkt['max_drawdown'], 1)}.", mkt["max_drawdown"])
+        lines.append(beta)
     return [Point("risk", "risk", 40, tuple(lines))]
 
 
@@ -320,4 +363,10 @@ def look_through_expert(board: dict | None, names: dict[str, str]) -> list[Point
             f"{names.get(top['symbol'], top['name'])}, at {pct(top['share_of_total'])} of everything you own.")
     line = Line("portfolio:look_through", "note", text, (top["share_of_total"],), ("portfolio:exposure",),
                 top["symbol"], "What you really own", "/")
+    via = {f: v for f, v in (top.get("via_etf") or {}).items() if v}
+    if via and top.get("direct") is not None and board.get("total"):
+        inside = " and ".join(f"{money(v)} through {f}" for f, v in via.items())
+        line = with_pro(line, f"{top['symbol']}: {money(top['direct'])} direct plus {inside}, "
+                              f"{pct(top['share_of_total'], 1)} of {money(board['total'])}.",
+                        top["direct"], *via.values(), board["total"])
     return [Point("portfolio:look_through", "look-through", 35, (line,))]

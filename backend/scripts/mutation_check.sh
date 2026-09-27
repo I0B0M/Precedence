@@ -117,5 +117,7 @@ mutb $X "borderline flipped"                 'STRICT_WORDS[st["diff_low"] > 0]' 
 mutb $X "market-relative said as lower"      'if signal.get("vs_market")'                 'if False'
 mutb $X "filings older than a week"          'end - timedelta(days=FILINGS_DAYS) < date.fromisoformat(filed) <= end' 'date.fromisoformat(filed) <= end'
 mutb $X "Form 4s read as filings"            'form.startswith("4") or '                   ''
+mutb $L "Pro captions never checked"         'if line.pro is not None:'                   'if False:'
+mutb $X "the headline loses its Pro caption" 'replace(event_line(signal, co, "watch"), title=title)' 'replace(event_line(signal, co, "watch"), title=title, pro=None)'
 for f in $L $X $P; do git diff --quiet -- "$f" && echo "$f restored, identical to original"; done
 rm "$BAK" "$OUT"

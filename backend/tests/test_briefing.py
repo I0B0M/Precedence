@@ -7,7 +7,7 @@ import pytest
 
 from stone.briefing import experts as ex
 from stone.briefing import saved as saved_briefings
-from stone.briefing.lines import Line, Point, check, claims, grounded
+from stone.briefing.lines import Line, Point, check, claims, grounded, with_pro
 from stone.briefing.panel import briefing_json, company_briefing, gate, portfolio_briefing
 
 
@@ -186,6 +186,23 @@ def test_saved_portfolio_script_leads_with_what_needs_a_look(saved):
     assert not any("held up" in x for x in t)  # no saved result has 10+ cases in each half
     assert t[-1] == "That's everything: Stone ran 16 tests on your holdings, and only 2 of the signals happening now have mattered before."
     assert len(t) <= 16
+    pro = {line.id: line.pro for line in saved["portfolio"].lines}
+    assert pro["AMZN:insider_cluster:record"] == (
+        "6/12 lower after 20 days (50%, 90% Wilson range 29% to 71%) vs 32/125 normal days (26%); label STRONG.")
+    assert pro["AMZN:insider_cluster:confidence"] == (
+        "Newcombe range for the difference over 12.9 separate normal periods: -7 to +50 points, one-sided p 0.10; "
+        "hold-out halves 2/6 and 3/5, each needing 10 cases.")
+    assert pro["AMZN:insider_cluster:event"].startswith("Form 4: 7 filings with an open-market sale (code S) in 10 days")
+
+
+def test_pro_captions_are_checked_like_the_spoken_text():
+    base = line("Amazon was lower 6 of the last 12 times.", (6, 12))
+    assert check(with_pro(base, "6/12 lower (50%) vs 26% normal.", 0.5, 0.256)) == []
+    assert check(with_pro(base, "6/12 lower (51%) vs 26% normal.", 0.5, 0.256)) == ["pro: 51% is not in its evidence"]
+    assert check(with_pro(base, " ".join(["w"] * 41) + ".")) == ["pro: 41 words, over 40"]
+    assert check(with_pro(base, "One. Two.")) == ["pro: not exactly one sentence"]
+    assert claims("FRED DGS10 5.18%.") == ["5.18%"]  # a series name isn't a claim
+    assert claims("$120 through BRD500.") == ["$120"]  # nor is a ticker with digits
 
 
 def test_saved_json_matches_the_tab_contract(saved):
@@ -193,7 +210,7 @@ def test_saved_json_matches_the_tab_contract(saved):
     assert body["ticker"] == "BX" and body["as_of"] == "2026-09-25" and body["kind"] == "company"
     assert "no language model" in body["generated_by"]
     for ln in body["lines"]:
-        assert set(ln) == {"id", "text", "say", "tone", "cites", "ticker", "title", "link"}
+        assert set(ln) == {"id", "text", "say", "tone", "cites", "ticker", "title", "link", "pro"}
         assert ln["tone"] in ("calm", "watch", "note") and ln["cites"]
     p = briefing_json(saved["portfolio"])
     assert p["key"] == "AAPL-10_AMZN-10_BX-10_JPM-10_NVDA-10_SPY-5"

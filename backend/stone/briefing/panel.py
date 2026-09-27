@@ -119,7 +119,7 @@ def company_briefing(detail: dict) -> Briefing:
             else "nothing happening now has mattered before.")
     closing = Line(f"{ticker}:closing", "note" if proven or not ran else "calm", said, (ran, proven), cites,
                    ticker, "That's all", f"/company/{ticker}")
-    return assemble("company", ticker, as_of, opening, points, closing, COMPANY_LINES, (name, ex.cap(name)))
+    return assemble("company", ticker, as_of, opening, points, closing, COMPANY_LINES, (name, ex.cap(name), ticker))
 
 
 # ---------- a whole portfolio ----------
@@ -181,7 +181,7 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
             f"only {proven} of the signals happening now {'has' if proven == 1 else 'have'} mattered before."
             if proven else "nothing happening now has mattered before.")
     closing = Line("portfolio:closing", "calm", said, (ran, proven), ("portfolio:states",), None, "That's all", "/")
-    spoken_names = tuple(n for name in names.values() for n in (name, ex.cap(name)))
+    spoken_names = tuple(n for t, name in names.items() for n in (name, ex.cap(name), t))
     return assemble("portfolio", subject, as_of, opening, points, closing, PORTFOLIO_LINES, spoken_names)
 
 
@@ -189,7 +189,7 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
 
 def line_json(line: Line) -> dict:
     return {"id": line.id, "text": line.text, "say": speakable(line.text), "tone": line.tone,
-            "cites": list(line.cites), "ticker": line.ticker, "title": line.title, "link": line.link}
+            "cites": list(line.cites), "ticker": line.ticker, "title": line.title, "link": line.link, "pro": line.pro}
 
 
 def briefing_json(b: Briefing) -> dict:
