@@ -271,3 +271,10 @@ def test_gemini_summary_is_cached_per_filing(tmp_path, monkeypatch):
 def test_symbols_are_cleaned_the_way_stone_writes_them():
     assert [gemini.clean_symbol(s) for s in ("$aapl ", "BRK-B", "brk/b", "BRK B", "SPY")] == \
         ["AAPL", "BRK.B", "BRK.B", "BRK.B", "SPY"]
+
+
+def test_an_empty_gemini_model_setting_means_the_default(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL", "")  # what `GEMINI_MODEL=` in backend/.env loads as
+    assert gemini.model_from_env() == gemini.DEFAULT_MODEL
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    assert gemini.model_from_env() == "gemini-3.5-flash-lite"

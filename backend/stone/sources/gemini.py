@@ -30,7 +30,14 @@ BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 # ai.google.dev/gemini-api/docs/models and /pricing (checked 2026-09-26). The 2.5 models
 # are limited to accounts that used them before, so a new key would fail on them.
 # gemini-3.5-flash-lite is the other current pick, cheaper and meant for simple extraction.
-MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+DEFAULT_MODEL = "gemini-3.8-flash"
+
+
+def model_from_env() -> str:
+    return os.getenv("GEMINI_MODEL") or DEFAULT_MODEL  # an empty GEMINI_MODEL= in .env means the default
+
+
+MODEL = model_from_env()
 # Formats Gemini reads inline (ai.google.dev/gemini-api/docs/image-understanding)
 IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"}
 
