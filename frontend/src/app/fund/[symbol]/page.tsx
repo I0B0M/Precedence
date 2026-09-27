@@ -68,6 +68,8 @@ function FundScreen() {
   // VOO, IVV and SPYM track the S&P 500 and are shown with SPY's holdings file; the API's note says which fund's.
   const from = f.note?.match(/holdings from ([A-Z.]+)/)?.[1] ?? null;
   const borrowed = from && from !== f.symbol ? from : null;
+  // VOO, IVV, SPYM track the S&P 500, so SPY's market test is theirs (their own signal is the market rate jump).
+  const sameIndexAsSpy = f.symbol !== "SPY" && f.fund_firing.some((s) => s.signal === "market_rate_jump");
   const fileWords = borrowed ? `${borrowed}'s ${source ?? "holdings"} file` : source;
   // QQQ: holdings from the fund's quarterly SEC N-PORT filing, published about two months after its date.
   const nport = !!f.holdings_source?.startsWith("SEC N-PORT");
@@ -103,7 +105,8 @@ function FundScreen() {
       <div className="box">
         <h3>What&apos;s going on</h3>
         <p className="say-big">{fundLine(f)}</p>
-        <MarketCard onlyFor={borrowed ?? f.symbol} />
+        {sameIndexAsSpy && <p>Same index as SPY, so SPY&apos;s test applies.</p>}
+        <MarketCard onlyFor={borrowed ?? (sameIndexAsSpy ? "SPY" : f.symbol)} />
       </div>
 
       {f.holdings.length === 0 ? (
