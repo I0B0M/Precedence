@@ -83,11 +83,11 @@ export function resetPractice(holdings: Holding[]) {
 export function tradeProblem(s: PracticeState, side: "buy" | "sell", symbol: string, shares: number, price: number | null): string | null {
   if (!symbol) return "Pick a stock.";
   if (price == null) return "No closing price for this one yet.";
-  if (!Number.isInteger(shares) || shares < 1) return "Whole shares only, at least 1.";
-  if (side === "buy" && shares * price > s.cash + 1e-9) return "Not enough practice cash. Practice has no borrowing.";
+  if (!Number.isInteger(shares) || shares < 1) return "At least 1 whole share.";
+  if (side === "buy" && shares * price > s.cash + 1e-9) return "Not enough practice cash.";
   if (side === "sell" && shares > Math.floor(s.positions[symbol] ?? 0)) {
     const held = Math.floor(s.positions[symbol] ?? 0);
-    return held ? `You hold ${held} whole share${held > 1 ? "s" : ""} of ${symbol}. Practice has no short selling.` : `You don't hold ${symbol}. Practice has no short selling.`;
+    return held ? `You hold ${held} ${symbol}.` : `You don't hold ${symbol}.`;
   }
   return null;
 }

@@ -75,8 +75,8 @@ export function HitDots({ cases, vsMarket = false }: { cases: { hit: boolean }[]
         {cases.map((c, i) => <i key={i} className={c.hit ? "h" : undefined} style={{ "--i": i } as React.CSSProperties} />)}
       </div>
       <p className="note dotkey" aria-hidden>
-        <span><i className="h" /> {vsMarket ? "did worse than the market" : "was lower after"}</span>
-        <span><i /> didn&apos;t</span>
+        <span><i className="h" /> {vsMarket ? "worse than the market" : "lower after"}</span>
+        <span><i /> {vsMarket ? "not worse" : "not lower"}</span>
       </p>
     </div>
   );

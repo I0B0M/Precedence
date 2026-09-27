@@ -83,12 +83,12 @@ export default function CompanyScreen() {
               <p className="say-big"><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
               <HitDots cases={main.cases ?? []} vsMarket={main.vs_market} />
               <p><b>{liteVerdict(main)}</b></p>
-              {main.signal === "rate_jump" && <MarketCard where="above" />}
+              {main.signal === "rate_jump" && <MarketCard />}
             </>
           ) : (
             <>
-              <p className="say-big">{co.kind === "etf" ? "Funds hold many stocks; open a stock to see its signals." : "Nothing unusual is happening. No need to do anything."}</p>
-              {isFund && <MarketCard where="self" onlyFor={co.ticker} />}
+              <p className="say-big">{co.kind === "etf" ? "A fund: many stocks in one." : "Nothing unusual right now."}</p>
+              {isFund && <MarketCard onlyFor={co.ticker} />}
               {isFund && <Link className="linkb" href={`/fund/${co.ticker}`}>See what&apos;s inside {co.ticker} ›</Link>}
             </>
           )}
@@ -117,7 +117,7 @@ export default function CompanyScreen() {
             <h3>What it means for you</h3>
             {mine ? (
               <dl className="kv">
-                <dt>You own directly</dt><dd>{money(mine.direct)}</dd>
+                {mine.direct > 0 && <><dt>You own directly</dt><dd>{money(mine.direct)}</dd></>}
                 {Object.values(mine.via_etf).some((v) => v > 0) && (
                   <><dt>Inside your funds</dt><dd>{money(Object.values(mine.via_etf).reduce((a, b) => a + b, 0))}</dd></>
                 )}
@@ -126,11 +126,11 @@ export default function CompanyScreen() {
               </dl>
             ) : (
               <>
-                <p className="mute">You don&apos;t own {co.ticker}. Bring in what you own and this shows it in dollars.</p>
-                <Link className="btn light small" href="/import" style={{ alignSelf: "flex-start" }}>Add an account</Link>
+                <p className="mute">You don&apos;t own {co.ticker}.</p>
+                <Link className="btn light small" href="/import" style={{ alignSelf: "flex-start" }}>Add account</Link>
               </>
             )}
-            {mine && <p className="note">&quot;A bad day&quot; is this {isFund ? "fund" : "stock"}&apos;s 1-in-20 worst day of the past year.</p>}
+            {mine && <p className="note">Bad day: the worst 1 in 20 days, past year.</p>}
           </div>
 
           <div className="box">
@@ -146,7 +146,6 @@ export default function CompanyScreen() {
                 <div className="list-row"><span>10-year Treasury rate {d.rate.value.toFixed(2)}%</span><span className="mute">{shortDate(d.rate.day)}</span></div>
               )}
             </div>
-            <p className="note">Filings from SEC EDGAR; interest rate from FRED.</p>
           </div>
         </div>
       </div>
@@ -197,7 +196,7 @@ export default function CompanyScreen() {
             </div>
             <p className="note">STRONG only when the range&apos;s low end beats the normal-day rate. Fewer than 10 cases is always WEAK.
               Timed from SEC acceptance; measured from the next market open.</p>
-            {rateJump && <MarketCard where="above" />}
+            {rateJump && <MarketCard />}
             <ScanLine scan={scan} />
           </div>
         )}
@@ -294,8 +293,7 @@ export default function CompanyScreen() {
       )}
       {!nextSignal && isFund && (
         <div className="next-step">
-          <p>See what&apos;s inside {co.ticker}.</p>
-          <Link className="btn t-go" href={`/fund/${co.ticker}`}>Open the fund</Link>
+          <Link className="btn t-go" href={`/fund/${co.ticker}`}>What&apos;s inside {co.ticker}</Link>
         </div>
       )}
     </section>

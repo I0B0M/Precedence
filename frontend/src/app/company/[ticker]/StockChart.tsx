@@ -145,14 +145,14 @@ export function StockChart({ ticker, name, prices, signals, initialSignal, badge
           </div>
           {chosen && (
             <p className="note">
-              <i className="dotmark h" /> came true · <i className="dotmark" /> didn&apos;t
+              <i className="dotmark h" /> {chosen.vs_market ? "worse than the market" : "lower after"} · <i className="dotmark" /> {chosen.vs_market ? "not worse" : "not lower"}
               {chosen.firing ? <> · <i className="dotmark now" /> happening now</> : null}
               {outside > 0 ? ` · ${outside} earlier case${outside > 1 ? "s" : ""} outside this range` : ""}
             </p>
           )}
         </div>
       )}
-      <p className="note">Daily closes {shortDate(first.day)} – {shortDate(last.day)}, from Alpaca (IEX feed).</p>
+      <p className="note">Daily closes to {shortDate(last.day)}.</p>
     </section>
   );
 }

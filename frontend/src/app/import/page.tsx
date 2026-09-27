@@ -74,6 +74,7 @@ export default function ImportScreen() {
   const [note, setNote] = useState<string | null>(null);
   const [checkErr, setCheckErr] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [empty, setEmpty] = useState(false); // "Check" pressed with no rows
 
   const [priced, setPriced] = useState<{ symbol: string; day: string | null }[]>([]);
   const [unpriced, setUnpriced] = useState<string[]>([]);
@@ -85,6 +86,7 @@ export default function ImportScreen() {
     setTotal(ex.total);
     setCheck(null);
     setCheckErr(false);
+    setEmpty(false);
     setExample(ex.asOf);
   }
   // Fill the table, then bring it into view (the button sits at the top of the page).
@@ -108,12 +110,14 @@ export default function ImportScreen() {
       setTotal(r.printed_total?.toString() ?? "");
       setCheck(r);
     } catch (e) {
-      // The API's own detail already says what went wrong (422 unreadable, 415 not an image, 413 too big, 502/503 reader down).
-      // Only a failure to reach Precedence at all gets our own wording.
-      const known = e instanceof ApiError && [413, 415, 422, 502, 503].includes(e.status);
-      setNote(known
-        ? `${(e as ApiError).message} You can type the rows below instead.`
-        : "Couldn't read that screenshot: Precedence can't reach its data right now. Is the server running? You can type the rows below instead.");
+      // 413/415/422: the API's own detail says what was wrong with the file. 502/503: the reader is down or not
+      // connected; its detail names env vars and models, so it gets our wording, as does not reaching us at all.
+      const status = e instanceof ApiError ? e.status : 0;
+      setNote([413, 415, 422].includes(status)
+        ? `${(e as ApiError).message} Type the rows below instead.`
+        : status === 502 || status === 503
+          ? "Screenshot reading is off right now. Type the rows below instead."
+          : "Can't reach our server. Type the rows below instead.");
     } finally {
       setBusy(false);
     }
@@ -121,6 +125,8 @@ export default function ImportScreen() {
 
   async function runCheck(next = rows, nextTotal = total) {
     const kept = next.filter((r) => r.symbol.trim());  // drop blank rows so check.rows[i] lines up with rows[i]
+    setEmpty(!kept.length);
+    if (!kept.length) return setCheck(null);
     try {
       setCheckErr(false);
       // Typed rows: a missing price comes from the latest close, a missing value is shares x price. "BX 10" must work.
@@ -169,6 +175,7 @@ export default function ImportScreen() {
 
   const edit = (i: number, k: keyof EditRow, v: string) => {
     setExample(null);
+    setEmpty(false);
     setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
     setCheck(null);
   };
@@ -182,13 +189,13 @@ export default function ImportScreen() {
       <div className="stack" style={{ gap: 8 }}>
         <span className="ticker">Add an account</span>
         <h1>Bring in what you own</h1>
-        <p className="lede">Precedence only reads what you own. It never trades or moves money.</p>
+        <p className="lede">Read-only. Never trades or moves money.</p>
       </div>
 
       {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
       <div className="card" style={{ borderWidth: 2 }}>
-        <h3>Try an example portfolio</h3>
-        <p>BX, AMZN and SPY at real closing prices. Nothing is saved until you press Save.</p>
+        <h3>Example portfolio</h3>
+        <p>BX, AMZN and SPY at real closing prices.</p>
         <button className="btn" type="button" onClick={fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
       </div>
 
@@ -199,25 +206,24 @@ export default function ImportScreen() {
           {CONNECT.map((c) => (
             <div key={c.name} className="list-row" style={{ alignItems: "center" }}>
               <span><b>{c.name}</b><span className="note" style={{ display: "block" }}>{c.what} · read-only</span></span>
-              <button className="btn light small" type="button" disabled>Connecting opens soon</button>
+              <button className="btn light small" type="button" disabled>Coming soon</button>
             </div>
           ))}
         </div>
       </div>
 
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
-        <h2>Your app isn&apos;t here? Add a screenshot</h2>
-        <p className="mute">Read by Gemini, then checked against your total.</p>
+        <h2>Or add a screenshot</h2>
+        <p className="mute">Checked against the total on your screen.</p>
       </div>
 
       <div className="drop">
-        <b>A screenshot from Cash App, Webull, Fidelity, anything</b>
+        <b>Any app: Cash App, Webull, Fidelity…</b>
         <label className={`btn${busy ? " is-busy" : ""}`}>
           <input className="sr-only" type="file" accept="image/*" disabled={busy}
             onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
           {busy ? "Reading…" : "Choose a screenshot"}
         </label>
-        {busy && <span className="note">Reading your screenshot…</span>}
         {note && <span className="badline">{note}</span>}
         {status?.data === "sample" && (
           <button className="linkb" type="button" onClick={tryExample}>Try the example (sample data, one blurry number)</button>
@@ -226,9 +232,9 @@ export default function ImportScreen() {
 
       <div className="card" id="check-rows" style={{ scrollMarginTop: 110 }}>
         <h3>Check the rows</h3>
-        <p className="note">No screenshot? Type your holdings here instead: a ticker and shares is enough.</p>
+        <p className="note">Or type them: ticker and shares.</p>
         {example && (
-          <p className="example-note"><b>Example holdings, not yours.</b> Real prices at the close on {shortDate(example)}. Nothing is saved until you press Save.</p>
+          <p className="example-note"><b>Example, not yours.</b> Prices at the {shortDate(example)} close. Not saved until you press Save.</p>
         )}
         <div className="tscroll">
           <table className="readtable">
@@ -257,7 +263,7 @@ export default function ImportScreen() {
             </tbody>
           </table>
         </div>
-        {check?.rows.filter((c) => c.problem).map((c, i) => (
+        {check?.rows.filter((c) => c.problem && !unpriced.includes(c.symbol)).map((c, i) => (
           <p key={i} className="note"><b>{c.symbol}:</b> {c.problem}</p>
         ))}
         <div className="row-flex">
@@ -270,15 +276,16 @@ export default function ImportScreen() {
           <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
 
-        {checkErr && <div className="badline">Precedence can&apos;t reach its data right now, so it can&apos;t check the rows. Is the server running?</div>}
+        {empty && <div className="badline">Add a ticker and shares first.</div>}
+        {checkErr && <div className="badline">Can&apos;t reach our server. Try again.</div>}
         {priced.length > 0 && (
-          <p className="note">Price filled in from the latest close: {priced.map((p) => `${p.symbol}${p.day ? ` (close ${shortDate(p.day)})` : ""}`).join(", ")}.</p>
+          <p className="note">Price from the latest close: {priced.map((p) => `${p.symbol}${p.day ? ` (${shortDate(p.day)})` : ""}`).join(", ")}.</p>
         )}
         {unpriced.length > 0 && (
-          <p className="badline">Precedence has no price for {unpriced.join(", ")}. It follows the S&amp;P 100 and a few funds. Type a price and value for {unpriced.length > 1 ? "them" : "it"}, or remove the row.</p>
+          <p className="badline">No price for {unpriced.join(", ")}. Type a price, or remove the row.</p>
         )}
         {check && !(check.status === "no_total" && unpriced.length > 0) && (typedOk ? (
-          <div className="okline">✓ No total to check against, so these rows add up to {money(check.rows_sum)}. Confirm they&apos;re right, then save.</div>
+          <div className="okline">✓ Rows add up to {money(check.rows_sum)}. Check them, then save.</div>
         ) : (
           <div className={check.status === "ok" ? "okline" : "badline"}>
             {check.status === "ok" ? "✓ " : ""}{check.message}
@@ -286,13 +293,13 @@ export default function ImportScreen() {
         ))}
         <div className="row-flex">
           <button className="btn" type="button" disabled={!canSave} onClick={save}>Save as my holdings</button>
-          {check && !canSave && <span className="note">Saving unlocks once every row has a value and they add up to the total.</span>}
+          {check && !canSave && <span className="note">Needs a price on every row{total.trim() ? " and a matching total" : ""}.</span>}
         </div>
       </div>
 
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Everything else you own</h2>
-        <p className="mute">A home, a 401(k) or an IRA{SHOW_CRYPTO ? ", crypto" : ""}. Values show once there&apos;s a real estimate.</p>
+        <p className="mute">A home, a 401(k) or an IRA{SHOW_CRYPTO ? ", crypto" : ""}.</p>
       </div>
       <OtherAssetsForms />
     </section>

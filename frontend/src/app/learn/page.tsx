@@ -51,18 +51,18 @@ export default function Learn() {
         <div className="learn-grid three">
           <div className="learn-tile"><StateBadge state="CALM" /><p>Nothing that has mattered before is happening.</p></div>
           <div className="learn-tile"><StateBadge state="WATCH" /><p>Something that has mattered for this stock before is happening now.</p></div>
-          <div className="learn-tile"><StateBadge state={null} /><p>We haven&apos;t tested this one, so it says nothing.</p></div>
+          <div className="learn-tile"><StateBadge state={null} /><p>Not tested yet, so no call either way.</p></div>
         </div>
       </div>
 
       <div className="stack" style={{ gap: 16 }}>
         <h2>Real pattern, or not proven?</h2>
-        <p className="lede">The dark bar is where the real rate likely is. The blue line is a normal week.</p>
+        <p className="lede">The bar is where the real rate likely is. The gold line is normal.</p>
         <div className="learn-grid">
           <Figure label="STRONG" words="The whole bar is right of the line: it has mattered." left={58} width={26} normal={40} />
           <Figure label="NOT PROVEN" words="The bar crosses the line: could be chance." left={30} width={44} normal={48} />
         </div>
-        <p className="note">Illustrations, not data. Every real bar here comes from that stock&apos;s own history.</p>
+        <p className="note">Illustrations, not data.</p>
         <div className="pro-only card">
           <h3>The rules</h3>
           <ul className="learn-rules">

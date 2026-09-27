@@ -27,7 +27,7 @@ export function ApiProblem() {
   return (
     <div className="card problem" role="alert">
       <h3>Can&apos;t reach our data</h3>
-      <p>Precedence can&apos;t reach its data right now. Is the server running?</p>
+      <p>Try again in a moment.</p>
       <button className="btn small" type="button" onClick={() => window.location.reload()} style={{ alignSelf: "flex-start" }}>Try again</button>
     </div>
   );
@@ -38,7 +38,7 @@ export function NotFollowed({ ticker }: { ticker: string }) {
   return (
     <div className="card problem">
       <h3>We don&apos;t follow {ticker} yet</h3>
-      <p>Precedence has filings, prices and signals for the S&amp;P 100 companies and a few funds. {ticker} isn&apos;t one of them yet.</p>
+      <p>We cover the S&amp;P 100 and a few funds.</p>
       <div className="row-flex">
         <Link className="btn small" href="/portfolio">Back to your portfolio</Link>
         <Link className="btn light small" href="/signals">Signals</Link>

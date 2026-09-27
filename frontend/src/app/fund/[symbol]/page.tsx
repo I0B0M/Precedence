@@ -85,14 +85,13 @@ export default function FundScreen() {
       <div className="box">
         <h3>What&apos;s going on</h3>
         <p className="say-big">{f.fund_firing.length ? liteSummary(f.fund_firing) : "Nothing important today."}</p>
-        <MarketCard where="self" onlyFor={f.symbol} />
+        <MarketCard onlyFor={f.symbol} />
       </div>
 
       {f.holdings.length === 0 ? (
         <div className="box">
           <h3>What&apos;s inside</h3>
           <p className="say-big">{f.note ?? `What's inside ${f.symbol} isn't loaded yet.`}</p>
-          <p className="mute">Shown as one line until Precedence has its holdings file.</p>
         </div>
       ) : (
         <div className="grid2">
@@ -114,7 +113,7 @@ export default function FundScreen() {
             </div>
             <p className="note">
               {more > 0 ? `And ${more} more${f.built_from === "api" ? "" : " that we can see"}. ` : ""}
-              {f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}${source ? `, ${source}` : ""}.` : ""}
+              {f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}.` : ""}
               <span className="pro-only">{unseen > 0.005 ? ` The other ${w(unseen)} of the fund is in companies Precedence doesn't track yet.` : ""}</span>
             </p>
             {f.heads_up.length > 0 && (
@@ -124,7 +123,7 @@ export default function FundScreen() {
 
           <div className="stack" style={{ gap: 20 }}>
             <div className="box">
-              <h3>How it&apos;s done</h3>
+              <h3>Returns</h3>
               <div className="versus perf" style={{ gap: 10 }}>
                 {([["1 month", f.performance.d30], ["3 months", f.performance.d90], ["1 year", f.performance.y1]] as const).map(([label, v]) => (
                   <div key={label}>
