@@ -157,7 +157,8 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
               <tbody>
                 {[...(p.distributions ?? [])].reverse().map((x) => (
                   <tr key={x.record_date}>
-                    <td data-label="Month"><span>{monthYear(x.month)}</span></td>
+                    <td data-label="Month"><span>{monthYear(x.month)}{p.nav && x.record_date > p.nav.as_of
+                      ? <span className="note" style={{ display: "block" }}>after the latest value, so not in any return yet</span> : null}</span></td>
                     <td data-label="Paid per share" className="num"><b>{navMoney(x.amount)}</b></td>
                     <td data-label="Record date"><span>{shortDate(x.record_date)}</span></td>
                     <td data-label="Filing"><a href={x.url} target="_blank" rel="noopener noreferrer">sec.gov</a></td>
