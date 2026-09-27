@@ -25,6 +25,9 @@ class FundLoad:
     liquidity: tuple[str, str] | None = None
     links: list[Filing] = field(default_factory=list)
     skipped: list[Filing] = field(default_factory=list)  # NAV-form filings that state no NAV (other supplements)
+    # month end -> (Class I gross distribution, record date, the 8-K declaring it)
+    distributions: dict[date, tuple[float, date, Filing]] = field(default_factory=dict)
+    unreadable: list[tuple[Filing, str]] = field(default_factory=list)  # 8-Ks declaring something we can't read whole
 
 
 def collect(fund: pf.Fund, filings: list[Filing], text_of: Callable[[Filing], str], since: date) -> FundLoad:
@@ -40,7 +43,20 @@ def collect(fund: pf.Fund, filings: list[Filing], text_of: Callable[[Filing], st
             raise pf.ConflictingNav(f"{fund.ticker} {nav.as_of}: {f.accession} says {nav.nav}, "
                                     f"{kept.accession} says {out.navs[nav.as_of][0]}")
         out.navs.setdefault(nav.as_of, (nav.nav, f))  # newest filing first, so a restated month keeps the newest
-    report = next((f for f in filings if f.form in REPORT_FORMS), None)
+    # a month's distribution is declared before that month ends, so look one month further back than the NAVs
+    for f in (f for f in filings if f.form == "8-K" and f.filed_date >= pf.month_back(since, 1)):
+        try:
+            declared = pf.parse_distributions(text_of(f))
+        except pf.UnreadableDistribution as e:
+            out.unreadable.append((f, str(e)))  # that month stays missing, so returns over it stay null
+            continue
+        for d in declared:
+            if d.month in out.distributions and out.distributions[d.month][0] != d.gross:
+                kept = out.distributions[d.month][2]
+                raise pf.ConflictingDistribution(f"{fund.ticker} {d.month}: {f.accession} says {d.gross}, "
+                                                 f"{kept.accession} says {out.distributions[d.month][0]}")
+            out.distributions.setdefault(d.month, (d.gross, d.record_date, f))
+    report =next((f for f in filings if f.form in REPORT_FORMS), None)
     if report:
         text, url = text_of(report), url_of(fund.cik, report)
         if q := pf.invests_in(fund.ticker, text):
@@ -75,8 +91,17 @@ def store(conn: psycopg.Connection, load: FundLoad) -> int:
          *(load.liquidity or (None, None)), pf.SOURCE))
     new = [(f.ticker, pf.SHARE_CLASS, as_of, nav, fl.form, fl.accession, url_of(f.cik, fl), fl.filed_date, pf.SOURCE)
            for as_of, (nav, fl) in load.navs.items() if as_of not in have]
+    had = {r["month"]: float(r["amount"]) for r in conn.execute(
+        "select month, amount from private_fund_distributions where ticker = %s and share_class = %s",
+        (f.ticker, pf.SHARE_CLASS)).fetchall()}
+    for month, (amount, _, filing) in load.distributions.items():
+        if month in had and had[month] != amount:
+            raise pf.ConflictingDistribution(f"{f.ticker} {month}: stored {had[month]}, {filing.accession} says {amount}")
+    new_dist = [(f.ticker, pf.SHARE_CLASS, month, amount, record, fl.form, fl.accession, url_of(f.cik, fl), fl.filed_date,
+                 pf.SOURCE) for month, (amount, record, fl) in load.distributions.items() if month not in had]
     with conn.cursor() as cur:
         cur.executemany("insert into private_fund_navs values (%s, %s, %s, %s, %s, %s, %s, %s, %s)", new)
+        cur.executemany("insert into private_fund_distributions values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", new_dist)
         cur.executemany("insert into private_fund_filings values (%s, %s, %s, %s, %s) on conflict do nothing",
                         [(f.ticker, fl.accession, fl.form, fl.accepted_at, url_of(f.cik, fl)) for fl in load.links])
     return len(new)
