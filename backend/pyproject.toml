@@ -10,10 +10,14 @@ dependencies = [
     "python-multipart>=0.0.9",
     "httpx>=0.27",
     "python-dotenv>=1.0",
+    "quantstats>=0.0.85",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = [
+    "pytest>=8",
+    "statsmodels>=0.15.0",
+]
 
 [build-system]
 requires = ["hatchling"]

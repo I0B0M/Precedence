@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { SignalResult } from "@/lib/api";
+import type { CompanyDetail, SignalResult } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { useMode } from "@/lib/mode";
+import { CandleChart } from "./CandleChart";
 
 // Trading days per range. "2Y" is everything the API sent (about 528 days).
 const RANGES = [
@@ -18,7 +19,9 @@ type RangeKey = (typeof RANGES)[number]["key"];
 interface Props {
   ticker: string;
   name: string;
-  prices: { day: string; close: number }[];
+  prices: CompanyDetail["prices"];
+  /** saved data only: where the closes and the high/low came from, when it isn't all Alpaca (IEX) */
+  sources?: CompanyDetail["price_sources"];
   signals: SignalResult[];
   /** the signal whose past cases get ticks first (the page's headline signal) */
   initialSignal?: string;
@@ -29,7 +32,7 @@ interface Props {
 /** Chart-first header: one big price, the change in colour, the line, range tabs underneath.
  *  Ticks under the line mark every past case of the chosen signal (filled = it came true), so you can see
  *  where the "Does it matter?" dots come from. Hover or drag to read any day. */
-export function StockChart({ ticker, name, prices, signals, initialSignal, badge, kicker }: Props) {
+export function StockChart({ ticker, name, prices, signals, initialSignal, badge, kicker, sources }: Props) {
   const { mode } = useMode();
   const pro = mode === "pro";
   const box = useRef<HTMLDivElement>(null);
@@ -38,11 +41,15 @@ export function StockChart({ ticker, name, prices, signals, initialSignal, badge
   const withCases = signals.filter((s) => (s.cases?.length ?? 0) > 0 || s.firing);
   const [sig, setSig] = useState<string | null>(initialSignal && withCases.some((s) => s.signal === initialSignal) ? initialSignal : withCases[0]?.signal ?? null);
   const [hover, setHover] = useState<number | null>(null);
+  const [kind, setKind] = useState<"line" | "candles">("line");
+  const hasBars = prices.length > 1 && prices.every((p) => p.high != null && p.low != null);
+  const candles = pro && hasBars && kind === "candles";
 
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setW(Math.max(280, Math.round(e.contentRect.width))));
+    // a hidden plot (candles showing) measures 0 wide: keep the last real width
+    const ro = new ResizeObserver(([e]) => { if (e.contentRect.width > 0) setW(Math.max(280, Math.round(e.contentRect.width))); });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -96,7 +103,10 @@ export function StockChart({ ticker, name, prices, signals, initialSignal, badge
         </p>
       </div>
 
-      <div className="sc-plot" ref={box}
+      {candles && (
+        <CandleChart bars={view} cases={chosen?.cases ?? []} firing={!!chosen?.firing} height={H} mode={mode} onHover={setHover} />
+      )}
+      <div className="sc-plot" ref={box} hidden={candles}
         onPointerMove={(e) => pick(e.clientX)} onPointerDown={(e) => pick(e.clientX)} onPointerLeave={() => setHover(null)}>
         <svg key={range} className="sc-svg" viewBox={`0 0 ${w} ${H}`} width={w} height={H} role="img"
           aria-label={`${ticker} daily closes ${shortDate(first.day)} to ${shortDate(last.day)}: ${money(first.close, true)} to ${money(last.close, true)}, ${pct(rel)}`}>
@@ -133,6 +143,14 @@ export function StockChart({ ticker, name, prices, signals, initialSignal, badge
         ))}
       </div>
 
+      {pro && hasBars && (
+        <div className="sc-chips sc-kind" role="radiogroup" aria-label="Chart type">
+          {(["line", "candles"] as const).map((k) => (
+            <button key={k} role="radio" aria-checked={kind === k} onClick={() => { setKind(k); setHover(null); }}>{k === "line" ? "Line" : "Candles"}</button>
+          ))}
+        </div>
+      )}
+
       {withCases.length > 0 && (
         <div className="sc-events">
           <span className="kicker">Marks under the line</span>
@@ -152,7 +170,10 @@ export function StockChart({ ticker, name, prices, signals, initialSignal, badge
           )}
         </div>
       )}
-      <p className="note">Daily closes {shortDate(first.day)} – {shortDate(last.day)}, from Alpaca (IEX feed).</p>
+      <p className="note">
+        Daily closes {shortDate(first.day)} – {shortDate(last.day)}, from {sources?.close ?? "Alpaca (IEX feed)"}.
+        {candles && ` Candles: open and close from ${sources?.close ?? "Alpaca (IEX feed)"}, high and low from ${sources?.high_low ?? "Alpaca (IEX feed)"}. Marks under the candles: past cases, blue = came true.`}
+      </p>
     </section>
   );
 }

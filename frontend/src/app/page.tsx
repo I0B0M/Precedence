@@ -5,11 +5,14 @@ import { useEffect, useState } from "react";
 import { BadgeKey, LabelTag, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
-import { ApiProblem, Loading } from "@/components/Problem";
+import { OwnMap } from "@/components/OwnMap";
+import { RiskCard } from "@/components/RiskCard";
+import { ApiProblem, isNotFound, Loading } from "@/components/Problem";
 import { StartFlow, TodayFunnel } from "@/components/Today";
-import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
+import { api, SAVED, SAVED_EXAMPLE, SAVED_TICKERS, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
+import { maybeAutoTour, startTour } from "@/lib/tour";
 import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
@@ -33,6 +36,17 @@ export default function HoldingsBoard() {
     api.portfolio(holdings).then(setBoard).catch(setError);
   }, [holdings]);
 
+  // The guided tour: once by itself on a first visit, or when the header's Tour button sent us here (?tour=1).
+  const ready = !!board;
+  useEffect(() => {
+    if (!ready) return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("tour") === "1") {
+      window.history.replaceState(null, "", "/");
+      setTimeout(startTour, 400);
+    } else maybeAutoTour();
+  }, [ready]);
+
   // 30 trading days of closes per row, from the company endpoint (the same prices the company page charts).
   const symbols = board?.exposure.map((e) => e.symbol).join(",") ?? "";
   useEffect(() => {
@@ -41,6 +55,14 @@ export default function HoldingsBoard() {
       .then((pairs) => setSparks(Object.fromEntries(pairs.filter((p) => p !== null))));
   }, [symbols]);
 
+  if (error && SAVED && isNotFound(error)) return (
+    <div className="card problem">
+      <h3>The live demo has one saved portfolio</h3>
+      <p>It runs on real prices and signals saved for {SAVED_TICKERS}. Your own holdings need the full app.</p>
+      <button className="btn small" type="button" style={{ alignSelf: "flex-start" }}
+        onClick={() => { setError(null); setBoard(null); setHoldings(SAVED_EXAMPLE); }}>Open the example portfolio</button>
+    </div>
+  );
   if (error) return <ApiProblem />;
   if (holdings && !holdings.length) return <StartFlow />;
   if (!board) return <Loading what="what you own" />;
@@ -83,6 +105,11 @@ export default function HoldingsBoard() {
       </div>
 
       <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
+
+      <div className="grid2 board-extras">
+        <OwnMap board={board} />
+        {holdings && <RiskCard holdings={holdings} />}
+      </div>
 
       {watching > 0 && <BadgeKey />}
       <div className="rows">
