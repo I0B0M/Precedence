@@ -100,5 +100,24 @@ def test_facts_and_sources_only_never_a_cause(client):
     assert s["rate"]["series"] == "DGS10" and s["market"]["symbol"] == "BRD500"
 
 
+def test_each_insider_sale_links_to_its_form_4_on_sec_gov(client, conn):
+    conn.execute("update companies set cik = 1234567 where ticker = 'HLCN'")
+    conn.execute("update filings set source = 'sec', primary_doc = 'xslF345X06/ownership.xml' "
+                 "where accession = 'SAMPLE-HLCN-4-122'")
+    conn.commit()
+    try:
+        sales = client.get("/api/companies/HLCN").json()["insider_sales"]
+        by_acc = {s["accession"]: s for s in sales}
+        s = by_acc["SAMPLE-HLCN-4-122"]
+        assert s["url"] == "https://www.sec.gov/Archives/edgar/data/1234567/SAMPLEHLCN4122/xslF345X06/ownership.xml"
+        assert s["accepted_at"].startswith("2026-09-23") and s["transaction_date"] == "2026-09-23"
+        assert all(x["url"] is None for a, x in by_acc.items() if a != "SAMPLE-HLCN-4-122")  # sample filings never link
+        assert "primary_doc" not in s and "source" not in s  # join columns stay internal
+    finally:  # a row marked 'sec' would outlive the sample reseed, which only clears 'sample' rows
+        conn.execute("update filings set source = 'sample', primary_doc = 'form4.xml' where accession = 'SAMPLE-HLCN-4-122'")
+        conn.execute("update companies set cik = null where ticker = 'HLCN'")
+        conn.commit()
+
+
 def test_unknown_company_today_is_404(client):
     assert client.get("/api/companies/NOPE/today").status_code == 404
