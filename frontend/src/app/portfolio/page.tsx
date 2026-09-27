@@ -168,18 +168,39 @@ export default function HoldingsBoard() {
       {/* Lite: only what you entered, one row each at its full value, a link to its own page. Pro: the look-through
        *  list too (stocks inside your funds), each still one clean row and one link. */}
       {/* Everything you own in five sections, each with its subtotal: stocks, funds, crypto, real estate, 401(k).
-       *  Pro lists stocks and funds in its look-through list below, so there those two headers stay out. */}
+       *  The same in Lite and Pro; Pro adds the look-through list, the risk card and the treemap below them. */}
       {stocksSum > 0 && (
-        <Section label="Stocks" sum={money(stocksSum)} className="lite-only">
+        <Section label="Stocks" sum={money(stocksSum)}>
           <div className="rows">{board.rows.filter((r) => r.kind !== "etf").map(ownRow)}</div>
         </Section>
       )}
       {(fundsSum > 0 || privateRows.length > 0 || localPrivate > 0) && (
-        <Section label="Funds" sum={money(fundsSum + privateSum)} className={privateRows.length || localPrivate ? undefined : "lite-only"}>
-          <div className="rows lite-only">{board.rows.filter((r) => r.kind === "etf").map(ownRow)}</div>
+        <Section label="Funds" sum={money(fundsSum + privateSum)}>
+          <div className="rows">{board.rows.filter((r) => r.kind === "etf").map(ownRow)}</div>
           <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="private" title={null} />
         </Section>
       )}
+      {other.crypto.length > 0 && (
+        <Section label="Crypto" sum={money(cryptoSum)}>
+          <OtherAssetsRows show="crypto" title={null} />
+        </Section>
+      )}
+      {other.properties.length > 0 && (
+        <Section label="Real estate" sum={(board.subtotals?.home_estimate ?? 0) + localHome ? approxMoney((board.subtotals?.home_estimate ?? 0) + localHome) : "—"}>
+          <OtherAssetsRows show="home" title={null} />
+        </Section>
+      )}
+      {other.retirement.length > 0 && (
+        <Section label="401(k)" sum={money((board.subtotals?.retirement ?? 0) + localRetirement)}>
+          <OtherAssetsRows rows={board.retirement ?? []} show="retirement" title={null} />
+        </Section>
+      )}
+      <OtherAssetsRows show="wallets" />
+
+      {/* Pro: every dollar looked through, stocks inside your funds included, below the five sections. */}
+      <div className="stack pro-only" style={{ gap: 10, marginTop: 22 }}>
+        <div className="pf-sec"><span className="kicker">Looked through</span><span className="pf-sec-sum">{money(board.total)}</span></div>
+      </div>
       <div className="rows pro-only pro-add">
         {board.exposure.map((e) => {
           const kind = kindOf(e.symbol);
@@ -204,22 +225,6 @@ export default function HoldingsBoard() {
         {board.unknown.length > 0 && <p className="badline">No data yet for {board.unknown.join(", ")}.</p>}
       </div>
 
-      {other.crypto.length > 0 && (
-        <Section label="Crypto" sum={money(cryptoSum)}>
-          <OtherAssetsRows show="crypto" title={null} />
-        </Section>
-      )}
-      {other.properties.length > 0 && (
-        <Section label="Real estate" sum={(board.subtotals?.home_estimate ?? 0) + localHome ? approxMoney((board.subtotals?.home_estimate ?? 0) + localHome) : "—"}>
-          <OtherAssetsRows show="home" title={null} />
-        </Section>
-      )}
-      {other.retirement.length > 0 && (
-        <Section label="401(k)" sum={money((board.subtotals?.retirement ?? 0) + localRetirement)}>
-          <OtherAssetsRows rows={board.retirement ?? []} show="retirement" title={null} />
-        </Section>
-      )}
-      <OtherAssetsRows show="wallets" />
 
       {status?.data === "sample" && (
         <div className="row-flex" style={{ marginTop: 20 }}>
