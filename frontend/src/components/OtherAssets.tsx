@@ -43,7 +43,7 @@ export function OtherAssetsForms() {
           Add this home
         </button>
         {homeSaved && <p className="okline">Saved. It shows on your portfolio as &quot;Estimate coming soon&quot;.</p>}
-        <p className="note">Stone doesn&apos;t estimate home values yet, so we keep what you typed and show no value until an estimate with its source and date is ready.</p>
+        <p className="note">Precedence doesn&apos;t estimate home values yet, so we keep what you typed and show no value until an estimate with its source and date is ready.</p>
       </div>
 
       <div className="card">
@@ -88,13 +88,13 @@ export function OtherAssetsForms() {
           Add {coinRows.length > 1 ? `${coinRows.length} coins` : "this coin"}
         </button>
         {coinsSaved && <p className="okline">Saved. It shows on your portfolio as &quot;Price coming soon&quot;.</p>}
-        <p className="note">Stone doesn&apos;t price crypto yet, so we keep what you typed and show no dollar value until it does.</p>
+        <p className="note">Precedence doesn&apos;t price crypto yet, so we keep what you typed and show no dollar value until it does.</p>
       </div>}
     </div>
   );
 }
 
-/** Board: what you added that Stone can't value or test yet. Not counted in the total. */
+/** Board: what you added that Precedence can't value or test yet. Not counted in the total. */
 export function OtherAssetsRows() {
   const all = useOtherAssets();
   const v = SHOW_CRYPTO ? all : { ...all, crypto: [] };
@@ -134,7 +134,7 @@ export function OtherAssetsRows() {
           </div>
         ))}
       </div>
-      <p className="note">Not counted in your total yet. Stone shows a value only when it has an estimate with its source and date.</p>
+      <p className="note">Not counted in your total yet. Precedence shows a value only when it has an estimate with its source and date.</p>
     </div>
   );
 }

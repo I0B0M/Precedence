@@ -21,7 +21,7 @@ function spanWords(span: FundView["filings_span"], fallback: string): string {
   const m = (d: Date) => d.toLocaleDateString("en-US", { month: "short" });
   return `this week (${m(a)} ${a.getDate()}–${m(a) === m(b) ? "" : m(b) + " "}${b.getDate()})`;
 }
-/** A holding row: a link when Stone has a company page for it, plain otherwise. */
+/** A holding row: a link when Precedence has a company page for it, plain otherwise. */
 function WeightRow({ href, children }: { href: string | null; children: React.ReactNode }) {
   return href ? <Link href={href} className="list-row weight-row">{children}</Link> : <div className="list-row weight-row">{children}</div>;
 }
@@ -67,7 +67,7 @@ export default function FundScreen() {
             <h1>{f.name}</h1>
             <StateBadge state={f.fund_state} />
             {fundSignal && <Why signal={fundSignal} scan={scan} what={`${f.symbol} ${fundSignal.lite}`}
-              source="FRED DGS10 rate data · Stone's daily closes" asOf={f.price?.as_of} />}
+              source="FRED DGS10 rate data · our daily closes" asOf={f.price?.as_of} />}
           </div>
         </div>
         {f.price && (
@@ -92,7 +92,7 @@ export default function FundScreen() {
         <div className="box">
           <h3>What&apos;s inside</h3>
           <p className="say-big">{f.note ?? `What's inside ${f.symbol} isn't loaded yet.`}</p>
-          <p className="mute">Shown as one line until Stone has its holdings file.</p>
+          <p className="mute">Shown as one line until Precedence has its holdings file.</p>
         </div>
       ) : (
         <div className="grid2">
@@ -113,9 +113,9 @@ export default function FundScreen() {
               ))}
             </div>
             <p className="note">
-              {more > 0 ? `And ${more} more${f.built_from === "api" ? "" : " that Stone can see"}. ` : ""}
+              {more > 0 ? `And ${more} more${f.built_from === "api" ? "" : " that we can see"}. ` : ""}
               {f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}${source ? `, ${source}` : ""}.` : ""}
-              <span className="pro-only">{unseen > 0.005 ? ` The other ${w(unseen)} of the fund is in companies Stone doesn't track yet.` : ""}</span>
+              <span className="pro-only">{unseen > 0.005 ? ` The other ${w(unseen)} of the fund is in companies Precedence doesn't track yet.` : ""}</span>
             </p>
             {f.heads_up.length > 0 && (
               <p className="watchline"><b>Heads up inside:</b> {f.heads_up.map((h) => h.ticker).join(", ")}.</p>
@@ -131,7 +131,7 @@ export default function FundScreen() {
                     <div className={`bignum ${v != null && v < 0 ? "down" : "up"}`} style={{ fontSize: "clamp(24px, 2.6vw, 34px)" }}>{v == null ? "—" : pct(v, true, 1)}</div>
                     <p className="note">{label}</p>
                     <Why what={`${f.symbol} ${label} change`} rows={[["Change", v == null ? "Not enough history" : `${pct(v, true, 2)} over ${label}`], ["Basis", f.performance.basis]]}
-                      source="Stone's daily closes" asOf={f.performance.as_of} />
+                      source="our daily closes" asOf={f.performance.as_of} />
                   </div>
                 ))}
               </div>
@@ -166,7 +166,7 @@ export default function FundScreen() {
           <div className="row-flex" style={{ justifyContent: "space-between" }}>
             <h3>Top {f.holdings.length} holdings</h3>
             <Why what={`${f.symbol} holdings weights`}
-              rows={[["Weights", "Each holding's share of the fund, from the fund's own holdings file"], ["Stone tracks", `${w(f.looked_through_share)} of the fund`], ["Holdings", `${f.total_holdings_count}${f.built_from === "api" ? " in the fund" : " that Stone can see"}`]]}
+              rows={[["Weights", "Each holding's share of the fund, from the fund's own holdings file"], ["Precedence tracks", `${w(f.looked_through_share)} of the fund`], ["Holdings", `${f.total_holdings_count}${f.built_from === "api" ? " in the fund" : " that we can see"}`]]}
               source={source ?? undefined} asOf={f.holdings_as_of} />
           </div>
           <div className="tscroll">
@@ -176,7 +176,7 @@ export default function FundScreen() {
                 {f.holdings.map((h, i) => (
                   <tr key={h.ticker}>
                     <td className="num">{i + 1}</td>
-                    <td>{h.in_stone ? <Link href={`/company/${h.ticker}`}><b>{h.ticker}</b></Link> : <b>{h.ticker}</b>}<div className="note">{h.name ?? "Not tracked by Stone"}</div></td>
+                    <td>{h.in_stone ? <Link href={`/company/${h.ticker}`}><b>{h.ticker}</b></Link> : <b>{h.ticker}</b>}<div className="note">{h.name ?? "Not tracked by Precedence"}</div></td>
                     <td className="num nowrap">{w(h.weight)}</td>
                     <td><StateBadge state={h.state} /></td>
                     <td>{h.firing.length ? h.firing.map((s) => `${SIGNAL_WORDS[s.signal] ?? s.signal} (${s.label === "NO DATA" ? "not loaded" : s.label})`).join("; ") : <span className="mute">—</span>}</td>
@@ -187,8 +187,8 @@ export default function FundScreen() {
           </div>
           <p className="note">
             Weights from {source ?? "the fund's holdings file"}{f.holdings_as_of ? `, as of ${shortDate(f.holdings_as_of)}` : ""}; {w(f.looked_through_share)} of the fund
-            is in companies Stone tracks. Holdings under 1% of the fund aren&apos;t tested, so they show &quot;Not tested&quot;.
-            {f.built_from === "existing endpoints" && " Built from Stone's portfolio look-through until the fund endpoint ships."}
+            is in companies Precedence tracks. Holdings under 1% of the fund aren&apos;t tested, so they show &quot;Not tested&quot;.
+            {f.built_from === "existing endpoints" && " Built from our portfolio look-through until the fund endpoint ships."}
           </p>
         </div>
       )}

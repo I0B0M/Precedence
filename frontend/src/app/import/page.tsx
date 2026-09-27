@@ -109,11 +109,11 @@ export default function ImportScreen() {
       setCheck(r);
     } catch (e) {
       // The API's own detail already says what went wrong (422 unreadable, 415 not an image, 413 too big, 502/503 reader down).
-      // Only a failure to reach Stone at all gets our own wording.
+      // Only a failure to reach Precedence at all gets our own wording.
       const known = e instanceof ApiError && [413, 415, 422, 502, 503].includes(e.status);
       setNote(known
         ? `${(e as ApiError).message} You can type the rows below instead.`
-        : "Couldn't read that screenshot: Stone can't reach its data right now. Is the server running? You can type the rows below instead.");
+        : "Couldn't read that screenshot: Precedence can't reach its data right now. Is the server running? You can type the rows below instead.");
     } finally {
       setBusy(false);
     }
@@ -182,7 +182,7 @@ export default function ImportScreen() {
       <div className="stack" style={{ gap: 8 }}>
         <span className="ticker">Add an account</span>
         <h1>Bring in what you own</h1>
-        <p className="lede">Stone only reads what you own. It never trades or moves money.</p>
+        <p className="lede">Precedence only reads what you own. It never trades or moves money.</p>
       </div>
 
       {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
@@ -270,12 +270,12 @@ export default function ImportScreen() {
           <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
 
-        {checkErr && <div className="badline">Stone can&apos;t reach its data right now, so it can&apos;t check the rows. Is the server running?</div>}
+        {checkErr && <div className="badline">Precedence can&apos;t reach its data right now, so it can&apos;t check the rows. Is the server running?</div>}
         {priced.length > 0 && (
           <p className="note">Price filled in from the latest close: {priced.map((p) => `${p.symbol}${p.day ? ` (close ${shortDate(p.day)})` : ""}`).join(", ")}.</p>
         )}
         {unpriced.length > 0 && (
-          <p className="badline">Stone has no price for {unpriced.join(", ")}. It follows the S&amp;P 100 and a few funds. Type a price and value for {unpriced.length > 1 ? "them" : "it"}, or remove the row.</p>
+          <p className="badline">Precedence has no price for {unpriced.join(", ")}. It follows the S&amp;P 100 and a few funds. Type a price and value for {unpriced.length > 1 ? "them" : "it"}, or remove the row.</p>
         )}
         {check && !(check.status === "no_total" && unpriced.length > 0) && (typedOk ? (
           <div className="okline">✓ No total to check against, so these rows add up to {money(check.rows_sum)}. Confirm they&apos;re right, then save.</div>

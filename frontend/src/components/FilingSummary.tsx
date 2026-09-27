@@ -46,7 +46,7 @@ export function FilingSummary({ accession }: { accession: string }) {
           {!got ? <p className="note">Reading the filing…</p>
             : got.kind === "soon" ? <p className="mute">Summary coming soon.</p>
             : got.kind === "none" ? <p className="mute">There&apos;s no summary for this filing yet.</p>
-            : got.kind === "down" ? <p className="mute">Stone can&apos;t reach its data right now, so there&apos;s no summary to show.</p>
+            : got.kind === "down" ? <p className="mute">Precedence can&apos;t reach its data right now, so there&apos;s no summary to show.</p>
             : (
               <>
                 <p>{got.s.summary_lite}</p>

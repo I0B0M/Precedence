@@ -12,7 +12,7 @@ export type FundView = FundPage & { built_from: "api" | "existing endpoints" };
 const back = (closes: number[], n: number) => (closes.length > n ? closes[closes.length - 1] / closes[closes.length - 1 - n] - 1 : null);
 
 async function fromExisting(symbol: string): Promise<FundView> {
-  const co = await api.company(symbol); // throws ApiError 404 for a fund Stone doesn't have
+  const co = await api.company(symbol); // throws ApiError 404 for a fund Precedence doesn't have
   const p = await api.portfolio([{ symbol, shares: 1 }]);
   const price = p.rows.find((r) => r.symbol === symbol)?.price ?? co.last?.close ?? 0;
   const fund = p.funds.find((f) => f.symbol === symbol);
@@ -56,7 +56,7 @@ async function fromExisting(symbol: string): Promise<FundView> {
     fund_firing: co.signals.filter((s) => s.firing),
     holdings_as_of: fund?.as_of ?? null,
     holdings_source: fund?.source ?? null,
-    total_holdings_count: inside.length, // only what Stone can see; the page words it that way
+    total_holdings_count: inside.length, // only what Precedence can see; the page words it that way
     looked_through_share: fund?.looked_through ?? 0,
     holdings: inside.slice(0, 25),
     heads_up: inside.filter((h) => h.state === "WATCH").map((h) => ({ ticker: h.ticker, name: h.name ?? h.ticker, weight: h.weight })),

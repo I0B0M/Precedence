@@ -44,7 +44,7 @@ export function useToday(symbols: string[]) {
   return got?.key === key ? got.t : null;
 }
 
-/** The start screen's big number: what landed in Stone's data on the last trading day. Nothing shown if the API has nothing. */
+/** The start screen's big number: what landed in our data on the last trading day. Nothing shown if the API has nothing. */
 export function TodayMarket({ t }: { t: Today }) {
   const f = t.market.filings, r = t.market.rate;
   const n = f.count + (r ? 1 : 0);
@@ -77,7 +77,7 @@ export function TodayMarket({ t }: { t: Today }) {
       <p className="lede" style={{ color: "var(--text)" }}>new filings and rate moves on {shortDate(t.day)}.</p>
       <p className="pro-only">{marketWords(t)}.</p>
       <p className="note">
-        Filings from {SOURCES[f.source] ?? f.source} for the companies Stone tracks
+        Filings from {SOURCES[f.source] ?? f.source} for the companies Precedence tracks
         {r ? `; 10-year Treasury rate ${r.value.toFixed(2)}% on ${shortDate(r.day)}, from ${SOURCES[r.source] ?? r.source}` : ""}.
       </p>
     </div>
@@ -142,7 +142,7 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
     const mine = w && h.week_filings ? h.week_filings : h.filings;
     const all = w ? w.filings.count + (w.rate?.jumps.length ?? 0) : t.market.filings.count + (t.market.rate ? 1 : 0);
     const out: (Stage | null)[] = [
-      { n: all, label: w ? `new this week (${span(w.start, w.end)}) across the companies Stone follows` : `new in Stone's data for ${shortDate(t.day)}` },
+      { n: all, label: w ? `new this week (${span(w.start, w.end)}) across the companies Precedence follows` : `new in our data for ${shortDate(t.day)}` },
       mine && h.signals ? { n: mine.count + h.signals.firing, label: `about what you own: ${plural(mine.count, "SEC filing")} and ${plural(h.signals.firing, "signal")} firing` } : null,
       h.signals ? { n: h.signals.strong_firing, label: `${h.signals.strong_firing === 1 ? "has" : "have"} mattered before for your holdings` } : null,
     ];
@@ -174,7 +174,7 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
             ["Firing now", h.signals.items.map((i) => `${i.symbol} ${SIGNAL_WORDS[i.signal] ?? i.signal} (${i.label})`).join(", ") || "none"],
             ["Rule", "STRONG only when the whole 90% range beats the stock's normal rate"],
           ]}
-          source="Stone's signal engine on prices, SEC filings and FRED" asOf={h.signals.as_of ?? t.day} />
+          source="our signal engine on prices, SEC filings and FRED" asOf={h.signals.as_of ?? t.day} />
       </p>
       {top && <p className="lite-only note">{filingRow(top)}</p>}
       {mine.items.length > 0 && (
@@ -184,7 +184,7 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
       )}
       <p className="note pro-only">
         {w ? `This week: ${filingWords(w.filings, false)}${w.rate?.jumps.length ? ` and ${plural(w.rate.jumps.length, "interest-rate jump")}` : ""}. ` : `${marketWords(t, false)}. `}
-        Filings from SEC EDGAR; signals from Stone&apos;s engine on prices, SEC filings and FRED, as of {shortDate(h.signals.as_of ?? t.day)}.
+        Filings from SEC EDGAR; signals from our engine on prices, SEC filings and FRED, as of {shortDate(h.signals.as_of ?? t.day)}.
         {h.signals.items.length > 0 && <> Firing: {h.signals.items.map((i) => `${i.symbol} (${i.label})`).join(", ")}.</>}
       </p>
     </div>

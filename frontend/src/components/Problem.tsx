@@ -17,7 +17,7 @@ export function Loading({ what }: { what: string }) {
   return (
     <div className="loading" role="status" aria-live="polite">
       <span className="pulse" aria-hidden />
-      <span>{slow ? `Still waiting for Stone's data (${what})…` : `Loading ${what}…`}</span>
+      <span>{slow ? `Still waiting for our data (${what})…` : `Loading ${what}…`}</span>
     </div>
   );
 }
@@ -26,19 +26,19 @@ export function Loading({ what }: { what: string }) {
 export function ApiProblem() {
   return (
     <div className="card problem" role="alert">
-      <h3>Can&apos;t reach Stone&apos;s data</h3>
-      <p>Stone can&apos;t reach its data right now. Is the server running?</p>
+      <h3>Can&apos;t reach our data</h3>
+      <p>Precedence can&apos;t reach its data right now. Is the server running?</p>
       <button className="btn small" type="button" onClick={() => window.location.reload()} style={{ alignSelf: "flex-start" }}>Try again</button>
     </div>
   );
 }
 
-/** /company/XYZ for a ticker Stone doesn't have. */
+/** /company/XYZ for a ticker Precedence doesn't have. */
 export function NotFollowed({ ticker }: { ticker: string }) {
   return (
     <div className="card problem">
       <h3>We don&apos;t follow {ticker} yet</h3>
-      <p>Stone has filings, prices and signals for the S&amp;P 100 companies and a few funds. {ticker} isn&apos;t one of them yet.</p>
+      <p>Precedence has filings, prices and signals for the S&amp;P 100 companies and a few funds. {ticker} isn&apos;t one of them yet.</p>
       <div className="row-flex">
         <Link className="btn small" href="/portfolio">Back to your portfolio</Link>
         <Link className="btn light small" href="/signals">Signals</Link>

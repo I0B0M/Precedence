@@ -41,7 +41,7 @@ export function Why({ signal: s, scan, source, asOf, filings, rows, what }: WhyP
     }
   }
   if (scan && scan.strong_fdr10 != null) {
-    lines.push(["Correction", `Across all ${scan.tested} stock-signal tests (${shortDate(scan.as_of)}), ${scan.strong_fdr10} of ${scan.strong} STRONG results survive a 10% false-discovery correction. Stone doesn't report this per signal yet.`]);
+    lines.push(["Correction", `Across all ${scan.tested} stock-signal tests (${shortDate(scan.as_of)}), ${scan.strong_fdr10} of ${scan.strong} STRONG results survive a 10% false-discovery correction. Precedence doesn't report this per signal yet.`]);
   }
   for (const r of rows ?? []) lines.push(r);
   if (source || asOf) lines.push(["Source", [source, asOf ? `as of ${shortDate(asOf)}` : null].filter(Boolean).join(", ")]);
