@@ -122,19 +122,11 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
   transition: background-color 0.25s var(--ease), border-color 0.2s var(--ease-out);
 }
 .top.scrolled { border-bottom-color: var(--sep); }
-.logo-link { text-decoration: none; color: inherit; }
+.logo-link { text-decoration: none; color: inherit; min-height: 44px; gap: 8px; }
+.brand-castle { color: var(--gold); display: inline-flex; }
 .brand .logo { letter-spacing: -0.035em; }
-/* The castle is the Lite/Pro switch: 44px hit area, the mark in the accent colour. */
-.csw {
-  flex: none; width: 44px; min-width: 44px; height: 44px; margin: -10px -6px -10px -10px; padding: 0; border: 0; background: none; cursor: pointer;
-  display: grid; place-items: center; color: var(--gold); border-radius: 10px;
-  transition: transform 0.2s var(--ease-out), background-color 0.2s var(--ease-out);
-}
-.csw:hover { background: var(--accent-tint); }
-.csw:active { transform: scale(0.92); }
 .castle { display: block; }
 .brand { align-items: center; }
-@media (max-width: 900px) { .modetag { display: none; } }
 .top-end { display: flex; align-items: center; gap: 12px; }
 .menu-btn { display: none; width: 44px; height: 44px; border: 0; background: none; cursor: pointer; place-items: center; padding: 0; }
 .burger, .burger::before, .burger::after { display: block; width: 20px; height: 2px; background: var(--text); border-radius: 1px; transition: transform 0.3s var(--ease-out), opacity 0.2s var(--ease-out); }
@@ -165,7 +157,7 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
 .menu-end .seg { align-self: flex-start; }
 @media (max-width: 900px) {
   .top { grid-template-columns: 1fr auto; }
-  .top > .nav, .top-end > .seg { display: none; }
+  .top > .nav { display: none; }
   .menu-btn { display: grid; }
   .menu { display: flex; }
   .menu:not([data-open="true"]) { pointer-events: none; visibility: hidden; transition: opacity 0.3s var(--ease-out), visibility 0s linear 0.3s; }
@@ -184,9 +176,8 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
 .osw:hover { transform: scale(1.06); }
 .osw:active { transform: scale(0.94); }
 .osw[aria-checked="true"] { background: var(--accent); }
-.modetag { font-size: 12px; color: var(--text-2); white-space: nowrap; }
 .nav { display: flex; gap: 4px 22px; flex-wrap: wrap; justify-content: flex-end; }
-.nav a { text-decoration: none; font-size: 14px; letter-spacing: -0.01em; color: var(--text-2); padding: 6px 0; transition: color 0.2s var(--ease); }
+.nav a { text-decoration: none; font-size: 14px; letter-spacing: -0.01em; color: var(--text-2); padding: 0; min-height: 44px; min-width: 44px; justify-content: center; display: inline-flex; align-items: center; transition: color 0.2s var(--ease); }
 .nav a:hover { color: var(--gold); }
 .nav a[aria-current="page"] { color: var(--gold); font-weight: 600; }
 
@@ -200,8 +191,12 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
 .seg[data-value="pro"]::before { transform: translateX(100%); }
 .seg button {
   position: relative; border: 0; background: none; cursor: pointer; border-radius: 999px;
-  font-size: 13px; font-weight: 600; padding: 5px 16px; min-width: 56px; color: var(--text); transition: color 0.2s var(--ease);
+  font-size: 13px; font-weight: 600; padding: 0 14px; min-width: 56px; min-height: 44px; color: var(--text); transition: color 0.2s var(--ease);
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
 }
+.btn, .btn.small { min-height: 44px; }
+/* Phone: the pill stays in the header; Add account moves into the menu so the row fits 360px. */
+@media (max-width: 640px) { .top-end .top-add { display: none; } .seg button { padding: 0 10px; min-width: 0; } }
 .seg button[aria-pressed="true"] { color: var(--bg); }
 
 .ticker { font-family: var(--font); font-weight: 600; font-size: clamp(18px, 2.2vw, 24px); letter-spacing: 0.03em; text-transform: uppercase; color: var(--text); line-height: 1.1; }
@@ -227,7 +222,7 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
 .btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; transform: none; }
 .linkb {
   background: none; border: 0; padding: 0; color: var(--text-2); cursor: pointer; text-decoration: none;
-  font-size: 15px; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 15px; display: inline-flex; align-items: center; gap: 4px; min-height: 44px;
 }
 .linkb:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 
@@ -646,7 +641,6 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
 /* Phone: every tap target at least 44px, without changing how tables lay out. */
 @media (max-width: 640px) {
   .nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0; }
-  .seg button { min-height: 44px; padding: 8px 18px; }
   .seg { padding: 2px; }
   .btn, .btn.small { min-height: 44px; }
   .linkb { min-height: 44px; }
@@ -665,4 +659,4 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
 
 /* Phone: Epilogue is wider than the old face, so the wordmark steps down to clear the Add account pill (to 360px). */
 @media (max-width: 480px) { .logo { font-size: 21px; } }
-@media (max-width: 380px) { .logo { font-size: 19px; } }
+@media (max-width: 380px) { .logo { font-size: 19px; } .logo-link { gap: 6px; } .seg button { padding: 0 8px; font-size: 12px; gap: 4px; } }

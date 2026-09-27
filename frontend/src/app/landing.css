@@ -38,6 +38,7 @@
 .lp-btn-accent { background: var(--c-accent); color: var(--c-ink); }
 .lp-btn-ink { background: var(--c-ink); border-color: var(--c-ink); color: var(--c-white); }
 .lp-u { text-decoration: underline; text-underline-offset: 2px; }
+.lp-tap { display: inline-block; padding: 13px 0; margin: -13px 0; }   /* a 44px tap area without moving the line */
 .lp-u:hover, .lp-tlink:hover { opacity: 0.5; }
 
 /* announce */
@@ -137,6 +138,7 @@
   .lp-learn-card { width: 100%; }
   .lp-hero-col { width: auto; margin: 0 19px; text-align: center; align-items: center; }
   .lp-hero-col .lp-pill { align-self: center; }
+  .lp-hero-ctas { justify-content: center; }
 }
 @media (max-width: 550px) {
   .lp-hero-wrap { height: 700px; }

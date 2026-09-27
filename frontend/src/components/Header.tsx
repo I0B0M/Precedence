@@ -16,7 +16,7 @@ const isCurrent = (path: string, l: (typeof NAV)[number]) => [l.href, ...l.also]
 
 /** Sticky header: gains a hairline once the page scrolls. On a phone the links fold into a full-screen menu. */
 export function Header() {
-  const { mode, toggle, set } = useMode();
+  const { mode, set } = useMode();
   const path = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState<string | null>(null); // the path the menu was opened on
@@ -39,21 +39,16 @@ export function Header() {
   const seg = (
     <div className="seg" role="group" aria-label="Mode" data-value={mode}>
       {MODES.map((m) => (
-        <button key={m.value} type="button" aria-pressed={mode === m.value} onClick={() => set(m.value)}>{m.label}</button>
+        <button key={m.value} type="button" aria-pressed={mode === m.value} onClick={() => set(m.value)}><Castle size={14} />{m.label}</button>
       ))}
     </div>
   );
 
   return (
     <header className={`top${scrolled ? " scrolled" : ""}`}>
+      {/* The mark and the wordmark go home. Lite/Pro is the one pill on the right, on every screen size. */}
       <div className="brand">
-        {/* The castle is the switch: tap it to flip between Lite and Pro. The wordmark goes home. */}
-        <button className="csw" type="button" role="switch" onClick={toggle} aria-checked={mode === "pro"}
-          aria-label="Switch between Lite and Pro" title={mode === "pro" ? "Tap the castle for Lite" : "Tap the castle for Pro"}>
-          <Castle size={26} />
-        </button>
-        <Link href="/" className="logo logo-link">Precedence</Link>
-        <span className="modetag">{mode === "pro" ? "Pro · tap the castle for Lite" : "Lite · tap the castle for Pro"}</span>
+        <Link href="/" className="logo logo-link"><span className="brand-castle"><Castle size={26} /></span>Precedence</Link>
       </div>
       <nav className="nav" aria-label="Main">
         {NAV.map((l) => (
@@ -77,7 +72,7 @@ export function Header() {
           ))}
         </nav>
         <div className="menu-end">
-          {seg}
+          <Link className="btn" href="/import">Add account</Link>
         </div>
       </div>
     </header>

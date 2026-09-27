@@ -50,8 +50,8 @@ export default function Landing() {
         <div className="lp-hero-col">
           <Lockup word="for everyday investors" />
           <h1 className="lp-hero-title">See what&rsquo;s happening to what you own</h1>
-          <p className="lp-hero-text">And whether that kind of news has ever mattered for that stock. It doesn&rsquo;t predict. <Link className="lp-u" href="/learn">How we check</Link></p>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <p className="lp-hero-text">And whether that kind of news has ever mattered for that stock. It doesn&rsquo;t predict. <Link className="lp-u lp-tap" href="/learn">How we check</Link></p>
+          <div className="lp-hero-ctas" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Link className="lp-pill lp-btn-accent" href="/import?example=1"><span>Try it with an example</span></Link>
             <Link className="lp-pill lp-btn-outline" href="/import"><span>Add your account</span></Link>
           </div>
