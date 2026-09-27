@@ -99,3 +99,7 @@ _Avoid_: mock data, fixtures (those are the database export the saved data is bu
 **Example portfolio**:
 The holdings the home page shows and /import?example=1 fills in; with saved data, the one portfolio that was saved.
 _Avoid_: sample portfolio (that's the fictional HLCN/MRDN set in sample mode), demo portfolio
+
+**Portfolio key**:
+The name a portfolio's saved answers and briefing go by: each holding as typed, upper case, sorted by symbol, "SYMBOL-shares" joined by "_" (`AAPL-10_SPY-5`), shares written as JavaScript writes a number. `holdings_key` in `stone/portfolio/holdings.py` and `savedKey` in `lib/api.ts` must agree.
+_Avoid_: portfolio id, hash

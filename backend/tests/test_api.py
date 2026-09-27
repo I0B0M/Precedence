@@ -530,11 +530,21 @@ def test_an_etf_that_tracks_the_same_index_reuses_that_funds_holdings(client, mo
 
 
 def test_a_renamed_ticker_is_valued_under_its_current_symbol(client, monkeypatch):
-    import stone.api.main as m
-    monkeypatch.setattr(m, "RENAMED", {"OLDH": "HLCN"})  # like SPLG -> SPYM on 2025-10-31
+    import stone.portfolio.holdings as h
+    monkeypatch.setattr(h, "RENAMED", {"OLDH": "HLCN"})  # like SPLG -> SPYM on 2025-10-31
     body = client.post("/api/portfolio", json={"holdings": [{"symbol": "oldh", "shares": 1}]}).json()
     [row] = body["rows"]
     assert row["symbol"] == "HLCN" and row["renamed_from"] == "OLDH" and body["unknown"] == []
+
+
+def test_the_risk_card_values_a_renamed_ticker_like_the_board(client, monkeypatch):
+    import stone.portfolio.holdings as h
+    monkeypatch.setattr(h, "RENAMED", {"OLDH": "HLCN"})
+    holdings = [{"symbol": "oldh", "shares": 10}, {"symbol": "ORCA", "shares": 5}]
+    board = client.post("/api/portfolio", json={"holdings": holdings}).json()
+    risk = client.post("/api/portfolio/risk", json={"holdings": holdings}).json()
+    assert risk["unknown"] == [] and risk["symbols"] == ["HLCN", "ORCA"]
+    assert risk["total"] == pytest.approx(board["total"])
 
 
 def test_fund_lookup_endpoint(client):

@@ -28,6 +28,7 @@ from stone import saved
 from stone.briefing import saved as saved_briefings
 from stone.api.main import FUND_TOP, PERFORMANCE_BASIS, return_over, risk_json
 from stone.config import REPO_DIR
+from stone.portfolio.holdings import Holding, holdings_key
 from stone.portfolio.risk import BASIS as RISK_BASIS
 from stone.portfolio.risk import portfolio_risk
 from stone.signals import engine
@@ -47,11 +48,6 @@ def write(path: str, data) -> None:
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text(json.dumps(data, separators=(",", ":")))
     print(f"wrote {f.relative_to(REPO_DIR)}")
-
-
-def holdings_key(holdings: list[dict]) -> str:
-    """Same key as savedKey() in frontend/src/lib/api.ts: symbols sorted, 'SYM-shares' joined by '_'."""
-    return "_".join(f"{h['symbol'].upper()}-{h['shares']:g}" for h in sorted(holdings, key=lambda h: h["symbol"].upper()))
 
 
 board = fixture("holdings.json")
@@ -218,7 +214,7 @@ write("market/rate_jump", market)
 write("scan", {"run_at": "2026-09-26T19:27:00-04:00", "stocks": 103, "tested": 309, "eligible": 115, "strong": 11,
                "strong_held_up": 0, "strong_fdr10": 0, "expected_by_chance": 5.75, "as_of": "2026-09-25"})
 
-key = holdings_key(request["holdings"])
+key = holdings_key(Holding(h["symbol"], h["shares"]) for h in request["holdings"])
 write(f"portfolio/{key}", response)
 
 # ---- risk card for the saved board: stocks on their fixture closes (IEX), SPY on Yahoo's

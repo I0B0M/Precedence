@@ -501,9 +501,9 @@ export class ApiError extends Error {
 export const SAVED = process.env.NEXT_PUBLIC_STONE_SAVED === "1";
 
 const ticker = (s: string) => s.trim().toUpperCase();
-const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0); // Python's sorted() order, as build_saved.py
+const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0); // Python's sorted() order, as holdings_key
 
-/** Same key as holdings_key() in build_saved.py: symbols sorted, "SYM-shares" joined by "_". */
+/** The Portfolio key, same as holdings_key() in backend/stone/portfolio/holdings.py: symbols sorted, "SYM-shares" joined by "_". */
 export const savedKey = (holdings: Holding[]) =>
   holdings.map((h) => ({ s: ticker(h.symbol), n: h.shares })).sort((a, b) => byText(a.s, b.s)).map((h) => `${h.s}-${h.n}`).join("_");
 

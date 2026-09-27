@@ -51,6 +51,13 @@ def test_portfolio_briefing_names_every_heads_up(client):
     assert all(name in body["lines"][1]["text"] for name in watch) or not watch
 
 
+def test_the_portfolio_key_prints_shares_like_the_frontend(client):
+    """savedKey() in lib/api.ts writes shares as JavaScript prints a number: every digit, no trailing .0."""
+    holdings = [{"symbol": " orca", "shares": 3.1415926}, {"symbol": "HLCN", "shares": 10.0}]
+    body = client.post("/api/briefing/portfolio", json={"holdings": holdings}).json()
+    assert body["key"] == "HLCN-10_ORCA-3.1415926"
+
+
 def test_the_briefing_says_precedence_never_stone(client):
     """The product is Precedence on screen and the briefing is read aloud; `stone` is only the code's package name."""
     import json

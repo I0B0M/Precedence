@@ -22,9 +22,10 @@ from stone.names import display_name
 from stone.briefing.panel import briefing_json, company_briefing, portfolio_briefing
 from stone.config import NotConnected
 from stone.figures import check_figures, html_to_text
-from stone.ingest.tickers import HOLDINGS_FROM, RENAMED
+from stone.ingest.tickers import HOLDINGS_FROM
 from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
+from stone.portfolio.holdings import Holding, holdings_key, last_two_closes, price_holdings
 from stone.portfolio.risk import BASIS as RISK_BASIS
 from stone.portfolio.risk import portfolio_risk
 from stone.signals import engine, service
@@ -107,15 +108,6 @@ def nport_note(as_of, source: str | None) -> str | None:
 
 def state_of(results: list[engine.Result] | None) -> str | None:
     return engine.holding_state(results) if results is not None else None
-
-
-def last_two_closes(c: psycopg.Connection, ticker: str) -> tuple[dict | None, float | None]:
-    rows = c.execute("select day, close from prices_daily where ticker = %s order by day desc limit 2",
-                     (ticker,)).fetchall()
-    if not rows:
-        return None, None
-    change = float(rows[0]["close"]) / float(rows[1]["close"]) - 1 if len(rows) == 2 else None
-    return rows[0], change
 
 
 @app.get("/api/status")
@@ -591,6 +583,9 @@ class PortfolioIn(BaseModel):
     holdings: list[HoldingIn]
     other: list[OtherIn] = []
 
+    def held(self) -> list[Holding]:
+        return [Holding(h.symbol, h.shares) for h in self.holdings]
+
 
 def fund_weights(c: psycopg.Connection, etf: str, known: dict) -> tuple[dict[str, float], dict]:
     """The fund's latest holdings, only stocks we have data for (the rest stays as the fund itself).
@@ -609,21 +604,13 @@ def fund_weights(c: psycopg.Connection, etf: str, known: dict) -> tuple[dict[str
 @app.post("/api/portfolio")
 def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
     known = {r["ticker"]: r for r in c.execute("select * from companies").fetchall()}
-    rows, values, unknown = [], {}, []
-    for h in body.holdings:
-        typed = h.symbol.strip().upper()
-        sym = RENAMED.get(typed, typed)  # an old ticker a statement may still print (SPLG -> SPYM)
-        last, change = last_two_closes(c, sym) if sym in known else (None, None)
-        if not last:
-            unknown.append(typed)
-            continue
-        value = h.shares * float(last["close"])
-        values[sym] = values.get(sym, 0.0) + value
-        rows.append({"symbol": sym, **named(sym, known[sym]["name"]), "kind": known[sym]["kind"], "shares": h.shares,
-                     "price": float(last["close"]), "value": value, "change": change, "day": last["day"],
-                     "renamed_from": typed if typed != sym else None})
+    priced = price_holdings(c, body.held(), known)
+    rows = [{"symbol": p.symbol, **named(p.symbol, known[p.symbol]["name"]), "kind": known[p.symbol]["kind"],
+             "shares": p.shares, "price": p.price, "value": p.value, "change": p.change,
+             "renamed_from": p.renamed_from} for p in priced.holdings]
+    values = priced.values  # a fresh dict: 401(k) / IRA funds that stand in for a fund join it below
 
-    investments = sum(values.values())
+    investments = priced.total
     etfs = [s for s in values if known[s]["kind"] == "etf"]
     weights: dict[str, dict[str, float]] = {}
     funds = []
@@ -691,11 +678,11 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
         if r["ticker"] in same_index:
             r["state"] = by_symbol[r["ticker"]]["state"] if r["ticker"] in by_symbol else None
             r["note"] = f"Same index as {r['behaves_like']}, so {r['behaves_like']}'s test applies."
-    price_as_of = max((r.pop("day") for r in rows), default=None)  # the close the values are priced at
+    price_as_of = priced.price_as_of  # the close the values are priced at
     retirement_total = sum(r["amount"] for r in retirement_rows)
     home_estimate = sum(p["estimate"] for p in properties)
     private_total = sum(r["amount"] for r in private_rows)
-    return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds,
+    return {"total": total, "rows": rows, "exposure": exposure, "unknown": priced.unknown, "funds": funds,
             "price_as_of": price_as_of.isoformat() if price_as_of else None,
             "retirement": retirement_rows, "properties": properties, "private_funds": private_rows,
             "subtotals": {"investments": investments, "retirement": retirement_total, "home_estimate": home_estimate,
@@ -776,24 +763,17 @@ def risk_json(r, total: float | None = None) -> dict:
 def portfolio_risk_card(body: PortfolioIn, c: psycopg.Connection = Conn):
     """How bumpy this mix has been over Stone's price history, next to the market. Computed with QuantStats."""
     known = {r["ticker"] for r in c.execute("select ticker from companies").fetchall()}
-    values: dict[str, float] = {}
-    unknown = []
-    for h in body.holdings:
-        sym = h.symbol.strip().upper()
-        last, _ = last_two_closes(c, sym) if sym in known else (None, None)
-        if not last:
-            unknown.append(sym)
-            continue
-        values[sym] = values.get(sym, 0.0) + h.shares * float(last["close"])
+    priced = price_holdings(c, body.held(), known)
+    values = priced.values
     market_symbol, _ = service.load_market(c)
     closes = {s: [(b.day, b.close) for b in service.load_bars(c, s)] for s in {*values, market_symbol}}
     got = portfolio_risk(closes, values, market_symbol)
     if got is None:
         raise HTTPException(422, "Not enough shared price history for these holdings.")
     mine, market, rets = got
-    total = sum(values.values())
+    total = priced.total
     return {
-        "total": total, "symbols": sorted(values), "unknown": unknown, "market_symbol": market_symbol,
+        "total": total, "symbols": sorted(values), "unknown": priced.unknown, "market_symbol": market_symbol,
         "start": rets.index.min().date().isoformat(), "end": rets.index.max().date().isoformat(), "days": len(rets),
         "portfolio": risk_json(mine, total), "market": risk_json(market),
         "basis": RISK_BASIS, "source": "QuantStats on Precedence's daily closes (Alpaca, IEX feed)",
@@ -934,6 +914,4 @@ def briefing_portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
     except HTTPException:
         risk = None  # too little shared history: the risk expert just has nothing to say
     companies = {r["symbol"]: company(r["symbol"], c) for r in board["rows"]}
-    key = "_".join(f"{h.symbol.strip().upper()}-{h.shares:g}"
-                   for h in sorted(body.holdings, key=lambda h: h.symbol.strip().upper()))
-    return briefing_json(portfolio_briefing(board, companies, market_rate_jump(c), risk, key))
+    return briefing_json(portfolio_briefing(board, companies, market_rate_jump(c), risk, holdings_key(body.held())))

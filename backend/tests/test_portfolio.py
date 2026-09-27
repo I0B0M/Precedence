@@ -110,3 +110,30 @@ def test_board_rows_always_add_up_to_what_you_hold():
     rows = board_rows(values, weights)
     assert sum(r.shown for r in rows.values()) == pytest.approx(sum(values.values()))
     assert "B" not in rows and rows["F1"].children["B"] == pytest.approx(16) and rows["F2"].children["B"] == pytest.approx(2)
+
+
+from stone.portfolio.holdings import Holding, holdings_key  # noqa: E402
+
+
+def test_holdings_key_is_symbols_as_typed_sorted_with_their_shares():
+    assert holdings_key([Holding("orca", 5), Holding(" HLCN ", 10), Holding("brd500", 2)]) == "BRD500-2_HLCN-10_ORCA-5"
+    assert holdings_key([]) == ""
+
+
+@pytest.mark.parametrize("shares, js", [
+    (10, "10"), (10.0, "10"), (0.5, "0.5"), (3.1415926, "3.1415926"), (1234567.0, "1234567"),
+    (0.000001, "0.000001"), (0.00005, "0.00005"), (1e-7, "1e-7"), (1.5e-7, "1.5e-7"),
+    (1e20, "100000000000000000000"), (1e21, "1e+21"), (1.25e22, "1.25e+22"), (0, "0"), (-2.5, "-2.5"),
+])
+def test_the_key_writes_shares_as_javascript_does(shares, js):
+    """What String(n) gives in JavaScript, as savedKey() in lib/api.ts writes it."""
+    assert holdings_key([Holding("X", shares)]) == f"X-{js}"
+
+
+def test_the_saved_example_is_saved_under_its_holdings_key():
+    """build_saved.py names the example's files with holdings_key; the frontend asks for savedKey (api.test.ts)."""
+    import json
+    from stone.config import REPO_DIR
+    request = json.loads((REPO_DIR / "frontend" / "fixtures" / "holdings.json").read_text())["data"]["request"]
+    index = json.loads((REPO_DIR / "frontend" / "public" / "saved" / "index.json").read_text())
+    assert holdings_key(Holding(h["symbol"], h["shares"]) for h in request["holdings"]) == index["example_key"]
