@@ -6,7 +6,7 @@ import { api, type Scan, type Today } from "@/lib/api";
 import { Why } from "@/components/Why";
 import { useMode } from "@/lib/mode";
 import { shortDate } from "@/lib/format";
-import { SHOW_CRYPTO } from "@/lib/flags";
+import { COMING_NEXT, SHOW_CONNECT, SHOW_CRYPTO, SHOW_SCREENSHOT } from "@/lib/flags";
 import { FORM_WORDS, SIGNAL_WORDS } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
@@ -244,20 +244,34 @@ export function StartFlow() {
                 {notCovered.map((k) => OWN.find((o) => o.key === k)?.label).join(" and ")} {notCovered.length > 1 ? "aren't" : "isn't"} covered yet.
               </p>
             )}
+            {/* Only paths that work tonight; the ones waiting on keys are one quiet line under them. */}
             <div className="list">
               <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Connect Robinhood{SHOW_CRYPTO ? " or Binance" : ""}</b><span className="note" style={{ display: "block" }}>Read-only</span></span>
-                <button className="btn light small" type="button" disabled>Coming soon</button>
-              </div>
-              <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app</span></span>
-                <Link className="btn small" href="/import">Add a screenshot</Link>
+                <span><b>Try an example</b><span className="note" style={{ display: "block" }}>Real prices, not saved</span></span>
+                <Link className="btn small" href="/import?example=1">Try an example</Link>
               </div>
               <div className="list-row" style={{ alignItems: "center" }}>
                 <span><b>Type them in</b><span className="note" style={{ display: "block" }}>Ticker and shares</span></span>
                 <Link className="btn light small" href="/import">Type them in</Link>
               </div>
+              <div className="list-row" style={{ alignItems: "center" }}>
+                <span><b>A home or 401(k)</b><span className="note" style={{ display: "block" }}>Address or fund name</span></span>
+                <Link className="btn light small" href="/import#other">Add one</Link>
+              </div>
+              {SHOW_SCREENSHOT && (
+                <div className="list-row" style={{ alignItems: "center" }}>
+                  <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app</span></span>
+                  <Link className="btn light small" href="/import">Add a screenshot</Link>
+                </div>
+              )}
+              {SHOW_CONNECT && (
+                <div className="list-row" style={{ alignItems: "center" }}>
+                  <span><b>Connect Robinhood{SHOW_CRYPTO ? " or Binance" : ""}</b><span className="note" style={{ display: "block" }}>Read-only</span></span>
+                  <Link className="btn light small" href="/import">Connect</Link>
+                </div>
+              )}
             </div>
+            {!(SHOW_CONNECT && SHOW_SCREENSHOT) && <p className="note">{COMING_NEXT}</p>}
             <button className="linkb" type="button" onClick={() => setStep(1)}>‹ Back</button>
           </>
         )}
