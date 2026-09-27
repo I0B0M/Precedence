@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, ApiError, type FilingSummary as FilingSummaryData } from "@/lib/api";
 import { shortDate } from "@/lib/format";
 
@@ -17,6 +17,14 @@ async function fetchSummary(accession: string): Promise<Got> {
   }
 }
 
+// Asked once per page load: does the summary service answer at all? A 503 means it isn't connected (no key),
+// so no filing shows a button that could only say "not available". Summaries are cached by the API, so this is cheap.
+let service: Promise<boolean> | null = null;
+function serviceOn(accession: string): Promise<boolean> {
+  service ??= api.filingSummary(accession).then(() => true, (e) => !(e instanceof ApiError && e.status === 503));
+  return service;
+}
+
 const bigNum = (v: number | null) => {
   if (v == null) return "—";
   const a = Math.abs(v);
@@ -24,10 +32,16 @@ const bigNum = (v: number | null) => {
   return (v < 0 ? "−$" : "$") + s;
 };
 
-/** "Read it in plain words" for one filing: Gemini's summary, with each figure checked against the SEC's XBRL numbers. */
+/** "Read it in plain words" for one filing (hidden while the summary service is off): Gemini's summary, with each figure checked against the SEC's XBRL numbers. */
 export function FilingSummary({ accession }: { accession: string }) {
   const [open, setOpen] = useState(false);
   const [got, setGot] = useState<Got | null>(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    let live = true;
+    serviceOn(accession).then((v) => live && setOn(v));
+    return () => { live = false; };
+  }, [accession]);
 
   function toggle() {
     const next = !open;
@@ -35,6 +49,7 @@ export function FilingSummary({ accession }: { accession: string }) {
     if (next && !got) fetchSummary(accession).then(setGot);
   }
 
+  if (!on) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
       <button type="button" className="linkb" aria-expanded={open} onClick={toggle}>
@@ -45,8 +60,8 @@ export function FilingSummary({ accession }: { accession: string }) {
           style={{ border: "1.5px dashed var(--edge-c)", borderRadius: "var(--r-ctl)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
           {!got ? <p className="note">Reading the filing…</p>
             : got.kind === "soon" ? <p className="mute">Summary coming soon.</p>
-            : got.kind === "none" ? <p className="mute">There&apos;s no summary for this filing yet.</p>
-            : got.kind === "down" ? <p className="mute">Precedence can&apos;t reach its data right now, so there&apos;s no summary to show.</p>
+            : got.kind === "none" ? <p className="mute">No summary for this filing yet.</p>
+            : got.kind === "down" ? <p className="mute">Can&apos;t load the summary right now.</p>
             : (
               <>
                 <p>{got.s.summary_lite}</p>
@@ -70,8 +85,7 @@ export function FilingSummary({ accession }: { accession: string }) {
                   </ul>
                 )}
                 <p className="note">
-                  Written by {got.s.model.toLowerCase().includes("gemini") ? "Gemini" : got.s.model}, numbers checked against the SEC filing
-                  {got.s.generated_at ? ` · ${shortDate(got.s.generated_at)}` : ""}. ✓ matches the SEC&apos;s numbers; ≠ doesn&apos;t.
+                  By {got.s.model.toLowerCase().includes("gemini") ? "Gemini" : got.s.model}{got.s.generated_at ? `, ${shortDate(got.s.generated_at)}` : ""} · ✓ matches the SEC filing · ≠ doesn&apos;t
                 </p>
               </>
             )}
