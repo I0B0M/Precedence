@@ -565,6 +565,8 @@ export function savedFile(path: string, init?: RequestInit): string {
   if (init?.method === "POST") {
     const body = typeof init.body === "string" ? JSON.parse(init.body) : null;
     if (!Array.isArray(body?.holdings)) throw new ApiError(503, NEEDS_BACKEND);
+    // No stocks, no saved answer (e.g. asking only about a 401(k)): the same 404, without fetching /saved/…/.json for it.
+    if (!body.holdings.length) throw new ApiError(404, "Not in the saved data.");
     return `/saved/${route}/${savedKey(body.holdings)}.json`;
   }
   if (route.endsWith("/summary")) throw new ApiError(503, NEEDS_BACKEND);
