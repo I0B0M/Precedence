@@ -81,7 +81,7 @@ export default function Home() {
             <h1>See what&rsquo;s happening to what you own</h1>
             <p className="lede">
               {PROMISE_WORDS.hero} It doesn&rsquo;t predict.{" "}
-              <Link className="home-link" href="/learn">How we check</Link>
+              <Link className="home-link" href="/signals">How we check</Link>
             </p>
             <div className="home-ctas">
               {returning ? <>
@@ -212,7 +212,6 @@ export default function Home() {
             <span className="kicker">Lite and Pro</span>
             <h2>Lite for everyone. Pro shows the working.</h2>
             <p className="lede">Switch at the top of any page. Pro adds the evidence, the sources and the raw rows under the same answer.</p>
-            <Link className="btn light" href="/learn">What the badges mean</Link>
           </div>
           <div className="card home-badges" aria-label="The badges">
             {BADGES.map(([t, s, c]) => (
@@ -252,7 +251,7 @@ export default function Home() {
         </dl>
         <div className="home-close">
           <h2>Understand what you own</h2>
-          <Link className="btn" href="/start">Start in 3 taps</Link>
+          <Link className="btn" href="/import">Add what you own</Link>
         </div>
       </Band>
     </div>

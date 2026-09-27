@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
       { source: "/practice", destination: "/paper", permanent: false },
       // Everything you own, funds included, lives in Portfolio; a fund row opens its own /fund page.
       { source: "/funds", destination: "/portfolio", permanent: false },
+      // Learn and the start screen are gone; the landing and the portfolio carry what they said.
+      { source: "/learn", destination: "/", permanent: false },
+      { source: "/start", destination: "/", permanent: false },
     ];
   },
   async rewrites() {

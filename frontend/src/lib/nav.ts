@@ -3,5 +3,4 @@ export const NAV = [
   { href: "/portfolio", label: "Portfolio", also: ["/company", "/import", "/fund"] },
   { href: "/signals", label: "Signals", also: [] },
   { href: "/paper", label: "Paper trading", also: [] },
-  { href: "/learn", label: "Learn", also: [] },
 ];
