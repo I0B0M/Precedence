@@ -64,6 +64,14 @@ function subscribeVoices(cb: () => void) {
 const readVoiceName = () => (hasVoice() ? pickVoice(window.speechSynthesis.getVoices())?.name ?? null : null);
 
 /** Brief: "summarize complex information" · "more accessible … engaging" · "understanding what they own". */
+const PHONE = "(max-width: 767px)";
+function subscribePhone(cb: () => void) {
+  const m = window.matchMedia?.(PHONE);
+  m?.addEventListener("change", cb);
+  return () => m?.removeEventListener("change", cb);
+}
+const readPhone = () => !!window.matchMedia?.(PHONE).matches;
+
 /** fallback: what to brief on when nothing is saved (the landing passes the example). Saved holdings always win.
  *  compact: the landing hero's strip, a small orb beside the caption and Play, with the full briefing one link away. */
 export function Stage({ fallback, compact = false }: { fallback?: Holding[]; compact?: boolean } = {}) {
@@ -79,6 +87,7 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
   const [voiceOn, setVoiceOn] = useState(true);
   const [browserVoice] = useState(() => hasVoice()); // read on the client; the controls only render after data arrives
   const voiceName = useSyncExternalStore(subscribeVoices, readVoiceName, () => null);
+  const phone = useSyncExternalStore(subscribePhone, readPhone, () => false); // under 768px: a smaller orb, the first line up top
   const narrator = useRef<Narrator | null>(null);
 
   useEffect(() => {
@@ -183,7 +192,7 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
       <div className="bf-stage">
         <div className="bf-glow" aria-hidden />
         <div className="bf-orbwrap">
-          <Orb state={orbState} size={compact ? 132 : 340} />
+          <Orb state={orbState} size={compact ? 132 : phone ? 150 : 340} />
         </div>
 
         <div className="bf-caption" aria-live="polite" aria-atomic="true">
@@ -195,7 +204,10 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
             <p className="bf-cap dim">Nothing to brief you on yet. <Link className="bf-link" href="/import">Add what you own</Link> and come back.</p>
           )}
           {phase === "ready" && play === "idle" && (
-            <p className="bf-cap dim">{lines.length} things to say about what you own{script?.as_of ? `, at the close on ${shortDate(script.as_of)}` : ""}. Press play.</p>
+            phone && !compact && lines[0]
+              // On a phone the first line itself, so a number shows without scrolling.
+              ? <p className="bf-cap dim">{mode === "pro" && lines[0].pro ? lines[0].pro : lines[0].text} Press play.</p>
+              : <p className="bf-cap dim">{lines.length} things to say about what you own{script?.as_of ? `, at the close on ${shortDate(script.as_of)}` : ""}. Press play.</p>
           )}
           {phase === "ready" && play !== "idle" && line && (
             <p className={`bf-cap tone-${line.tone}`}>
