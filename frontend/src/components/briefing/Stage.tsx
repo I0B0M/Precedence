@@ -4,7 +4,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { api, SAVED, SAVED_EXAMPLE, type Holding, type PortfolioOut, type PortfolioRisk, type Status } from "@/lib/api";
-import { createNarrator, hasVoice, pickVoice, type Narrator } from "@/lib/briefing/narrator";
+import { createNarrator, hasAudio, hasVoice, pickVoice, type Narrator } from "@/lib/briefing/narrator";
+import { loadRecordings, type Recordings } from "@/lib/briefing/recordings";
 import { loadScript } from "@/lib/briefing/source";
 import { wordsReached } from "@/lib/briefing/spoken";
 import type { Line, Script } from "@/lib/briefing/types";
@@ -27,7 +28,12 @@ interface Loaded {
   portfolio: PortfolioOut;
   risk: PortfolioRisk | null;
   script: Script;
+  /** The recorded voice, by `say`; empty when the site has none. */
+  recordings: Recordings;
 }
+
+// Fetched once per visit: the recordings don't depend on the holdings.
+let recordingsOnce: Promise<Recordings> | null = null;
 
 /** A cite string ("signal:insider_cluster") as a chip: words and where the working is. */
 function citeChip(cite: string, line: Line): { label: string; href: string } | null {
@@ -71,7 +77,7 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
   const [pos, setPos] = useState<{ script: Script | null; play: PlayStatus; index: number; fraction: number; level: number }>(
     { script: null, play: "idle", index: 0, fraction: 0, level: 0 });
   const [voiceOn, setVoiceOn] = useState(true);
-  const [canSpeak] = useState(() => hasVoice()); // read on the client; the controls only render after data arrives
+  const [browserVoice] = useState(() => hasVoice()); // read on the client; the controls only render after data arrives
   const voiceName = useSyncExternalStore(subscribeVoices, readVoiceName, () => null);
   const narrator = useRef<Narrator | null>(null);
 
@@ -93,9 +99,11 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
     let live = true;
     (async () => {
       try {
-        const [portfolio, risk] = await Promise.all([api.portfolio(h, ex), api.risk(h).catch(() => null)]);
+        const [portfolio, risk, recordings] = await Promise.all([
+          api.portfolio(h, ex), api.risk(h).catch(() => null), (recordingsOnce ??= loadRecordings()),
+        ]);
         const script = await loadScript(h, portfolio, risk, ex);
-        if (live) setLoaded({ key, portfolio, risk, script });
+        if (live) setLoaded({ key, portfolio, risk, script, recordings });
       } catch (e) {
         if (live) setError(e);
       }
@@ -104,14 +112,19 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
   }, [key]);
 
   const script = loaded?.key === key ? loaded.script : null;
+  const recordings = loaded?.key === key ? loaded.recordings : null;
   const lines = useMemo(() => script?.lines ?? [], [script]);
+  // Each line with its recording, when the site has one for exactly these words.
+  const spoken = useMemo(() => lines.map((l) => ({ say: l.say, recording: recordings?.get(l.say) ?? null })), [lines, recordings]);
+  const recorded = spoken.filter((l) => l.recording).length;
 
   // One narrator per script. Destroying it cancels any speech, so leaving the page goes quiet.
   useEffect(() => {
-    if (!script || !lines.length) return;
-    const n = createNarrator(lines, {
+    if (!script || !spoken.length) return;
+    const n = createNarrator(spoken, {
       onLine: (i) => setPos((p) => ({ ...p, script, index: i, fraction: 0 })),
-      onProgress: (i, f) => setPos((p) => ({ ...p, script, index: i, fraction: f, level: 0.55 + 0.45 * Math.abs(Math.sin(f * 37)) })),
+      // A recording says how loud it is; the browser's voice doesn't, so the orb keeps a speaking rhythm.
+      onProgress: (i, f, lv) => setPos((p) => ({ ...p, script, index: i, fraction: f, level: lv ?? 0.55 + 0.45 * Math.abs(Math.sin(f * 37)) })),
       onStatus: (st) => setPos((p) => ({ ...p, script, play: st })),
     }, { voice: voiceOn });
     narrator.current = n;
@@ -120,7 +133,7 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
       if (narrator.current === n) narrator.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [script, lines]);
+  }, [script, spoken]);
 
   useEffect(() => { narrator.current?.setVoice(voiceOn); }, [voiceOn]);
 
@@ -141,6 +154,10 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
   const current = pos.script === script && script ? pos : { play: "idle" as PlayStatus, index: 0, fraction: 0, level: 0 };
   const { play, index: lineIndex, fraction, level } = current;
   const line = lines[lineIndex] ?? null;
+  const canSpeak = browserVoice || (recorded > 0 && hasAudio());
+  const voiceTitle = !canSpeak ? "This browser has no voice; captions only"
+    : spoken[lineIndex]?.recording ? "Voice: Kokoro, an open-weight speech model, recorded ahead of time"
+    : voiceName ? `Voice: ${voiceName} (this browser's)` : "Voice";
 
   const orbState = useMemo<OrbState>(() => {
     if (phase === "error") return { state: "failed" };
@@ -199,7 +216,7 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
               <button type="button" className="bf-btn" onClick={() => narrator.current?.restart()} disabled={play === "idle"}>Restart</button>
             </>}
             <button type="button" className="bf-btn" onClick={() => setVoiceOn((v) => !v)} aria-pressed={voiceOn} disabled={!canSpeak}
-              title={!canSpeak ? "This browser has no voice; captions only" : voiceName ? `Voice: ${voiceName}` : "Voice"}>
+              title={voiceTitle}>
               {!canSpeak ? "No voice here" : voiceOn ? "Voice on" : "Voice off"}
             </button>
           </div>
@@ -262,6 +279,13 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
           <details className="bf-panel">
             <summary>How Precedence decided what to say</summary>
             <p className="dim">A panel of experts, each a plain rule over the data, offered lines; a gate kept the ones that matter and holds the rest. Source: {script.generated_by}.</p>
+            <p className="dim">
+              {recorded === lines.length
+                ? "The voice is Kokoro-82M, an open-weight speech model, reading these exact lines. It was recorded ahead of time and says only what's written here."
+                : recorded > 0
+                  ? `The voice is Kokoro-82M, an open-weight speech model, recorded ahead of time for ${recorded} of these ${lines.length} lines; your browser's voice reads the rest.`
+                  : "The voice is your browser's own."}
+            </p>
             <table>
               <thead><tr><th>Expert</th><th className="num">Offered</th><th className="num">Spoke</th></tr></thead>
               <tbody>

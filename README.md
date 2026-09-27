@@ -97,6 +97,8 @@ Everything else in this repo was written at the event.
 | Hugging Face Transformers, PyTorch | Apache-2.0, BSD-3 | Optional, v2: the FinBERT tone Reader (`scripts/read_filings.py`); not installed by default |
 | ProsusAI/finbert (model) | see its model card | Optional, v2: reads 8-K text as negative/neutral/positive |
 | Ollama | MIT | Optional, v2: a local model for filing summaries (`STONE_SUMMARY_MODEL=ollama:<model>`) |
+| Kokoro-82M (hexgrad) | Apache-2.0 | The Briefing's voice: an open-weight speech model that reads the saved briefing's lines ahead of time (`scripts/build_voice.py`, one-off), so the tab plays recordings instead of the browser's voice |
+| misaki, PyTorch | Apache-2.0, BSD-3 | Used by Kokoro (pronunciation, running the model); `scripts/build_voice.py` only |
 
 ## Data sources
 

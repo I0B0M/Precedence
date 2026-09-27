@@ -64,6 +64,14 @@ _Avoid_: insight, fact, item
 One spoken sentence of at most 28 words, carrying the numbers it prints and what it cites.
 _Avoid_: message, caption (the tab's rendering of a line)
 
+**Spoken form**:
+A line as the voice says it: tickers as names, symbols and dates as words. It never adds, drops or changes a number.
+_Avoid_: speech text, TTS text
+
+**Recording**:
+A line's spoken form read aloud ahead of time, with when each word starts. It plays only for the exact words it was made from; any other line is read by the browser's voice.
+_Avoid_: clip, audio, TTS output
+
 **Gate**:
 What picks the points a briefing speaks: highest salience first, within a line budget and a cap per expert.
 _Avoid_: router, filter, ranker
