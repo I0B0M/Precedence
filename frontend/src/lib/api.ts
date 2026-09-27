@@ -345,6 +345,10 @@ export interface HomeEstimate {
   method: string; // "paid × FHFA ZIP5 index change"
   source: string; // "FHFA House Price Index, 5-digit ZIP (annual, developmental)"
   geocoder: string; // "US Census Geocoder"
+  // where the Census geocoder placed the matched address (WGS84 degrees), for a map pin; always sent.
+  // null when located_by is "zip": no ZIP centre is looked up, so there is no point to place
+  lat?: number | null;
+  lon?: number | null;
   as_of: string | null; // the latest index year used
   note: string | null; // e.g. fallback to county, or bought after the latest index year
   state: null;

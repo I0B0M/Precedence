@@ -15,6 +15,7 @@ def test_census_geocoder_gives_zip_county_and_state():
     g = census.parse_geocode(json.loads((FIX / "census_geocode_miami.json").read_text()))
     assert g.matched == "3500 PAN AMERICAN DR, MIAMI, FL, 33133"
     assert (g.zip, g.county_fips, g.state) == ("33133", "12086", "FL")
+    assert (g.lat, g.lon) == (25.728662483198, -80.23499374077)  # Census: y = latitude, x = longitude
 
 
 def test_census_geocoder_without_a_match_is_none():
