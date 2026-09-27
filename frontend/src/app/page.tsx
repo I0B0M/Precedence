@@ -2,27 +2,39 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import "./landing.css";
+import "./home.css";
 import { StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { ChartPanel, DotsArt, FundsPanel, IconChecked, IconHonest, IconSources, IconTested, Mark, PaperPanel, RangeArt } from "@/components/landing/Art";
-import { HeroLoop, JoinLoop } from "@/components/landing/Loops";
+import { HeroLoop } from "@/components/landing/Loops";
 import { api, type CompanyDetail, type FundPage, type PortfolioOut, type Scan, type Status, type Today } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { PRACTICE_CASH } from "@/lib/practice";
 
-// The example the landing shows, and the one /import?example=1 fills in.
+// The example the home page shows, and the one /import?example=1 fills in.
 const EXAMPLE = [{ symbol: "BX", shares: 10 }, { symbol: "AMZN", shares: 5 }, { symbol: "SPY", shares: 3 }];
 // Not served by the API yet (no all-time totals endpoint): counted in the database load, as of Sep 25.
 const INSIDER_TRADES = 35797;
+const BADGES: [string, string, string][] = [
+  ["Calm", "Nothing with a track record is happening.", "var(--blue)"],
+  ["Heads up", "Has come before drops. Not a prediction.", "var(--gold)"],
+  ["Not tested", "We haven’t tested this one.", "var(--text-2)"],
+];
 
-const Lockup = ({ word }: { word: string }) => (
-  <div className="lp-lockup"><Mark /><b>Precedence</b> <i>{word}</i></div>
-);
 const day = (iso: string | null | undefined) => (iso ? shortDate(iso).replace(/, \d{4}$/, "") : "…");
 
-// Brief: "more accessible … engaging" · "understanding what they own"
-export default function Landing() {
+/** One band of the home page, full width, on one of the two surfaces. */
+function Band({ id, alt = false, label, children }: { id: string; alt?: boolean; label: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className={`home-band${alt ? " alt" : ""}`} aria-label={label}>
+      <div className="home-inner">{children}</div>
+    </section>
+  );
+}
+
+// Brief: "more accessible … engaging" · "understanding what they own". Sections follow the product: what you own, does
+// it matter, Lite vs Pro, practice, where the data comes from.
+export default function Home() {
   const [board, setBoard] = useState<PortfolioOut | null>(null);
   const [sparks, setSparks] = useState<Record<string, CompanyDetail["prices"]>>({});
   const [today, setToday] = useState<Today | null>(null);
@@ -44,129 +56,149 @@ export default function Landing() {
   const stocks = status?.companies_by_source.sec;
 
   return (
-    <div className="lp">
-      <section className="lp-hero-wrap">
-        <div className="lp-hero"><HeroLoop /><div className="lp-scrim" /></div>
-        <div className="lp-hero-col">
-          <Lockup word="for everyday investors" />
-          <h1 className="lp-hero-title">See what&rsquo;s happening to what you own</h1>
-          <p className="lp-hero-text">And whether that kind of news has ever mattered for that stock. It doesn&rsquo;t predict. <Link className="lp-u lp-tap" href="/learn">How we check</Link></p>
-          <div className="lp-hero-ctas" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Link className="lp-pill lp-btn-accent" href="/import?example=1"><span>Try it with an example</span></Link>
-            <Link className="lp-pill lp-btn-outline" href="/import"><span>Add your account</span></Link>
+    <div className="home">
+      {/* ---- hero + the example portfolio ---- */}
+      <section className="home-band home-hero" aria-label="Precedence">
+        <div className="home-hero-bg" aria-hidden><HeroLoop /></div>
+        <div className="home-inner home-hero-grid">
+          <div className="stack" style={{ gap: 20 }}>
+            <p className="home-lockup"><Mark /><b>Precedence</b> <span>for everyday investors</span></p>
+            <h1>See what&rsquo;s happening to what you own</h1>
+            <p className="lede">
+              And whether that kind of news has ever mattered for that stock. It doesn&rsquo;t predict.{" "}
+              <Link className="home-link" href="/learn">How we check</Link>
+            </p>
+            <div className="home-ctas">
+              <Link className="btn" href="/import?example=1">Try it with an example</Link>
+              <Link className="btn light" href="/import">Add your account</Link>
+            </div>
           </div>
+          <Link className="card home-example" href="/import?example=1" aria-label="Example portfolio: open it">
+            <span className="home-example-top"><span className="kicker">Example</span>
+              <span className="note">{board?.price_as_of ? `Close ${shortDate(board.price_as_of)}` : "Loading…"}</span></span>
+            <span className="bignum home-example-total">{board ? money(board.total) : "—"}</span>
+            {EXAMPLE.map((h) => {
+              const row = board?.rows.find((r) => r.symbol === h.symbol);
+              const e = board?.exposure.find((x) => x.symbol === h.symbol);
+              const spk = sparks[h.symbol];
+              const down = spk && spk.length > 1 && spk[spk.length - 1].close < spk[0].close;
+              return (
+                <span className="home-example-row" key={h.symbol}>
+                  <span><b>{h.symbol}</b><small className="note">{h.shares} shares</small></span>
+                  <span className={down ? "down" : "up"}>{spk ? <Spark closes={spk.map((p) => p.close)} /> : <span className="spark" />}</span>
+                  <span className="home-num">{row ? money(row.value) : "—"}
+                    <small className={row?.change != null && row.change < 0 ? "down" : "up"}>{row?.change != null ? pct(row.change) : ""}</small></span>
+                  {e ? <StateBadge state={e.state} /> : <span />}
+                </span>
+              );
+            })}
+            <span className="note pro-only">Prices from Alpaca (IEX); badges from our tests on SEC and FRED data.</span>
+          </Link>
         </div>
-        <Link className="lp-hero-example" href="/import?example=1" aria-label="Example portfolio: open it">
-          <div className="lp-hx-top"><span>Example</span><span>{board?.price_as_of ? `Close ${shortDate(board.price_as_of)}` : "Loading…"}</span></div>
-          <div className="lp-hx-total">{board ? money(board.total) : "—"}</div>
-          {EXAMPLE.map((h) => {
-            const row = board?.rows.find((r) => r.symbol === h.symbol);
-            const e = board?.exposure.find((x) => x.symbol === h.symbol);
-            const spk = sparks[h.symbol];
-            const down = spk && spk.length > 1 && spk[spk.length - 1].close < spk[0].close;
-            return (
-              <div className="lp-hx-row" key={h.symbol}>
-                <span><b>{h.symbol}</b><small>{h.shares} shares</small></span>
-                <span className={down ? "down" : "up"}>{spk ? <Spark closes={spk.map((p) => p.close)} /> : <span className="spark" />}</span>
-                <span className="lp-hx-num">{row ? money(row.value) : "—"}
-                  <small className={row?.change != null && row.change < 0 ? "down" : "up"}>{row?.change != null ? pct(row.change) : ""}</small></span>
-                {e ? <StateBadge state={e.state} /> : <span />}
-              </div>
-            );
-          })}
-          <p className="lp-hx-note pro-only">Prices from Alpaca (IEX); badges from our tests on SEC and FRED data.</p>
-        </Link>
       </section>
 
-      <section className="lp-stats" aria-label="What's under the hood">
-        <div className="lp-stat"><b>{INSIDER_TRADES.toLocaleString("en-US")}</b><span>insider trades read from SEC Form 4s, as of Sep 25</span></div>
-        <div className="lp-stat"><b>{spy ? spy.total_holdings_count : "…"}</b><span>companies inside SPY, as of {day(spy?.holdings_as_of)}</span></div>
-        <div className="lp-stat"><b>{rate ? `${rate.value.toFixed(2)}%` : "…"}</b><span>10-year Treasury rate<span className="pro-only"> (FRED)</span>, {day(rate?.day)}</span></div>
-        <div className="lp-stat"><b>{stocks ?? "…"}</b><span>stocks tested, priced at the {day(board?.price_as_of)} close</span></div>
-      </section>
-
-      <section className="lp-agent">
-        <div>
-          <h2 className="lp-agent-title">It doesn&rsquo;t predict.</h2>
-          <h2 className="lp-agent-title">It checks.</h2>
+      {/* ---- what you own: portfolio and funds ---- */}
+      <Band id="what-you-own" alt label="What you own">
+        <div className="home-head">
+          <span className="kicker">What you own</span>
+          <h2>Stocks, funds, a 401(k) and a home, in one place</h2>
         </div>
-        <div className="lp-card-grid">
-          <article className="lp-card">
-            <h3 className="lp-card-title">Portfolio</h3>
-            <p className="lp-card-text lp-t-body">Everything you own, with the one thing worth a look.</p>
-            <Link className="lp-pill lp-btn-accent" href="/portfolio"><span>Open your portfolio</span></Link>
+        <div className="home-cards">
+          <article className="card home-card">
+            <h3>Portfolio</h3>
+            <p className="mute">Everything you own, with the one thing worth a look.</p>
+            <Link className="btn" href="/portfolio">Open your portfolio</Link>
             <DotsArt />
           </article>
-          <article className="lp-card">
-            <h3 className="lp-card-title">Signals</h3>
-            <p className="lp-card-text lp-t-body">Every past time the news happened, and what followed.</p>
-            <Link className="lp-pill lp-btn-accent" href="/signals?t=BX&s=rate_jump"><span>Signals</span></Link>
-            <RangeArt />
+          <article className="card home-card">
+            <h3>Funds</h3>
+            <p className="mute">Look inside the fund, down to every company. All {spy ? spy.total_holdings_count : "…"} SPY companies, with the Heads up names flagged.</p>
+            <Link className="btn" href="/funds">See the funds</Link>
+            <FundsPanel />
           </article>
         </div>
-      </section>
+      </Band>
 
-      <section className="lp-feature">
-        <ChartPanel />
-        <div className="lp-feature-col">
-          <h3 className="lp-t-h40 lp-feature-eyebrow">Stock pages</h3>
-          <p className="lp-t-h40 lp-feature-title">Chart first, with a dot for every past event</p>
-          <p className="lp-t-body lp-feature-text">Financials and filings from the SEC, in plain words.</p>
-          <Link className="lp-pill lp-btn-accent" href="/company/BX"><span>Open BX</span></Link>
+      {/* ---- does it matter: signals, stock pages, honesty ---- */}
+      <Band id="does-it-matter" label="Does it matter">
+        <div className="home-head">
+          <span className="kicker">Does it matter?</span>
+          <h2>It doesn&rsquo;t predict. It checks.</h2>
         </div>
-      </section>
-
-      <section className="lp-feature lp-feature-light">
-        <FundsPanel />
-        <div className="lp-feature-col">
-          <Lockup word="Funds" />
-          <p className="lp-t-h40 lp-feature-title">Look inside the fund, down to every company</p>
-          <p className="lp-t-body lp-feature-text">All {spy ? spy.total_holdings_count : "…"} SPY companies, with the Heads up names flagged.</p>
-          <Link className="lp-pill lp-btn-ink" href="/fund/SPY"><span>Open SPY</span></Link>
+        <div className="home-cards">
+          <article className="card home-card">
+            <h3>Signals</h3>
+            <p className="mute">Every past time the news happened, and what followed.</p>
+            <Link className="btn" href="/signals?t=BX&s=rate_jump">Signals</Link>
+            <RangeArt />
+          </article>
+          <article className="card home-card">
+            <h3>Stock pages</h3>
+            <p className="mute">Chart first, with a dot for every past event. Financials and filings from the SEC, in plain words.</p>
+            <Link className="btn" href="/company/BX">Open BX</Link>
+            <ChartPanel />
+          </article>
         </div>
-      </section>
-
-      <section className="lp-feature lp-feature-left">
-        <PaperPanel />
-        <div className="lp-feature-col">
-          <Lockup word="Paper trading" />
-          <p className="lp-t-h40 lp-feature-title">Try a trade with pretend money</p>
-          <p className="lp-t-body lp-feature-text">{money(PRACTICE_CASH)} of pretend cash, under a yellow &ldquo;Not real money&rdquo; bar.</p>
-          <Link className="lp-pill lp-btn-accent" href="/paper"><span>Try paper trading</span></Link>
+        <div className="home-head" style={{ marginTop: 16 }}>
+          <h3>Honest about what isn&rsquo;t proven</h3>
         </div>
-      </section>
+        <ul className="home-facts">
+          <li><IconTested /><span>{scan ? `${scan.tested} pairs tested. ${scan.strong} looked strong, about ${Math.round(scan.expected_by_chance)} by luck.` : "…"}</span></li>
+          <li><IconChecked /><span>{scan?.strong_fdr10 != null ? `${scan.strong_fdr10} survive the correction, as of ${day(scan.as_of)}.` : "…"}</span></li>
+          <li><IconHonest /><span>When something isn&rsquo;t proven, it says so.</span></li>
+        </ul>
+      </Band>
 
-      <section className="lp-protect">
-        <h2 className="lp-t-h52 lp-protect-title">Honest about what isn&rsquo;t proven</h2>
-        <div className="lp-protect-grid">
-          <div className="lp-protect-item"><IconTested /><h5>{scan ? `${scan.tested} pairs tested. ${scan.strong} looked strong, about ${Math.round(scan.expected_by_chance)} by luck.` : "…"}</h5></div>
-          <div className="lp-protect-item"><IconChecked /><h5>{scan?.strong_fdr10 != null ? `${scan.strong_fdr10} survive the correction, as of ${day(scan.as_of)}.` : "…"}</h5></div>
-          <div className="lp-protect-item"><IconHonest /><h5>When something isn&rsquo;t proven, it says so.</h5></div>
-          <div className="lp-protect-item"><IconSources /><h5>Real SEC, Fed and price data. No samples.</h5></div>
-        </div>
-      </section>
-
-      <section className="lp-learn">
-        <div className="lp-learn-inner">
-          <h2 className="lp-t-h52 lp-learn-title">Lite for everyone. Pro shows the working.</h2>
-          <p className="lp-t-body lp-learn-text">Tap the castle. Pro shows the working behind every result.</p>
-          <Link className="lp-pill lp-btn-white" href="/learn"><span>What the badges mean</span></Link>
-          <div className="lp-learn-card" aria-hidden="true">
-            <h4>The badges</h4>
-            {[["Calm", "Nothing with a track record is happening.", "#2563eb"], ["Heads up", "Has come before drops. Not a prediction.", "#d4af37"], ["Not tested", "We haven’t tested this one.", "#a0a0a0"]].map(([t, s, c]) => (
-              <div className="lp-lrow" key={t}><div className="lp-lthumb" style={{ color: c }}>●</div><div><strong>{t}</strong><small>{s}</small></div><span>›</span></div>
+      {/* ---- Lite vs Pro ---- */}
+      <Band id="lite-pro" alt label="Lite and Pro">
+        <div className="home-split">
+          <div className="home-head">
+            <span className="kicker">Lite and Pro</span>
+            <h2>Lite for everyone. Pro shows the working.</h2>
+            <p className="lede">Switch at the top of any page. Pro adds the evidence, the sources and the raw rows under the same answer.</p>
+            <Link className="btn light" href="/learn">What the badges mean</Link>
+          </div>
+          <div className="card home-badges" aria-label="The badges">
+            {BADGES.map(([t, s, c]) => (
+              <div className="home-badge-row" key={t}>
+                <i style={{ background: c }} aria-hidden />
+                <span><b>{t}</b><small className="note">{s}</small></span>
+              </div>
             ))}
           </div>
         </div>
-      </section>
+      </Band>
 
-      <section className="lp-join-wrap">
-        <div className="lp-join"><JoinLoop /></div>
-        <div className="lp-join-inner">
-          <h2 className="lp-t-serif lp-join-title">Understand what you own</h2>
-          <Link className="lp-pill lp-btn-accent" href="/start"><span>Start in 3 taps</span></Link>
+      {/* ---- paper trading ---- */}
+      <Band id="paper-trading" label="Paper trading">
+        <div className="home-split">
+          <div className="home-head">
+            <span className="kicker">Paper trading</span>
+            <h2>Try a trade with pretend money</h2>
+            <p className="lede">{money(PRACTICE_CASH)} of pretend cash, under a yellow &ldquo;Not real money&rdquo; bar.</p>
+            <Link className="btn" href="/paper">Try paper trading</Link>
+          </div>
+          <div className="card home-card"><PaperPanel /></div>
         </div>
-      </section>
+      </Band>
+
+      {/* ---- where the data comes from ---- */}
+      <Band id="sources" alt label="Where the data comes from">
+        <div className="home-head">
+          <span className="kicker">Where the data comes from</span>
+          <h2><span className="home-inline-icon"><IconSources /></span>Real SEC, Fed and price data. No samples.</h2>
+        </div>
+        <dl className="home-stats">
+          <div><dt>{INSIDER_TRADES.toLocaleString("en-US")}</dt><dd>insider trades read from SEC Form 4s, as of Sep 25</dd></div>
+          <div><dt>{spy ? spy.total_holdings_count : "…"}</dt><dd>companies inside SPY, as of {day(spy?.holdings_as_of)}</dd></div>
+          <div><dt>{rate ? `${rate.value.toFixed(2)}%` : "…"}</dt><dd>10-year Treasury rate<span className="pro-only"> (FRED)</span>, {day(rate?.day)}</dd></div>
+          <div><dt>{stocks ?? "…"}</dt><dd>stocks tested, priced at the {day(board?.price_as_of)} close</dd></div>
+        </dl>
+        <div className="home-close">
+          <h2>Understand what you own</h2>
+          <Link className="btn" href="/start">Start in 3 taps</Link>
+        </div>
+      </Band>
     </div>
   );
 }

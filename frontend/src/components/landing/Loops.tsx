@@ -37,17 +37,5 @@ const drawHero = (ctx: CanvasRenderingContext2D, w: number, h: number, t: number
   }
 };
 
-/* Join: field of falling vertical lines — 3.034s loop. */
-const LINES = Array.from({ length: 140 }, (_, i) => ({ x: (i * 97.3) % 1, o: (i * 0.618) % 1, len: 30 + ((i * 37) % 30) }));
-const drawJoin = (ctx: CanvasRenderingContext2D, w: number, h: number, t: number) => {
-  const p = (t % 3.034) / 3.034;
-  ctx.fillStyle = '#0B0B0C'; ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.5;
-  for (const l of LINES) {
-    const y = ((l.o + p) % 1) * (h + 120) - 60;
-    ctx.beginPath(); ctx.moveTo(l.x * w, y); ctx.lineTo(l.x * w, y + l.len); ctx.stroke();
-  }
-};
 
 export function HeroLoop() { const ref = useCanvas(drawHero); return <canvas ref={ref} aria-hidden="true" />; }
-export function JoinLoop() { const ref = useCanvas(drawJoin); return <canvas ref={ref} aria-hidden="true" />; }

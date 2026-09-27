@@ -8,7 +8,7 @@ export const Mark = () => (
 
 /* Card: a price line with event dots, glowing from below */
 export const DotsArt = () => (
-  <svg className="lp-card-art" viewBox="0 0 576 480" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <svg className="home-art" viewBox="0 0 576 480" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
     <defs>
       <radialGradient id="glowA" cx="50%" cy="100%" r="75%"><stop offset="0" stopColor="rgb(37,99,235)" stopOpacity="0.9" /><stop offset="1" stopColor="rgb(0,0,0)" stopOpacity="0" /></radialGradient>
     </defs>
@@ -23,7 +23,7 @@ export const DotsArt = () => (
 
 /* Card: hit-rate bar vs normal range */
 export const RangeArt = () => (
-  <svg className="lp-card-art" viewBox="0 0 576 480" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <svg className="home-art" viewBox="0 0 576 480" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
     <defs>
       <radialGradient id="glowB" cx="50%" cy="100%" r="70%"><stop offset="0" stopColor="rgb(37,99,235)" stopOpacity="1" /><stop offset="1" stopColor="rgb(0,0,0)" stopOpacity="0" /></radialGradient>
       <linearGradient id="bar" x1="0" x2="1"><stop offset="0" stopColor="rgba(255,255,255,0.15)" /><stop offset="1" stopColor="rgba(255,255,255,0.5)" /></linearGradient>
@@ -40,7 +40,7 @@ export const RangeArt = () => (
 
 /* Feature: stock page — dusk sky, a screen with a chart and event dots */
 export const ChartPanel = () => (
-  <svg className="lp-feature-art" viewBox="0 0 1920 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <svg className="home-art wide" viewBox="0 0 1920 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs>
       <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgb(24,26,30)" /><stop offset="0.6" stopColor="rgb(80,78,82)" /><stop offset="1" stopColor="rgb(170,140,110)" /></linearGradient>
       <linearGradient id="scr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="rgb(30,34,40)" /><stop offset="1" stopColor="rgb(14,16,20)" /></linearGradient>
@@ -59,24 +59,24 @@ export const ChartPanel = () => (
 
 /* Feature: funds — layered holdings discs on blue-grey */
 export const FundsPanel = () => (
-  <svg className="lp-feature-art" viewBox="0 0 1920 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <svg className="home-art wide" viewBox="0 0 1920 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs>
-      <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="rgb(236,240,250)" /><stop offset="1" stopColor="rgb(255,255,255)" /></linearGradient>
-      <linearGradient id="disc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="rgba(255,255,255,0.9)" /><stop offset="0.5" stopColor="rgba(120,130,150,0.9)" /><stop offset="1" stopColor="rgba(240,244,250,0.9)" /></linearGradient>
+      <radialGradient id="bg2" cx="50%" cy="100%" r="75%"><stop offset="0" stopColor="rgba(37,99,235,0.45)" /><stop offset="1" stopColor="#0b0b0c" /></radialGradient>
+      <linearGradient id="disc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="rgba(255,255,255,0.75)" /><stop offset="0.5" stopColor="rgba(90,96,110,0.9)" /><stop offset="1" stopColor="rgba(220,224,232,0.8)" /></linearGradient>
     </defs>
     <rect width="1920" height="800" fill="url(#bg2)" />
     {Array.from({ length: 10 }, (_, i) => (
-      <ellipse key={i} cx="560" cy={640 - i * 46} rx={220 - i * 6} ry="44" fill="url(#disc)" stroke="rgba(40,50,70,0.35)" />
+      <ellipse key={i} cx="960" cy={640 - i * 46} rx={220 - i * 6} ry="44" fill="url(#disc)" stroke="rgba(212,175,55,0.55)" />
     ))}
   </svg>
 );
 
 /* Feature: paper trading — phone with pretend-cash receipt */
 export const PaperPanel = () => (
-  <svg className="lp-feature-art" viewBox="0 0 1920 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs><linearGradient id="bg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0.25" stopColor="#000" /><stop offset="1" stopColor="rgb(180,182,196)" /></linearGradient></defs>
+  <svg className="home-art wide" viewBox="0 0 1920 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><linearGradient id="bg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0.25" stopColor="#000" /><stop offset="1" stopColor="rgba(37,99,235,0.55)" /></linearGradient></defs>
     <rect width="1920" height="800" fill="url(#bg3)" />
-    <g transform="translate(1140 110) rotate(8)">
+    <g transform="translate(800 110) rotate(8)">
       <rect width="340" height="700" rx="46" fill="#0b0b0c" stroke="rgba(255,255,255,0.25)" strokeWidth="3" />
       <rect x="24" y="80" width="292" height="36" rx="8" fill="rgb(255,214,10)" />
       <text x="170" y="104" textAnchor="middle" fontFamily="Epilogue, sans-serif" fontSize="16" fill="#111">Not real money</text>
@@ -96,24 +96,24 @@ export const PaperPanel = () => (
 /* Four line icons */
 const S = { fill: 'none', stroke: '#D4AF37', strokeWidth: 1.4 } as const;
 export const IconTested = () => (
-  <svg className="lp-protect-icon" viewBox="0 0 200 200" aria-hidden="true">
+  <svg className="home-icon" viewBox="0 0 200 200" aria-hidden="true">
     {Array.from({ length: 5 }, (_, r) => Array.from({ length: 5 }, (_, c) => <circle key={`${r}${c}`} cx={40 + c * 30} cy={40 + r * 30} r="9" {...S} />))}
     <circle cx="130" cy="130" r="9" fill="#D4AF37" />
   </svg>
 );
 export const IconHonest = () => (
-  <svg className="lp-protect-icon" viewBox="0 0 200 200" aria-hidden="true">
+  <svg className="home-icon" viewBox="0 0 200 200" aria-hidden="true">
     <path d="M100 24 L168 52 V104 C168 142 138 168 100 180 C62 168 32 142 32 104 V52 Z" {...S} />
     <path d="M70 102 H130 M70 124 H112" {...S} /><circle cx="100" cy="72" r="10" {...S} />
   </svg>
 );
 export const IconSources = () => (
-  <svg className="lp-protect-icon" viewBox="0 0 200 200" aria-hidden="true">
+  <svg className="home-icon" viewBox="0 0 200 200" aria-hidden="true">
     {[0, 1, 2].map(i => <g key={i} transform={`translate(${36 + i * 20} ${36 + i * 22})`}><rect width="92" height="116" rx="6" {...S} /><path d="M16 26 H76 M16 44 H76 M16 62 H56" {...S} /></g>)}
   </svg>
 );
 export const IconChecked = () => (
-  <svg className="lp-protect-icon" viewBox="0 0 200 200" aria-hidden="true">
+  <svg className="home-icon" viewBox="0 0 200 200" aria-hidden="true">
     <circle cx="100" cy="100" r="70" {...S} /><circle cx="100" cy="100" r="52" {...S} strokeDasharray="6 6" />
     <path d="M72 102 L92 122 L130 82" {...S} strokeWidth="2" />
   </svg>

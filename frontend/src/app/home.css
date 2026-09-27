@@ -1,0 +1,67 @@
+/* Home page. Built only from the app's tokens (globals.css): the two surfaces --bg and --group alternate band by band,
+   hairlines are --sep, type is the app's h1/h2/h3/.lede/.kicker, boxes are .card, buttons are .btn. Spacing is the
+   app's 8px steps. Every class is prefixed home- so it can't collide with app rules. */
+
+.home { margin: calc(-1 * clamp(20px, 3vw, 36px)) calc(50% - 50vw) 0; }   /* full width: out of main's column and top padding */
+.home-inner { max-width: 1080px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+.home-band { background: var(--bg); padding: clamp(48px, 8vw, 96px) 0; border-top: 1px solid var(--sep); }
+.home-band.alt { background: var(--group); }
+.home-band .home-inner { display: flex; flex-direction: column; gap: 24px; }
+
+/* hero: a slow canvas of arcs behind, the words on the left, the example portfolio on the right */
+.home-hero { position: relative; overflow: hidden; border-top: 0; padding-top: clamp(40px, 7vw, 88px); }
+.home-hero-bg { position: absolute; inset: 0; opacity: 0.55; pointer-events: none; }
+.home-hero-bg canvas { width: 100%; height: 100%; display: block; }
+.home-hero-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg) 0%, transparent 70%); }
+.home-hero .home-inner.home-hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+.home-lockup { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; }
+.home-lockup svg { width: 22px; height: 22px; color: var(--gold); }
+.home-lockup span { color: var(--text-2); }
+.home-link { color: var(--text); text-decoration: underline; text-underline-offset: 3px; display: inline-block; padding: 12px 0; margin: -12px 0; }
+.home-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.home-example { display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit; transition: border-color 0.2s var(--ease-out); }
+.home-example:hover { border-color: var(--gold); }
+.home-example-top { display: flex; justify-content: space-between; align-items: baseline; }
+.home-example-total { font-size: clamp(32px, 4vw, 40px); line-height: 1.1; }
+.home-example-row { display: grid; grid-template-columns: minmax(0, 1fr) 72px auto auto; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--sep); }
+.home-example-row small { display: block; }
+.home-num { text-align: right; font-weight: 600; }
+.home-num small { display: block; font-weight: 400; }
+
+/* section heads and two-up cards */
+.home-head { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; max-width: 62ch; }
+.home-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.home-card { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; overflow: hidden; }
+.home-card .home-art { margin-top: 8px; }
+.home-art { display: block; width: 100%; height: 200px; border-radius: var(--r-ctl); }
+.home-art.wide { height: 180px; }
+.home-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+
+/* honesty facts, badges, numbers */
+.home-facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.home-facts li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; line-height: 1.45; }
+.home-icon { width: 40px; height: 40px; flex: none; }
+.home-inline-icon .home-icon { width: 32px; height: 32px; vertical-align: -6px; margin-right: 10px; }
+.home-badges { display: flex; flex-direction: column; }
+.home-badge-row { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--sep); }
+.home-badge-row:first-child { border-top: 0; }
+.home-badge-row i { width: 12px; height: 12px; border-radius: 50%; flex: none; margin-top: 5px; }
+.home-badge-row small { display: block; }
+.home-stats { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--sep); }
+.home-stats div { padding: 24px 20px 0 0; }
+.home-stats dt { font-family: var(--head); font-size: clamp(32px, 4vw, 44px); line-height: 1.1; color: var(--gold); }
+.home-stats dd { margin: 8px 0 0; color: var(--text-2); font-size: 15px; line-height: 1.45; }
+.home-close { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 24px; padding-top: 32px; border-top: 1px solid var(--sep); }
+
+@media (max-width: 900px) {
+  .home-hero .home-inner.home-hero-grid, .home-split { grid-template-columns: minmax(0, 1fr); }
+  .home-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-facts { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .home-cards { grid-template-columns: minmax(0, 1fr); }
+  .home-stats { grid-template-columns: minmax(0, 1fr); }
+  .home-example-row { grid-template-columns: minmax(0, 1fr) 56px auto auto; gap: 8px; }
+  .home-ctas .btn { flex: 1 1 auto; justify-content: center; }
+}
