@@ -239,7 +239,7 @@ function HomeRow({ p }: { p: Property }) {
                 {e.note ? ` ${e.note}` : ""}
               </p>
             </>
-          ) : <p>Estimate coming soon.</p>}
+          ) : <p>No estimate yet.</p>}
           <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`} style={{ alignSelf: "flex-start" }}>Remove</button>
         </div>
         {e?.lat != null && e?.lon != null ? <HomeMap lat={e.lat} lon={e.lon} place={place} /> : (

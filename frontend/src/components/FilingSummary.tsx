@@ -48,7 +48,10 @@ export function FilingSummary({ accession }: { accession: string }) {
   function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && !got) fetchSummary(accession).then(setGot);
+    if (next && !got) fetchSummary(accession).then((g) => {
+      setGot(g);
+      if (g.kind === "soon") setOn(false); // the service went away mid-session: hide the control, same as never having it
+    });
   }
 
   if (!on) return null;
@@ -57,11 +60,10 @@ export function FilingSummary({ accession }: { accession: string }) {
       <button type="button" className="linkb" aria-expanded={open} onClick={toggle}>
         {open ? "Hide the summary" : "Read it in plain words"}
       </button>
-      {open && (
+      {open && got?.kind !== "soon" && (
         <div role="region" aria-label="Filing summary"
           style={{ border: "1.5px dashed var(--edge-c)", borderRadius: "var(--r-ctl)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
           {!got ? <p className="note">Reading the filing…</p>
-            : got.kind === "soon" ? <p className="mute">Summary coming soon.</p>
             : got.kind === "none" ? <p className="mute">No summary for this filing yet.</p>
             : got.kind === "down" ? <p className="mute">Can&apos;t load the summary right now.</p>
             : (
