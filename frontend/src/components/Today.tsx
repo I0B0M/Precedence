@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { api, type Today } from "@/lib/api";
+import { api, SAVED, SAVED_TICKERS, type Today } from "@/lib/api";
 import { shortDate } from "@/lib/format";
 import { SHOW_CRYPTO } from "@/lib/flags";
 import { FORM_WORDS } from "@/lib/words";
@@ -211,7 +211,9 @@ export function StartFlow() {
               <button className="btn" type="button" disabled={!own.length} onClick={() => setStep(2)}>Next</button>
               <Link className="btn light" href="/import?example=1">Try an example portfolio</Link>
             </div>
-            <p className="note">The example uses real prices for BX, AMZN and SPY. It&apos;s labelled as an example and nothing is saved until you press Save.</p>
+            <p className="note">{SAVED
+              ? `The example uses real prices for ${SAVED_TICKERS}; the share counts are made up.`
+              : "The example uses real prices for BX, AMZN and SPY. It's labelled as an example and nothing is saved until you press Save."}</p>
           </>
         ) : (
           <>

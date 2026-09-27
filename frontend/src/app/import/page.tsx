@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { OtherAssetsForms } from "@/components/OtherAssets";
 import { SHOW_CRYPTO } from "@/lib/flags";
-import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib/api";
+import { api, ApiError, SAVED, SAVED_AS_OF, SAVED_EXAMPLE, SAVED_TICKERS, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 
@@ -96,8 +96,18 @@ export default function ImportScreen() {
 
   useEffect(() => {
     api.status().then(setStatus).catch(() => {});
-    if (new URLSearchParams(window.location.search).get("example") === "1") loadExample().then(applyExample);
+    if (new URLSearchParams(window.location.search).get("example") === "1") {
+      if (SAVED) return savedExample();
+      loadExample().then(applyExample);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Live demo: the saved board is the only portfolio with saved data, so the example opens it directly. */
+  function savedExample() {
+    saveHoldings(SAVED_EXAMPLE);
+    router.push("/");
+  }
 
   async function upload(file: File) {
     setBusy(true);
@@ -188,8 +198,10 @@ export default function ImportScreen() {
       {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
       <div className="card" style={{ borderWidth: 2 }}>
         <h3>Try an example portfolio</h3>
-        <p>See Stone with BX, AMZN and SPY at their real closing prices. It&apos;s labelled as an example, and nothing is saved until you press Save.</p>
-        <button className="btn" type="button" onClick={fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
+        {SAVED
+          ? <p>See Stone with {SAVED_TICKERS} at their real closing prices on {SAVED_AS_OF}. The share counts are made up for the example.</p>
+          : <p>See Stone with BX, AMZN and SPY at their real closing prices. It&apos;s labelled as an example, and nothing is saved until you press Save.</p>}
+        <button className="btn" type="button" onClick={SAVED ? savedExample : fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
       </div>
 
       {/* Connecting isn't built yet (no SnapTrade endpoint), so these stay disabled. Never fake a connection. */}

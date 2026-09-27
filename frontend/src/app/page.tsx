@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import { BadgeKey, LabelTag, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
-import { ApiProblem, Loading } from "@/components/Problem";
+import { ApiProblem, isNotFound, Loading } from "@/components/Problem";
 import { StartFlow, TodayFunnel } from "@/components/Today";
-import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
+import { api, SAVED, SAVED_EXAMPLE, SAVED_TICKERS, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
 import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
@@ -41,6 +41,14 @@ export default function HoldingsBoard() {
       .then((pairs) => setSparks(Object.fromEntries(pairs.filter((p) => p !== null))));
   }, [symbols]);
 
+  if (error && SAVED && isNotFound(error)) return (
+    <div className="card problem">
+      <h3>The live demo has one saved portfolio</h3>
+      <p>It runs on real prices and signals saved for {SAVED_TICKERS}. Your own holdings need the full app.</p>
+      <button className="btn small" type="button" style={{ alignSelf: "flex-start" }}
+        onClick={() => { setError(null); setBoard(null); setHoldings(SAVED_EXAMPLE); }}>Open the example portfolio</button>
+    </div>
+  );
   if (error) return <ApiProblem />;
   if (holdings && !holdings.length) return <StartFlow />;
   if (!board) return <Loading what="what you own" />;
