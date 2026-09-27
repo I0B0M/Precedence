@@ -11,7 +11,7 @@ import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
-import { portfolioExtras } from "@/lib/other-assets";
+import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
@@ -30,10 +30,12 @@ export default function HoldingsBoard() {
     api.status().then(setStatus).catch(setError);
   }, []);
 
+  const other = useOtherAssets();
+  const extras = JSON.stringify(portfolioExtras(other)); // changes when a home or 401(k) fund is added or removed
   useEffect(() => {
     if (!holdings?.length) return;
-    api.portfolio(holdings, portfolioExtras()).then(setBoard).catch(setError);
-  }, [holdings]);
+    api.portfolio(holdings, JSON.parse(extras)).then(setBoard).catch(setError);
+  }, [holdings, extras]);
 
   // 30 trading days of closes per row, from the company endpoint (the same prices the company page charts).
   const symbols = board?.exposure.map((e) => e.symbol).join(",") ?? "";
@@ -63,7 +65,8 @@ export default function HoldingsBoard() {
       <div className="pf-head">
         <div className="stack" style={{ gap: 4 }}>
           <span className="kicker">Everything you own</span>
-          <div className="pf-total">{money(board.total)}</div>
+          <div className="pf-total">{money(board.subtotals?.total ?? board.total)}</div>
+          {board.subtotals?.includes_home_estimate && <p className="note">Includes a home estimate</p>}
           {todayMove != null && (
             <p className="sc-change">
               <span className={todayMove < 0 ? "down" : "up"}>{todayMove < 0 ? "−" : "+"}{money(Math.abs(todayMove))} ({pct(todayRel)})</span>
