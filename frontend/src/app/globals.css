@@ -692,7 +692,7 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
   .field, .select, .readtable input { min-height: 44px; }
   .seg-choice button { min-height: 44px; }
   .list-row { min-height: 44px; }
-  .list-row span a, .today-move p a, .say a { display: inline-block; padding: 13px 0; margin: -13px 0; }   /* inline sec.gov links: a 44px tap area */
+  .list-row span a, .today-move p a, .say a, .foot p a { display: inline-block; padding: 13px 0; margin: -13px 0; }   /* inline sec.gov links: a 44px tap area */
   td a { display: inline-block; min-width: 44px; padding: 13px 14px 13px 0; margin: -13px -14px -13px 0; }
   .receipt .kv { font-size: 16px; }
   .receipt .kv dd { white-space: normal; }
@@ -739,6 +739,7 @@ html[data-mode="pro"] .ownmap.pro-only { display: flex !important; }
 @media (max-width: 640px) { .home-item .home-body { grid-template-columns: minmax(0, 1fr); } }
 /* Portfolio sections: the kicker on the left, the section's subtotal on the right, a hairline under both. */
 .pf-sec { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--sep); }
+.pf-sec .kicker { font-size: 16px; }   /* a section title (STOCKS, FUNDS, ...) reads faint at the usual 13px kicker size */
 .pf-sec-sum { font-size: 17px; font-variant-numeric: tabular-nums; color: var(--text); }
 .home-pic { display: block; width: 100%; max-width: 300px; height: auto; border-radius: var(--r-ctl); border: 1px solid var(--sep); }
 

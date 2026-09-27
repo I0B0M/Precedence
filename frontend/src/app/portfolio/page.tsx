@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { OwnMap } from "@/components/OwnMap";
 import { RiskCard } from "@/components/RiskCard";
 import { Stage } from "@/components/briefing/Stage";
-import { maybeAutoTour, startTour } from "@/lib/tour";
+import { startTour } from "@/lib/tour";
 import { BadgeKey, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
@@ -44,11 +44,6 @@ export default function HoldingsBoard() {
   useEffect(() => {
     api.status().then(setStatus).catch(setError);
   }, []);
-
-  // The saved-data demo plays the tour once on a first visit, once the board is on screen.
-  useEffect(() => {
-    if (board) maybeAutoTour();
-  }, [board]);
 
   const other = useOtherAssets();
   const extras = JSON.stringify(portfolioExtras(other)); // changes when a home or 401(k) fund is added or removed
@@ -125,15 +120,15 @@ export default function HoldingsBoard() {
   const localHome = SAVED && !board.subtotals?.home_estimate ? other.properties.reduce((a, p) => a + (p.estimate?.estimate ?? 0), 0) : 0;
   const localPrivate = SAVED && !board.subtotals?.private_funds ? other.privateFunds.reduce((a, f) => a + f.amount, 0) : 0;
   const privateSum = (board.subtotals?.private_funds ?? 0) + localPrivate;
-  const privateLabel = privateRows.length ? privateRows.map((r) => r.fund).join(" & ") : "Private funds";
   const cryptoSum = cryptoTotal(other.crypto); // at the Sep 25 closes (lib/crypto.ts), labelled so on every row
   const ownRow = (r: PortfolioOut["rows"][number]) => {
     const e = board.exposure.find((x) => x.symbol === r.symbol);
     return e ? <HoldingRow key={`own-${r.symbol}`} e={e} kind={r.kind} value={r.value} change={r.change} spark={sparks[r.symbol]} /> : null;
   };
+  // Matches the five sections below exactly: Funds includes private funds (BREIT/BCRED), same as the Funds section sum.
   const split: [string, number, boolean?][] = ([
-    ["Stocks", stocksSum], ["Funds", fundsSum], ["Crypto", cryptoSum], ["401(k)", (board.subtotals?.retirement ?? 0) + localRetirement],
-    ["Home", (board.subtotals?.home_estimate ?? 0) + localHome, true], [privateLabel, privateSum],
+    ["Stocks", stocksSum], ["Funds", fundsSum + privateSum], ["Crypto", cryptoSum], ["401(k)", (board.subtotals?.retirement ?? 0) + localRetirement],
+    ["Real estate", (board.subtotals?.home_estimate ?? 0) + localHome, true],
   ] as [string, number, boolean?][]).filter(([, v]) => v > 0);
 
   return (

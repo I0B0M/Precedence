@@ -144,7 +144,9 @@ export function OwnMap({ board }: { board: PortfolioOut }) {
                 <title>{`${t.symbol} · ${t.name}${t.inside ? ` (inside ${t.inside})` : ""}: ${line2} of your investments${watch ? " · WATCH" : ""}${spread ? `. ${money(t.held)} held; ${money(spread)} of it is counted in the stock boxes it holds, ${money(t.value)} here` : ""}`}</title>
               </g>
             );
-            return t.href ? <Link key={t.key} href={t.href} aria-label={`${t.symbol}, ${money(t.value)}`}>{body}</Link> : <g key={t.key}>{body}</g>;
+            // A tile below 44px either way is too small to reliably tap: keep it informative (title) but not a link.
+            const tappable = t.href && tw >= 44 && th >= 44;
+            return tappable ? <Link key={t.key} href={t.href!} aria-label={`${t.symbol}, ${money(t.value)}`}>{body}</Link> : <g key={t.key}>{body}</g>;
           })}
         </svg>
       </div>

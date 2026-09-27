@@ -2,11 +2,9 @@
 
 import { driver, type DriveStep } from "driver.js";
 import "driver.js/dist/driver.css";
-import { SAVED } from "./api";
 
-// A short guided tour of the portfolio (driver.js). On the saved-data demo it runs once by itself on a first visit,
-// remembered in this browser; everywhere, "Take the tour" on the portfolio plays it. Steps not on screen are skipped.
-const KEY = "stone.tour";
+// A short guided tour of the portfolio (driver.js), started only from "Take the tour" on the portfolio — never
+// on its own, so the first thing on screen is never a modal. Steps not on screen are skipped.
 
 const STEPS: DriveStep[] = [
   { element: ".pf-head", popover: { title: "Everything you own", description: "One number for everything you hold, at the last market close, and how many things are worth a look today." } },
@@ -17,14 +15,6 @@ const STEPS: DriveStep[] = [
   { element: ".seg", popover: { title: "Lite or Pro", description: "The same answer either way. Pro adds the working: case counts, ranges, the stricter checks, candles and the full risk table." } },
   { element: "a[href='/signals']", popover: { title: "Has this mattered before?", description: "Pick a stock and a kind of news. Precedence shows every time it happened in two years and what the stock did next." } },
 ];
-
-function seen(): boolean {
-  try {
-    return localStorage.getItem(KEY) === "done";
-  } catch {
-    return true; // storage blocked: never nag
-  }
-}
 
 export function startTour() {
   const steps = STEPS.filter((s) => {
@@ -44,17 +34,6 @@ export function startTour() {
     stagePadding: 6,
     stageRadius: 12,
     animate: !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
-    onDestroyed: () => {
-      try {
-        localStorage.setItem(KEY, "done");
-      } catch {}
-    },
   });
   d.drive();
-}
-
-/** On the portfolio: the first visit to the saved-data demo gets the tour once, after the page has settled. */
-export function maybeAutoTour() {
-  if (!SAVED || seen() || new URLSearchParams(window.location.search).has("notour")) return;
-  setTimeout(startTour, 700);
 }
