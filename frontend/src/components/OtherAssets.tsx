@@ -157,7 +157,8 @@ function HomeRow({ p }: { p: Property }) {
   return (
     <div className="hitem">
       <div className="hrow other">
-        <span><span className="tk">Home</span><span className="nm">{place}</span></span>
+        <span className="who">
+        <span className="tk">Home</span><span className="nm">{place}</span>
         <span className="say">
           {e ? <>About {money(e.estimate)} · Estimate</> : "Estimate coming soon"}
           {change && <span className="pro-only note"> · {change} (FHFA)</span>}
@@ -173,11 +174,11 @@ function HomeRow({ p }: { p: Property }) {
               ]} />
           )}
         </span>
-        <span className="val">{e ? money(e.estimate) : "—"}<small className="mute">{e ? "estimate" : "coming soon"}</small></span>
-        <span className="hend">
-          <StateBadge state={null} />
-          <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`}>Remove</button>
+        <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`} style={{ alignSelf: "flex-start" }}>Remove</button>
         </span>
+        <span className="sp" aria-hidden />
+        <span className="val">{e ? money(e.estimate) : "—"}<small className="mute">{e ? "estimate" : "coming soon"}</small></span>
+        <span className="hend"><StateBadge state={null} /></span>
       </div>
     </div>
   );
@@ -211,7 +212,8 @@ export function OtherAssetsRows() {
           return (
             <div key={r.id} className="hitem">
               <div className="hrow other">
-                <span><span className="tk">{r.account}</span><span className="nm">{r.lookup?.name ?? r.name}</span></span>
+                <span className="who">
+                <span className="tk">{r.account}</span><span className="nm">{r.lookup?.name ?? r.name}</span>
                 <span className="say">
                   {matchWords(match, behaves)}
                   {r.lookup && (
@@ -224,11 +226,11 @@ export function OtherAssetsRows() {
                       ]} />
                   )}
                 </span>
-                <span className="val">{money(r.amount)}<small className="mute">you entered</small></span>
-                <span className="hend">
-                  <StateBadge state={b?.state ?? null} />
-                  <button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`}>Remove</button>
+                <button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`} style={{ alignSelf: "flex-start" }}>Remove</button>
                 </span>
+                <span className="sp" aria-hidden />
+                <span className="val">{money(r.amount)}<small className="mute">you entered</small></span>
+                <span className="hend"><StateBadge state={b?.state ?? null} /></span>
               </div>
             </div>
           );
@@ -236,13 +238,14 @@ export function OtherAssetsRows() {
         {v.crypto.map((c) => (
           <div key={c.id} className="hitem">
             <div className="hrow other">
-              <span><span className="tk">{c.symbol}</span><span className="nm">Crypto</span></span>
-              <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol} · Price coming soon</span>
-              <span className="val">Price<small className="mute">coming soon</small></span>
-              <span className="hend">
-                <StateBadge state={null} />
-                <button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`}>Remove</button>
+              <span className="who">
+                <span className="tk">{c.symbol}</span><span className="nm">Crypto</span>
+                <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol} · Price coming soon</span>
+                <button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`} style={{ alignSelf: "flex-start" }}>Remove</button>
               </span>
+              <span className="sp" aria-hidden />
+              <span className="val">Price<small className="mute">coming soon</small></span>
+              <span className="hend"><StateBadge state={null} /></span>
             </div>
           </div>
         ))}
