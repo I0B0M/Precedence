@@ -84,7 +84,7 @@ export default function HoldingsBoard() {
         </div>
         <p className="note" style={{ maxWidth: "34ch" }}>
           <span className="pro-only">WATCH only when a signal that has proven itself on this stock is firing. </span>
-          {board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in our price data."}
+          {todayMove == null && (board.price_as_of ? `Values at the ${shortDate(board.price_as_of)} close.` : "Values at the latest close.")}
         </p>
       </div>
 
@@ -116,7 +116,7 @@ export default function HoldingsBoard() {
                     // A looked-through fund: show what you own, and say how much of it appears as its stocks.
                     <>
                       {money(e.direct)}
-                      <small className="mute">{money(e.direct - e.total)} of it shown as its stocks on this list</small>
+                      <small className="mute">{money(e.direct - e.total)} shown as its stocks</small>
                     </>
                   ) : (
                     <>
@@ -196,7 +196,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
       <div className="stack" style={{ gap: 8 }}>
         <h3>What&apos;s going on</h3>
         {isFund && (
-          <p>{fund?.as_of ? `A fund. Its holdings are from ${shortDate(fund.as_of)}.` : "A fund. Its holdings aren't loaded yet, so it's shown as one line."}</p>
+          <p>{fund?.as_of ? `Holdings as of ${shortDate(fund.as_of)}.` : "Holdings not loaded yet."}</p>
         )}
         {isCrypto && <p>Crypto isn&apos;t covered by our signals yet, so there&apos;s nothing tested to report.</p>}
         {!isCrypto && (!isFund || e.firing.length > 0) && (
@@ -218,7 +218,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
         )}
         {e.children.length > 0 && (
           <div className="list">
-            <p className="list-head">Smaller holdings inside {e.symbol} (under 1% of what you own each)</p>
+            <p className="list-head">Smaller holdings inside {e.symbol} (under 1% each)</p>
             {kids.map((k) => (
               <Link key={k.symbol} className="list-row" href={`/company/${k.symbol}`}>
                 <span>{k.symbol} <span className="mute">{k.name}</span></span>
@@ -236,14 +236,14 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
       <div className="stack" style={{ gap: 8 }}>
         <h3>What it means for you</h3>
         <dl className="kv">
-          <dt>You own directly</dt><dd>{money(e.direct)}</dd>
+          {e.direct > 0 && <><dt>You own directly</dt><dd>{money(e.direct)}</dd></>}
           {viaEtf > 0 && (<><dt>Inside your funds</dt><dd>{money(viaEtf)}</dd></>)}
-          {isFund && e.direct > e.total && (<><dt>Of that, shown as its stocks on this list</dt><dd>{money(e.direct - e.total)}</dd></>)}
+          {isFund && e.direct > e.total && (<><dt>Shown as its stocks</dt><dd>{money(e.direct - e.total)}</dd></>)}
           <dt>Share of everything you own</dt><dd>{whole(share)}</dd>
           <dt>A bad day could cost you</dt>
           <dd className="down">{money(badDay)}<span className="pro-only note"> ({pct(e.bad_day_return)})</span></dd>
         </dl>
-        <p className="note">&quot;A bad day&quot; is the 1-in-20 worst day of the past year{isFund ? ", for the whole fund" : ""}.</p>
+        <p className="note">Bad day: the worst 1 in 20 days, past year{isFund ? ", whole fund" : ""}.</p>
         {isFund && <Link className="linkb" href={`/fund/${e.symbol}`}>What&apos;s inside {e.symbol} ›</Link>}
         {kind !== "etf" && !isCrypto && <Link className="linkb" href={`/company/${e.symbol}`}>Open {e.symbol} ›</Link>}
       </div>
