@@ -90,6 +90,15 @@ export default function CompanyScreen() {
               <p className="say-big"><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
               <HitDots cases={main.cases ?? []} vsMarket={main.vs_market} />
               <p><b>{liteVerdict(main, co.ticker)}</b></p>
+              {main.firing && (() => {
+                // What to check next: the evidence behind the Heads up, never advice. Insider selling: the latest Form 4.
+                // The sale's own sec.gov link when the API sends one (BACKEND-REQUESTS #7); else every past case.
+                const s0 = d.insider_sales[0] as (typeof d.insider_sales)[number] & { url?: string | null } | undefined;
+                const f4 = main.signal === "insider_cluster" && s0 ? s0.url ?? filingUrl(s0.accession) : null;
+                return f4
+                  ? <a className="linkb" href={f4} target="_blank" rel="noopener noreferrer">What to check: who sold and how much ›</a>
+                  : inLab(main.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${main.signal}`}>What to check: every past time ›</Link>;
+              })()}
               {main.signal === "rate_jump" && <MarketCard />}
             </>
           ) : (

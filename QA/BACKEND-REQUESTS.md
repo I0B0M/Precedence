@@ -2,6 +2,19 @@
 
 Newest first. The builder doesn't edit `backend/**`; each item says what the frontend does until it lands.
 
+## 2026-09-27 (after judge walk #2)
+
+5. **Private funds (BREIT, BCRED)**: already in hand with the data chat (command center, 01:40). The builder is building the UI
+   against the shape it described and will wire it when the hash lands.
+
+6. **VOO and IVV holdings from their own N-PORT filings** (judge #8), as done for QQQ, so they stop borrowing SPY's file.
+   *Until then:* "Same index as SPY. Holdings shown from SPY's State Street file (Sep 24)."
+
+7. **A sec.gov `url` on each `/api/companies/{t}` `insider_sales` row**, as `/api/companies/{t}/today` already sends
+   (judge #4: "What to check: who sold and how much"). The company filings list leaves out Form 4s, so the frontend
+   can't find the link from the accession.
+   *Until then:* the Lite link reads "What to check: every past time ›" and opens the signal's past cases.
+
 ## 2026-09-27 (after judge walk #1)
 
 4. **Clean company names, once, server-side** (judge #8). Raw SEC names show in the /signals and /paper pickers and
