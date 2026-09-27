@@ -6,7 +6,7 @@ import { api, type Scan, type Today } from "@/lib/api";
 import { Why } from "@/components/Why";
 import { useMode } from "@/lib/mode";
 import { shortDate } from "@/lib/format";
-import { FORM_WORDS, PROMISE_WORDS, SIGNAL_WORDS, strongCountWords } from "@/lib/words";
+import { FORM_WORDS, PROMISE_WORDS, SIGNAL_WORDS, strongCountWords, WORTH_A_LOOK_WHY, worthALook } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
 const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
@@ -84,7 +84,7 @@ export function TodayMarket({ t }: { t: Today }) {
   );
 }
 
-type Stage = { n: number; label: string };
+type Stage = { n: number; label: string; sub?: string };
 
 /** The mockup's moment, with real numbers: the big number counts down stage by stage, leaving a struck-through trail.
  *  With prefers-reduced-motion it shows the final stage straight away.
@@ -140,6 +140,7 @@ function Countdown({ stages, plain = false }: { stages: Stage[]; plain?: boolean
         <p className="countdown-now">
           <span className="bignum">{shownNum}</span>
           <span className={plain ? "countdown-label" : "pro-only"}>{stages[shownLabel].label}</span>
+          {shownLabel === last && stages[last].sub && <span className="countdown-sub">{stages[last].sub}</span>}
         </p>
         {plain && <p className="countdown-dots">{stages.map((_, i) => <i key={i} className={i <= shownLabel ? "on" : undefined} />)}</p>}
       </div>
@@ -167,7 +168,7 @@ export function WeekCountdown({ symbols, example }: { symbols: string[]; example
     const out: Stage[] = [
       { n: all, label: w ? `new this week (${span(w.start, w.end)}) across the companies Precedence follows` : `new in our data for ${shortDate(t.day)}` },
       { n: mine.count + h.signals.firing, label: example ? "about the example portfolio" : "about what you own" },
-      { n: h.signals.strong_firing, label: h.signals.strong_firing === 1 ? "has come before drops" : "have come before drops" },
+      { n: h.signals.strong_firing, label: worthALook(h.signals.strong_firing), sub: WORTH_A_LOOK_WHY },
     ];
     return out.filter((x) => Number.isFinite(x.n));
   }, [t, example]);

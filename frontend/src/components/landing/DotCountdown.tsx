@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useToday } from "@/components/Today";
 import { shortDate } from "@/lib/format";
+import { WORTH_A_LOOK_WHY, worthALook } from "@/lib/words";
 
 // The landing's countdown, the demo film's moment with real counts: everything Precedence read, down to what has
 // come before drops for what you own. A field of gold dots thins out with the number (on a log scale) and, at the
@@ -18,7 +19,7 @@ const EASE = 0.9; // seconds the number takes to reach a step
 const COLS = 40, ROWS = 35, N = COLS * ROWS; // the dot field
 const GOLD = "#D4A73C", FINAL = "#F3D27A";
 
-type Step = { n: number; label: string };
+type Step = { n: number; label: string; sub?: string };
 
 const easeOut = (u: number) => 1 - Math.pow(1 - u, 3);
 const reducedMotion = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -40,7 +41,7 @@ export function DotCountdown({ symbols, example }: { symbols: string[]; example:
       const all = w ? w.filings.count + (w.rate?.jumps.length ?? 0) : t.market.filings.count + (t.market.rate ? 1 : 0);
       out.push({ n: all, label: w ? "new this week, across the companies Precedence follows" : "new today, across the companies Precedence follows" });
       out.push({ n: mine.count + h.signals.firing, label: example ? "about the example portfolio" : "about what you own" });
-      out.push({ n: h.signals.strong_firing, label: h.signals.strong_firing === 1 ? "has come before drops" : "have come before drops" });
+      out.push({ n: h.signals.strong_firing, label: worthALook(h.signals.strong_firing), sub: WORTH_A_LOOK_WHY });
     }
     // A step we can't count is dropped, never filled in; counts must step down for the countdown to read right.
     return out.filter((s, i) => Number.isFinite(s.n) && s.n >= 1 && (i === 0 || s.n < out[i - 1].n));
@@ -51,6 +52,7 @@ export function DotCountdown({ symbols, example }: { symbols: string[]; example:
   const canvas = useRef<HTMLCanvasElement>(null);
   const num = useRef<HTMLDivElement>(null);
   const cap = useRef<HTMLParagraphElement>(null);
+  const subRef = useRef<HTMLParagraphElement>(null);
   const glowL = useRef<HTMLElement>(null);
   const glowR = useRef<HTMLElement>(null);
   const pips = useRef<HTMLSpanElement>(null);
@@ -116,6 +118,7 @@ export function DotCountdown({ symbols, example }: { symbols: string[]; example:
       n.style.transform = `scale(${punch.toFixed(3)})`;
       n.style.color = done ? FINAL : "#fff";
       k.textContent = steps[i].label;
+      if (subRef.current) subRef.current.textContent = done ? steps[i].sub ?? "" : "";
       k.style.opacity = String(Math.min(1, dt / 0.4));
       pips.current?.querySelectorAll("i").forEach((p, j) => { p.className = j === i ? (i === last ? "on last" : "on") : ""; });
 
@@ -149,13 +152,14 @@ export function DotCountdown({ symbols, example }: { symbols: string[]; example:
   const final = steps[steps.length - 1];
   return (
     <div className="dcd" ref={box}>
-      <p className="sr-only">{steps.map((s) => `${s.n.toLocaleString("en-US")} ${s.label}`).join(". ")}.</p>
+      <p className="sr-only">{steps.map((s) => `${s.n.toLocaleString("en-US")} ${s.label}${s.sub ? `: ${s.sub}` : ""}`).join(". ")}.</p>
       <canvas ref={canvas} className="dcd-field" aria-hidden />
       <i ref={glowL} className="dcd-glow" aria-hidden />
       <i ref={glowR} className="dcd-glow" aria-hidden />
       <div className="dcd-center" aria-hidden>
         <div ref={num} className="dcd-num">{final.n.toLocaleString("en-US")}</div>
         <p ref={cap} className="dcd-cap">{final.label}</p>
+        <p ref={subRef} className="dcd-sub">{final.sub ?? ""}</p>
         <span ref={pips} className="dcd-pips">{steps.map((s, j) => <i key={j} />)}</span>
         <p className="dcd-src">SEC EDGAR · FRED{asOf ? ` · as of ${shortDate(asOf)}` : ""}</p>
       </div>

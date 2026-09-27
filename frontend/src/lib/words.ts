@@ -93,10 +93,14 @@ export function fundLine(f: { symbol: string; fund_firing: SignalResult[]; heads
   return f.holdings.length ? "A fund: many stocks in one." : "What's inside isn't loaded yet.";
 }
 
-/** "2 have mattered before" / "2 have come before drops": how many STRONG results are firing (LITE_STRONG_WORDING). */
+/** The countdown's last step: how many STRONG results are firing, and the small line that says what that means. */
+export const worthALook = (n: number) => (n === 1 ? "is worth a look" : "are worth a look");
+export const WORTH_A_LOOK_WHY = "the kind of news that came before drops in these stocks";
+
+/** "2 have mattered before" / "2 are worth a look": how many STRONG results are firing (LITE_STRONG_WORDING). */
 export function strongCountWords(n: number, forYourHoldings = false): string {
   const verb = n === 1 ? "has" : "have";
-  if (NOT_PROVEN_WORDS) return `${n} ${verb} come before drops${forYourHoldings ? " for your holdings" : ""}`;
+  if (NOT_PROVEN_WORDS) return `${n} ${worthALook(n)}${forYourHoldings ? " in your holdings" : ""}`;
   return `${n} ${verb} mattered before${forYourHoldings ? " for your holdings" : ""}`;
 }
 
