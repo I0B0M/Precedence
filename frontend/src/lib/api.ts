@@ -225,7 +225,42 @@ export interface RetirementIn { kind: "retirement"; fund: string; amount: number
 export interface PropertyIn { kind: "property"; label?: string; address?: string; paid: number; bought_year: number;
   estimate: number; source?: string; as_of?: string | null }
 
-export interface PortfolioIn { holdings: Holding[]; other?: (PropertyIn | RetirementIn)[] }
+/** A non-traded fund (Blackstone's BREIT or BCRED), valued at the amount the user entered. Ticker as typed. */
+export interface PrivateFundIn { kind: "private_fund"; fund: string; amount: number }
+
+export interface PortfolioIn { holdings: Holding[]; other?: (PropertyIn | RetirementIn | PrivateFundIn)[] }
+
+export interface PrivateFundRow {
+  kind: "private_fund";
+  fund: string; // "BREIT" | "BCRED"
+  name: string;
+  amount: number; // dollars as entered; this is the value used, never a market price
+  nav: number | null; // latest monthly NAV per share, Class I
+  nav_as_of: string | null; // the month end that NAV is for
+  nav_url: string | null; // the SEC filing that states it
+  share_class: "I";
+  shares: number | null; // amount / nav, for Pro; null without a NAV
+  state: null; // "Not tested": no daily prices
+}
+
+/** GET /api/funds/BREIT | BCRED: a non-traded fund, priced monthly by its own SEC filings. No holdings list. */
+export interface PrivateFundPage {
+  kind: "private_fund";
+  symbol: string;
+  name: string;
+  sponsor: "Blackstone";
+  pricing: "monthly NAV";
+  nav: { value: number; as_of: string; share_class: "I"; form: "424B3" | "8-K"; accession: string; url: string } | null;
+  history: { as_of: string; nav: number; url: string }[]; // month ends, oldest first; each value's own filing
+  returns: { m1: number | null; m3: number | null; m12: number | null; basis: string }; // fractions; null if a month is missing
+  invests_in: { text: string; url: string } | null; // ≤12 words, quoted from its latest 10-Q/10-K
+  liquidity_note: string | null; // its own repurchase limits, quoted
+  liquidity_url: string | null; // the filing that note quotes
+  filings: { form: string; accepted_at: string; url: string }[]; // latest 10-Q, 10-K and NAV filing
+  holdings: []; // never listed
+  state: null;
+  source: string; // e.g. "SEC EDGAR: BCRED monthly 8-K (Item 8.01)"
+}
 
 export interface RetirementRow {
   kind: "retirement";
@@ -261,10 +296,12 @@ export interface PortfolioOut {
   price_as_of: string | null; // the market close the values are priced at, e.g. "2026-09-25"
   retirement: RetirementRow[];
   properties: PropertyRow[];
+  private_funds?: PrivateFundRow[]; // always sent; not on the board, not in the day change
   subtotals: {
     investments: number; // brokerage holdings
     retirement: number; // every 401(k)/IRA row, mapped or not
     home_estimate: number;
+    private_funds?: number; // BREIT/BCRED amounts as entered; always sent, included in total
     total: number; // everything above
     includes_home_estimate: boolean; // say "includes a home estimate" next to the total when true
   };
@@ -440,6 +477,7 @@ export const api = {
   lab: (t: string, s: string) => call<SignalResult>(`/api/lab/${encodeURIComponent(t)}/${s}`),
   marketRateJump: () => call<MarketResult>("/api/market/rate_jump"),
   fund: (symbol: string) => call<FundPage>(`/api/funds/${encodeURIComponent(symbol)}`),
+  privateFund: (symbol: string) => call<PrivateFundPage>(`/api/funds/${encodeURIComponent(symbol)}`), // BREIT, BCRED
   filingSummary: (accession: string) => call<FilingSummary>(`/api/filings/${encodeURIComponent(accession)}/summary`),
   today: (symbols: string[] = []) =>
     call<Today>(`/api/today${symbols.length ? `?symbols=${encodeURIComponent(symbols.join(","))}` : ""}`),
