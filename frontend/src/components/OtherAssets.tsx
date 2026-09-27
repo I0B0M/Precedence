@@ -1,49 +1,99 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StateBadge } from "@/components/bits";
+import { Why } from "@/components/Why";
+import { api, ApiError, type FundLookup, type HomeEstimate, type RetirementRow } from "@/lib/api";
 import { SHOW_CRYPTO } from "@/lib/flags";
-import { money } from "@/lib/format";
-import { addCrypto, addProperty, addRetirement, removeOther, useOtherAssets, type RetirementFund } from "@/lib/other-assets";
+import { money, pct } from "@/lib/format";
+import { addCrypto, addProperty, addRetirement, portfolioExtras, removeOther, useOtherAssets, type Property, type RetirementFund } from "@/lib/other-assets";
 
 const num = (s: string) => {
   const v = Number(s.replace(/[$,\s]/g, ""));
   return s.trim() && Number.isFinite(v) && v > 0 ? v : null;
 };
-const monthWords = (ym: string) => new Date(ym + "-15T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
-/** Import page: add a home, or a 401(k) / IRA. Saved as typed; values come later from the backend. */
+/** "Behaves like the S&P 500" / "Close stand-in" / "Not tested", from the fund lookup (or the portfolio's row). */
+function matchWords(match: FundLookup["match"] | undefined, behaves: string | null | undefined): string {
+  if (match === "exact index" && behaves === "SPY") return "Behaves like the S&P 500";
+  if (match === "close stand-in") return "Close stand-in";
+  return "Not tested";
+}
+const LEVEL_WORDS: Record<string, string> = { zip5: "ZIP", county: "County", state: "State" };
+
+/** Import page: add a home (estimated from FHFA prices), 401(k) / IRA funds (matched to an index), crypto when shown. */
 export function OtherAssetsForms() {
   const [place, setPlace] = useState("");
   const [price, setPrice] = useState("");
   const [bought, setBought] = useState("");
-  const [homeSaved, setHomeSaved] = useState(false);
+  const [homeMsg, setHomeMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [homeBusy, setHomeBusy] = useState(false);
   const [account, setAccount] = useState<RetirementFund["account"]>("401(k)");
   const [funds, setFunds] = useState([{ name: "", amount: "" }]);
-  const [fundsSaved, setFundsSaved] = useState(false);
-
+  const [fundMsg, setFundMsg] = useState<string | null>(null);
+  const [fundBusy, setFundBusy] = useState(false);
   const [coins, setCoins] = useState([{ symbol: "", amount: "" }]);
   const [coinsSaved, setCoinsSaved] = useState(false);
+
   const coinRows = coins.filter((c) => /^[A-Za-z0-9.]{2,10}$/.test(c.symbol.trim()) && num(c.amount) != null);
-  const homeOk = place.trim().length > 1 && num(price) != null && /^\d{4}-\d{2}$/.test(bought);
+  const homeOk = place.trim().length > 1 && num(price) != null && /^\d{4}-\d{2}$/.test(bought) && !homeBusy;
   const fundRows = funds.filter((f) => f.name.trim() && num(f.amount) != null);
+
+  /** Ask for the estimate (an address, or a bare 5-digit ZIP), then save the home either way. */
+  async function addHome() {
+    setHomeBusy(true);
+    setHomeMsg(null);
+    const where = place.trim(), paid = num(price)!, [y, m] = bought.split("-").map(Number);
+    let estimate: HomeEstimate | null = null;
+    let msg: { ok: boolean; text: string };
+    try {
+      estimate = await api.estimateHome({ ...(/^\d{5}$/.test(where) ? { zip: where } : { address: where }), paid, bought_year: y, bought_month: m });
+      msg = { ok: true, text: `About ${money(estimate.estimate)} · Estimate` };
+    } catch (e) {
+      const status = e instanceof ApiError ? e.status : 0;
+      msg = status === 400 || status === 422
+        ? { ok: false, text: `${(e as ApiError).message} Saved without an estimate.` }
+        : { ok: false, text: "Estimate coming soon. Saved." };
+    }
+    addProperty({ address: where, paid, bought, estimate });
+    setPlace(""); setPrice(""); setBought("");
+    setHomeMsg(msg);
+    setHomeBusy(false);
+  }
+
+  /** Look each fund up (which index it tracks), then save them. */
+  async function addFunds() {
+    setFundBusy(true);
+    setFundMsg(null);
+    const rows = await Promise.all(fundRows.map(async (f) => {
+      let lookup: FundLookup | null = null;
+      try {
+        lookup = await api.lookupFund(f.name.trim());
+      } catch {}
+      return { account, name: f.name.trim(), amount: num(f.amount)!, lookup };
+    }));
+    addRetirement(rows);
+    setFunds([{ name: "", amount: "" }]);
+    setFundMsg(rows.map((r) => `${r.lookup?.ticker ?? r.name}: ${matchWords(r.lookup?.match, r.lookup?.behaves_like)}`).join(" · "));
+    setFundBusy(false);
+  }
 
   return (
     <div className="grid2 even">
       <div className="card">
-        <h3>Add a home or property</h3>
-        <label className="list-head" htmlFor="h-place">City and state, or ZIP</label>
-        <input id="h-place" className="field" value={place} onChange={(e) => { setPlace(e.target.value); setHomeSaved(false); }} placeholder="Miami, FL or 33101" />
+        <h3>Add a home</h3>
+        <label className="list-head" htmlFor="h-place">Home address</label>
+        <input id="h-place" className="field" value={place} autoComplete="street-address"
+          onChange={(e) => { setPlace(e.target.value); setHomeMsg(null); }} placeholder="1 Brickell Ave, Miami, FL" />
         <label className="list-head" htmlFor="h-price">What you paid</label>
-        <input id="h-price" className="field" inputMode="decimal" value={price} onChange={(e) => { setPrice(e.target.value); setHomeSaved(false); }} placeholder="$" />
+        <input id="h-price" className="field" inputMode="decimal" value={price} onChange={(e) => { setPrice(e.target.value); setHomeMsg(null); }} placeholder="$" />
         <label className="list-head" htmlFor="h-when">When you bought it</label>
-        <input id="h-when" className="field" type="month" value={bought} onChange={(e) => { setBought(e.target.value); setHomeSaved(false); }} />
-        <button className="btn" type="button" disabled={!homeOk} style={{ alignSelf: "flex-start" }}
-          onClick={() => { addProperty({ place: place.trim(), price: num(price)!, bought }); setPlace(""); setPrice(""); setBought(""); setHomeSaved(true); }}>
-          Add this home
+        <input id="h-when" className="field" type="month" value={bought} onChange={(e) => { setBought(e.target.value); setHomeMsg(null); }} />
+        <button className="btn" type="button" disabled={!homeOk} style={{ alignSelf: "flex-start" }} onClick={addHome}>
+          {homeBusy ? "Estimating…" : "Add this home"}
         </button>
-        {homeSaved && <p className="okline">Saved. It shows on your portfolio as &quot;Estimate coming soon&quot;.</p>}
-        <p className="note">Precedence doesn&apos;t estimate home values yet, so we keep what you typed and show no value until an estimate with its source and date is ready.</p>
+        {homeMsg && <p className={homeMsg.ok ? "okline" : "badline"}>{homeMsg.text}</p>}
+        <p className="note">A ZIP code works too. An estimate, never a price.</p>
       </div>
 
       <div className="card">
@@ -53,22 +103,20 @@ export function OtherAssetsForms() {
             <button key={a} type="button" aria-pressed={account === a} onClick={() => setAccount(a)}>{a}</button>
           ))}
         </div>
-        <p className="note">Type each fund&apos;s name and how much is in it, as your statement shows.</p>
         {funds.map((f, i) => (
           <div key={i} className="fund-row">
-            <input className="field" aria-label={`Fund name ${i + 1}`} placeholder="Fund name" value={f.name}
-              onChange={(e) => { setFunds(funds.map((x, j) => (j === i ? { ...x, name: e.target.value } : x))); setFundsSaved(false); }} />
+            <input className="field" aria-label={`Fund name ${i + 1}`} placeholder="Fund or ticker, e.g. FXAIX" value={f.name}
+              onChange={(e) => { setFunds(funds.map((x, j) => (j === i ? { ...x, name: e.target.value } : x))); setFundMsg(null); }} />
             <input className="field" aria-label={`Amount ${i + 1}`} placeholder="$" inputMode="decimal" value={f.amount}
-              onChange={(e) => { setFunds(funds.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x))); setFundsSaved(false); }} />
+              onChange={(e) => { setFunds(funds.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x))); setFundMsg(null); }} />
           </div>
         ))}
         <button className="linkb" type="button" onClick={() => setFunds([...funds, { name: "", amount: "" }])}>Add a fund</button>
-        <button className="btn" type="button" disabled={!fundRows.length} style={{ alignSelf: "flex-start" }}
-          onClick={() => { addRetirement(fundRows.map((f) => ({ account, name: f.name.trim(), amount: num(f.amount)! }))); setFunds([{ name: "", amount: "" }]); setFundsSaved(true); }}>
-          Add {fundRows.length > 1 ? `${fundRows.length} funds` : "this fund"}
+        <button className="btn" type="button" disabled={!fundRows.length || fundBusy} style={{ alignSelf: "flex-start" }} onClick={addFunds}>
+          {fundBusy ? "Looking up…" : `Add ${fundRows.length > 1 ? `${fundRows.length} funds` : "this fund"}`}
         </button>
-        {fundsSaved && <p className="okline">Saved. Funds show on your portfolio; matching them to an index comes next.</p>}
-        <p className="note">A screenshot of a 401(k) statement: coming soon. The reader handles stock tickers today, not fund names.</p>
+        {fundMsg && <p className="okline">Saved. {fundMsg}</p>}
+        <p className="note">A ticker like FXAIX works best.</p>
       </div>
 
       {SHOW_CRYPTO && <div className="card">
@@ -94,47 +142,107 @@ export function OtherAssetsForms() {
   );
 }
 
-/** Board: what you added that Precedence can't value or test yet. Not counted in the total. */
+/** One home row: "About $X · Estimate" in Lite; the price change and the method in Pro / Why. */
+function HomeRow({ p }: { p: Property }) {
+  const e = p.estimate;
+  const place = e?.address_matched ?? p.address;
+  const where = e?.index_level === "zip5" ? `ZIP ${e.zip ?? ""}` : e?.index_level === "county" ? "County" : e?.index_level === "state" ? (e.us_state ?? "State") : "";
+  const change = e && e.index_change != null && e.index_from
+    ? `${where} prices ${e.index_change >= 0 ? "up" : "down"} ${pct(Math.abs(e.index_change), false, 0)} since ${e.index_from.year}`.trim()
+    : null;
+  return (
+    <div className="hitem">
+      <div className="hrow other">
+        <span><span className="tk">Home</span><span className="nm">{place}</span></span>
+        <span className="say">
+          {e ? <>About {money(e.estimate)} · Estimate</> : "Estimate coming soon"}
+          {change && <span className="pro-only note"> · {change} (FHFA)</span>}
+          {e && (
+            <Why what={`home estimate for ${place}`} source={e.source} asOf={e.as_of}
+              rows={[
+                ["Method", e.method],
+                ...(change ? [["Change", change] as [string, string]] : []),
+                ["Index", e.index_level ? `${LEVEL_WORDS[e.index_level] ?? e.index_level} series${e.index_from && e.index_to ? `, ${e.index_from.year} ${e.index_from.value} → ${e.index_to.year} ${e.index_to.value}` : ""}` : "—"],
+                ["Located by", e.located_by === "address" ? `address, matched as ${e.address_matched ?? "—"} (${e.geocoder})` : `ZIP ${e.zip ?? "—"}`],
+                ["Paid", `${money(e.paid)} in ${e.bought_year}`],
+                ...(e.note ? [["Note", e.note] as [string, string]] : []),
+              ]} />
+          )}
+        </span>
+        <span className="val">{e ? money(e.estimate) : "—"}<small className="mute">{e ? "estimate" : "coming soon"}</small></span>
+        <span className="hend">
+          <StateBadge state={null} />
+          <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`}>Remove</button>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Board: a home, 401(k) / IRA funds (and crypto, when shown). One line each in Lite; the working in Pro. */
 export function OtherAssetsRows() {
   const all = useOtherAssets();
   const v = SHOW_CRYPTO ? all : { ...all, crypto: [] };
+  // Ask the stateless portfolio endpoint about just these rows, so each fund's badge is the backend's own state.
+  const extras = portfolioExtras(v);
+  const key = JSON.stringify(extras);
+  const [got, setGot] = useState<{ key: string; rows: RetirementRow[] } | null>(null);
+  useEffect(() => {
+    const ask = portfolioExtras();
+    if (!ask.other?.some((o) => o.kind === "retirement")) return;
+    api.portfolio([], ask).then((p) => setGot({ key, rows: p.retirement ?? [] })).catch(() => {});
+  }, [key]);
+  const backend = got?.key === key ? got.rows : [];
+
   if (!v.properties.length && !v.retirement.length && !v.crypto.length) return null;
   return (
     <div className="stack" style={{ gap: 10, marginTop: 24 }}>
       <span className="ticker">Also yours</span>
       <div className="rows">
-        {v.properties.map((p) => (
-          <div key={p.id} className="hitem">
-            <div className="hrow other">
-              <span><span className="tk">Home</span><span className="nm">{p.place}</span></span>
-              <span className="say">Bought for {money(p.price)} in {monthWords(p.bought)}. Estimate coming soon.</span>
-              <span className="val">Estimate<small className="mute">coming soon</small></span>
-              <span className="hend"><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home in ${p.place}`}>Remove</button></span>
+        {v.properties.map((p) => <HomeRow key={p.id} p={p} />)}
+        {v.retirement.map((r) => {
+          const b = backend.find((x) => x.fund === (r.lookup?.ticker ?? r.name));
+          const match = b?.match ?? r.lookup?.match ?? null;
+          const behaves = b?.behaves_like ?? r.lookup?.behaves_like ?? null;
+          return (
+            <div key={r.id} className="hitem">
+              <div className="hrow other">
+                <span><span className="tk">{r.account}</span><span className="nm">{r.lookup?.name ?? r.name}</span></span>
+                <span className="say">
+                  {matchWords(match, behaves)}
+                  {r.lookup && (
+                    <Why what={`${r.name} match`} source={r.lookup.source ?? undefined}
+                      rows={[
+                        ["Fund", `${r.lookup.ticker ?? r.name}${r.lookup.category ? ` · ${r.lookup.category}` : ""}`],
+                        ["Match", match ? `${match}${behaves ? `, behaves like ${behaves}` : ""}` : "no index match"],
+                        ...(r.lookup.basis ? [["Basis", r.lookup.basis] as [string, string]] : []),
+                        ...(r.lookup.note ? [["Note", r.lookup.note] as [string, string]] : []),
+                      ]} />
+                  )}
+                </span>
+                <span className="val">{money(r.amount)}<small className="mute">you entered</small></span>
+                <span className="hend">
+                  <StateBadge state={b?.state ?? null} />
+                  <button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`}>Remove</button>
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
-        {v.retirement.map((r) => (
-          <div key={r.id} className="hitem">
-            <div className="hrow other">
-              <span><span className="tk">{r.account}</span><span className="nm">{r.name}</span></span>
-              <span className="say">{money(r.amount)}, as you entered it. Matching this fund to an index comes next.</span>
-              <span className="val">{money(r.amount)}<small className="mute">you entered</small></span>
-              <span className="hend"><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`}>Remove</button></span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {v.crypto.map((c) => (
           <div key={c.id} className="hitem">
             <div className="hrow other">
               <span><span className="tk">{c.symbol}</span><span className="nm">Crypto</span></span>
-              <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol}, as you entered it. Price coming soon.</span>
+              <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol} · Price coming soon</span>
               <span className="val">Price<small className="mute">coming soon</small></span>
-              <span className="hend"><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`}>Remove</button></span>
+              <span className="hend">
+                <StateBadge state={null} />
+                <button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`}>Remove</button>
+              </span>
             </div>
           </div>
         ))}
       </div>
-      <p className="note">Not counted in your total yet. Precedence shows a value only when it has an estimate with its source and date.</p>
     </div>
   );
 }
