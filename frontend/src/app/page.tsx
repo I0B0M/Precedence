@@ -7,7 +7,8 @@ import { Spark } from "@/components/HoldingsRail";
 import { HeroLoop } from "@/components/landing/Loops";
 import { Stage } from "@/components/briefing/Stage";
 import { Features } from "@/components/landing/Features";
-import { useToday, WeekCountdown } from "@/components/Today";
+import { useToday } from "@/components/Today";
+import { DotCountdown } from "@/components/landing/DotCountdown";
 import { api, EXAMPLE_PORTFOLIO, type CompanyDetail, type PortfolioOut } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { useHoldings } from "@/lib/holdings";
@@ -193,7 +194,7 @@ export default function Home() {
       {/* ---- this week, counted down: everything new, then what's about what you own, then what has come before drops ---- */}
       <section className="home-band" aria-label="This week">
         <div className="home-inner">
-          <WeekCountdown symbols={(returning ? mine! : EXAMPLE_PORTFOLIO).map((h) => h.symbol)} example={!returning} />
+          <DotCountdown symbols={(returning ? mine! : EXAMPLE_PORTFOLIO).map((h) => h.symbol)} example={!returning} />
         </div>
       </section>
 
