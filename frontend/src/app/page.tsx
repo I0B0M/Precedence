@@ -74,14 +74,14 @@ export default function Landing() {
               </div>
             );
           })}
-          <p className="lp-hx-note">Prices from Alpaca (IEX); badges from our tests on SEC and FRED data.</p>
+          <p className="lp-hx-note pro-only">Prices from Alpaca (IEX); badges from our tests on SEC and FRED data.</p>
         </Link>
       </section>
 
       <section className="lp-stats" aria-label="What's under the hood">
         <div className="lp-stat"><b>{INSIDER_TRADES.toLocaleString("en-US")}</b><span>insider trades read from SEC Form 4s, as of Sep 25</span></div>
         <div className="lp-stat"><b>{spy ? spy.total_holdings_count : "…"}</b><span>companies inside SPY, as of {day(spy?.holdings_as_of)}</span></div>
-        <div className="lp-stat"><b>{rate ? `${rate.value.toFixed(2)}%` : "…"}</b><span>10-year Treasury (FRED), {day(rate?.day)}</span></div>
+        <div className="lp-stat"><b>{rate ? `${rate.value.toFixed(2)}%` : "…"}</b><span>10-year Treasury rate<span className="pro-only"> (FRED)</span>, {day(rate?.day)}</span></div>
         <div className="lp-stat"><b>{stocks ?? "…"}</b><span>stocks tested, priced at the {day(board?.price_as_of)} close</span></div>
       </section>
 
