@@ -31,7 +31,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SampleBanner />
             <main>{children}</main>
             <footer className="note foot">
-              Built at ShellHacks 2026. Not investment advice. No order is ever sent from this screen.
+              <p>Built at ShellHacks 2026. Not investment advice. No order is ever sent from this screen.</p>
+              <p>Filings: SEC EDGAR. Prices: IEX via Alpaca, daily, split-adjusted; in the saved demo, SPY&apos;s prices and
+                daily highs and lows are from Yahoo Finance. Interest rates: FRED (Board of Governors of the Federal Reserve
+                System, H.15).</p>
+              <p>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.
+                By using Stone you agree to the{" "}
+                <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noreferrer">FRED® API Terms of Use</a>.</p>
             </footer>
           </div>
         </ModeProvider>

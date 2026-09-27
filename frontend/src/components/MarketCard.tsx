@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HoldoutNote, LabelTag } from "@/components/bits";
+import { HoldoutNote, LabelTag, StrictNote } from "@/components/bits";
 import { api, type MarketResult } from "@/lib/api";
 import { dateTimeET, horizonWords, whole } from "@/lib/format";
 import { liteMarket } from "@/lib/words";
@@ -32,6 +32,7 @@ export function MarketCard({ where, onlyFor }: { where: "above" | "below" | "sel
           <div><dt>90% range</dt><dd>{whole(m.low)}–{whole(m.high)}</dd></div>
         </dl>
         <p className="note">Hold-out: <HoldoutNote s={m} /></p>
+        <StrictNote s={m} />
         {m.firing && <p className="note"><b>Firing:</b> {m.firing.note} · known {dateTimeET(m.firing.known_at)}</p>}
       </div>
     </div>

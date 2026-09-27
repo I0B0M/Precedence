@@ -6,9 +6,14 @@ export function headline(signals: SignalResult[]): SignalResult | null {
   return signals.find((s) => s.firing && s.label === "STRONG") ?? signals.find((s) => s.firing) ?? null;
 }
 
+/** STRONG by Stone's rule, but a stricter test that also counts the normal rate's uncertainty doesn't clear it. */
+export function isBorderline(s: SignalResult): boolean {
+  return s.label === "STRONG" && s.strict != null && s.strict.p >= 0.05;
+}
+
 export function liteSummary(firing: SignalResult[]): string {
   const strong = firing.find((s) => s.label === "STRONG");
-  if (strong?.signal === "market_rate_jump") return "Interest rates jumped, and the whole market has usually fallen after that.";
+  if (strong?.signal === "market_rate_jump") return `Interest rates jumped. The whole market fell after ${strong.hits} of the last ${strong.n} jumps.`;
   if (strong) return `${strong.lite}, and for this stock that has mattered before.`;
   if (firing.length) return `${firing[0].lite}, but that hasn't clearly mattered here before.`;
   return "Nothing important today.";
@@ -44,7 +49,11 @@ export function liteMarket(m: MarketResult): string {
 }
 
 export function liteVerdict(s: SignalResult): string {
-  if (s.label === "STRONG") return s.signal === "market_rate_jump" ? "That's a real pattern for the whole market." : "That's a real pattern for this stock.";
+  if (s.label === "STRONG") {
+    const what = s.signal === "market_rate_jump" ? "the whole market fell after this"
+      : s.vs_market ? "this stock did worse than the whole market after this" : "this came before a drop";
+    return `Before now, ${what} more often than usual${isBorderline(s) ? ", but only just" : ""}. Past pattern, not a forecast.`;
+  }
   if (s.label === "NO DATA") return "";
   if (s.label === "WEAK") return "That's too few times to be sure.";
   return "That's not clearly different from normal.";
