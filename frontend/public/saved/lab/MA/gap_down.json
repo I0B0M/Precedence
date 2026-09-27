@@ -1,0 +1,1 @@
+{"signal":"gap_down","lite":"The stock dropped 5% at the open","pro":"Gap down: opened 5% or more below the prior close","horizon":20,"vs_market":false,"n":0,"hits":0,"hit_rate":null,"normal_n":509,"normal_hits":230,"normal_rate":0.4518664047151277,"low":null,"high":null,"label":"WEAK","firing":null,"note":null,"fdr10_survives":null,"strict":null,"holdout":null,"cases":[]}

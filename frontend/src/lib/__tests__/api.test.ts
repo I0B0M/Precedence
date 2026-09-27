@@ -85,6 +85,7 @@ describe("every call the demo makes for the example has a saved answer", () => {
 
   it("Paper trading can trade every followed ticker, and each one's page opens", async () => {
     const cos = await api.companies();
+    const signals = await api.labSignals();
     expect(cos.length).toBeGreaterThanOrEqual(100); // the S&P 100 and the funds, not just the example's
     expect(new Set(cos.map((c) => c.ticker)).size).toBe(cos.length);
     for (const c of cos) {
@@ -95,6 +96,8 @@ describe("every call the demo makes for the example has a saved answer", () => {
       // Each page's biggest days, except SPY's: its saved chart is Yahoo's closes, its days the IEX feed's.
       if (c.ticker !== "SPY") expect(page.days?.worst.length).toBeGreaterThan(0);
       else expect(page.days).toBeUndefined();
+      // /signals offers every stock, so each stock's Lab tests are saved too
+      if (c.kind === "stock") for (const s of signals) await expect(api.lab(c.ticker, s.key)).resolves.toMatchObject({ signal: s.key });
     }
   });
 

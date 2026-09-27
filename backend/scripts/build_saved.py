@@ -80,6 +80,9 @@ def live_extras() -> None:
     files = {"today": market_day, f"today/{saved_as}": get(f"/api/today?symbols={asked}"),
              "companies": sorted([*kept, *(r for r in listed if r["ticker"] not in example)], key=lambda r: r["ticker"]),
              **{f"companies/{t}": c for t, c in live.items() if t not in example},
+             # and each one's Lab tests, so /signals?t=<it> opens (the Lab tests stocks only)
+             **{f"lab/{t}/{s['key']}": get(f"/api/lab/{t}/{s['key']}") for t, c in live.items()
+                if t not in example and c["company"]["kind"] == "stock" for s in get("/api/lab/signals")},
              **{f"companies/{t}/today": get(f"/api/companies/{t}/today") for t in [*stocks, MARKET]}}
     for path, data in files.items():
         if "Stone" in json.dumps(data):
