@@ -234,7 +234,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
         <p className={r.label === "STRONG" ? "watchline" : "okline"}>
           <b>Happening now</b>
           <span className="lite-only"> ({shortDate(r.firing.known_at)}).</span>
-          <span className="pro-only">: {r.firing.note}. {r.label === "STRONG" ? "This is why the stock is on WATCH." : "Not proven for this stock, so it stays CALM."}</span>
+          <span className="pro-only">: {r.firing.note}. {r.label === "STRONG" ? "This is why the stock is on WATCH." : "Not proven for this stock, so this signal alone doesn't put it on WATCH."}</span>
         </p>
       )}
 
