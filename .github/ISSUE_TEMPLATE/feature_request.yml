@@ -1,0 +1,29 @@
+name: Feature request
+description: An idea for something Precedence should do.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to understand or decide about what you own, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you'd like
+      description: How it could work. Sketches and examples from other apps are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Where the data would come from
+      description: |
+        Precedence shows only numbers it can source and test. If this needs new data, which source has it,
+        and what are its terms?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered

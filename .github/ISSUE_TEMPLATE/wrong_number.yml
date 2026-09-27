@@ -1,0 +1,46 @@
+name: A number looks wrong
+description: A price, total, count, rate or date on screen doesn't match its source.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every number in Precedence should trace back to a source and an as-of date, so a wrong one is a bug.
+        The more exactly you can say where you checked it, the faster we can fix it.
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      placeholder: /company/AMZN, /portfolio, /signals?t=BX&s=rate_jump ...
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Lite
+        - Pro
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: shown
+    attributes:
+      label: The number shown, with its label
+      placeholder: '"6 of the last 12 times, AMZN was lower a month later"'
+    validations:
+      required: true
+  - type: input
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Where you checked it
+      description: A link to the filing, the FRED series, the fund's holdings file, or your own working.
+    validations:
+      required: true

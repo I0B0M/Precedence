@@ -1,5 +1,8 @@
 # Stone — handoff
 
+> Build notes from ShellHacks 2026, kept as history. Stone is now Precedence; for the current overview, setup and
+> rules, start at [README.md](README.md), [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/](docs/README.md).
+
 Written 2026-09-26 ~14:15 ET by the build session "ShellHacks (Stone build)", for the user's
 other Claude account to take over all coding. Everything below was checked at the time of
 writing unless marked **not verified**.

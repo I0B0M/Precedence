@@ -1,0 +1,55 @@
+name: Bug report
+description: Something doesn't work the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. If a number looks wrong, use the "A number looks wrong" template instead.
+        For a security problem, follow SECURITY.md rather than opening a public issue.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected to see instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open /company/BX in Pro
+        2. Tap ...
+        3. See ...
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - Saved-data demo (Netlify or NEXT_PUBLIC_STONE_SAVED=1)
+        - Full app on my machine
+        - Backend, API or scripts only
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Lite
+        - Pro
+        - Both
+        - Not a screen
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Safari on iPhone 15, Chrome 130 on macOS, ...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Console errors, API responses or screenshots. Remove any keys or personal data first.

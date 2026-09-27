@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/I0B0M/Stone/security/policy
+    about: Please report vulnerabilities privately, as described in the security policy.
+  - name: How Precedence works
+    url: https://github.com/I0B0M/Stone#how-the-signal-test-works
+    about: How the signal test, the labels and the states are decided.
