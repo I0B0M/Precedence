@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { Label, Scan, SignalResult, State } from "@/lib/api";
 import { whole } from "@/lib/format";
-import { splitGap } from "@/lib/words";
+import { proCaveat, splitGap } from "@/lib/words";
 
 const BADGE_TIPS = {
   WATCH: "Has come before drops. Not a prediction.",
@@ -52,7 +52,7 @@ export function StateBadge({ state }: { state: State | null }) {
 export function BadgeKey() {
   return (
     <p className="note badge-key pro-only">
-      <b>WATCH</b> (Lite: Heads up) = a STRONG signal for this stock is firing now. <b>CALM</b> (Lite: Calm) = none is.
+      WATCH: a result that came out STRONG on this stock&apos;s past is happening again. It describes the past, not a prediction.
     </p>
   );
 }
@@ -64,6 +64,17 @@ export function LabelTag({ label }: { label: Label }) {
       style={{ borderColor: "var(--sep)", color: "var(--text-2)", fontWeight: 500 }}>Not loaded</span>;
   }
   return <span className={`label ${label.toLowerCase().replace(" ", "")}`}>{label}</span>;
+}
+
+/** The verdict tag, and in Pro beside a STRONG one, what the stricter checks say ("Doesn't survive the correction"). */
+export function Verdict({ s }: { s: { label: Label; fdr10_survives?: boolean | null; holdout?: SignalResult["holdout"] } }) {
+  const c = proCaveat(s);
+  return (
+    <>
+      <LabelTag label={s.label} />
+      {c && <span className="note caveat pro-only" style={{ display: "block", marginTop: 4 }}>{c}</span>}
+    </>
+  );
 }
 
 /** One dot per past case; filled = the stock was lower afterwards (or, vsMarket, did worse than SPY). */

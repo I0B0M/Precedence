@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
-import { BadgeKey, HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
+import { BadgeKey, HitDots, HoldoutNote, ScanLine, StateBadge, Verdict } from "@/components/bits";
 import { FilingSummary } from "@/components/FilingSummary";
 import { Why } from "@/components/Why";
 import { MarketCard } from "@/components/MarketCard";
@@ -170,7 +170,7 @@ export default function CompanyScreen() {
                       <td className="num">{s.n ? `${s.hits} (${whole(s.hit_rate)})` : "—"}<div className="note">{s.vs_market ? "worse than SPY" : "lower"}</div><Why signal={s} scan={scan} what={`${co.ticker} ${s.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" asOf={lastDay} /></td>
                       <td className="num">{whole(s.normal_rate)}<div className="note">of {s.normal_n} days</div></td>
                       <td className="num nowrap">{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</td>
-                      <td><LabelTag label={s.label} /></td>
+                      <td><Verdict s={s} /></td>
                       <td><HoldoutNote s={s} /></td>
                       <td>{s.firing ? <b>firing</b> : <span className="mute">—</span>}</td>
                       <td className="nowrap">{inLab(s.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${s.signal}`}>cases ›</Link>}</td>
@@ -184,7 +184,7 @@ export default function CompanyScreen() {
                 <div key={s.signal} className="sig-card">
                   <div className="row-flex" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "nowrap" }}>
                     <b>{s.pro}</b>
-                    <LabelTag label={s.label} />
+                    <span><Verdict s={s} /></span>
                   </div>
                   <dl className="stats">
                     <div><dt>Cases</dt><dd>{s.n}</dd></div>

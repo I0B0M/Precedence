@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HoldoutNote, LabelTag } from "@/components/bits";
+import { HoldoutNote, Verdict } from "@/components/bits";
 import { api, type MarketResult } from "@/lib/api";
 import { dateTimeET, horizonWords, whole } from "@/lib/format";
 import { liteMarket } from "@/lib/words";
@@ -23,7 +23,7 @@ export function MarketCard({ onlyFor }: { onlyFor?: string }) {
       <div className="pro-only stack" style={{ gap: 10 }}>
         <div className="row-flex" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "nowrap" }}>
           <b>{m.pro}</b>
-          <LabelTag label={m.label} />
+          <span><Verdict s={m} /></span>
         </div>
         <dl className="stats">
           <div><dt>Cases</dt><dd>{m.n}</dd></div>

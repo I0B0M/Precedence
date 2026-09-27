@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Allocation } from "@/components/Allocation";
-import { BadgeKey, LabelTag, StateBadge } from "@/components/bits";
+import { BadgeKey, StateBadge, Verdict } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
 import { ApiProblem, Loading } from "@/components/Problem";
@@ -285,7 +285,7 @@ function Panel({ e, kind, fund, retirement, grand, invest }: {
                       <span className="lite-only"><b>{s.lite}.</b> <span className="mute">{liteVerdict(s, e.symbol)}</span></span>
                       <span className="pro-only">{s.pro}</span>
                     </span>
-                    <span className="pro-only"><LabelTag label={s.label} /> <Why signal={s} what={`${e.symbol} ${s.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" /></span>
+                    <span className="pro-only"><Verdict s={s} /> <Why signal={s} what={`${e.symbol} ${s.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" /></span>
                   </div>
                 ))}
               </div>

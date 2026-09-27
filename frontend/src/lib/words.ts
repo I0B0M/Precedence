@@ -1,5 +1,5 @@
 import type { Label, MarketResult, SignalResult } from "./api";
-import { horizonWords, whole } from "./format";
+import { horizonWords } from "./format";
 
 /** The signal to talk about first: a proven one that is firing, else any firing one. */
 export function headline(signals: SignalResult[]): SignalResult | null {
@@ -55,6 +55,21 @@ export const splitGap = (s: SignalResult) => {
     ? `; ${x.n} case${x.n === 1 ? "" : "s"} (${x.hits} hit${x.hits === 1 ? "" : "s"}) in neither half. ${x.reason}`
     : `; the halves hold ${n} of the ${s.n} cases and ${hits} of the ${s.hits} hits`;
 };
+
+/** Pro, beside a STRONG result: what the stricter checks say, from the backend's own fields. Null when they don't
+ *  apply or passed. A STRONG verdict describes the past; this line keeps it from reading as proven. */
+export function proCaveat(s: { label: Label; fdr10_survives?: boolean | null; holdout?: SignalResult["holdout"] }): string | null {
+  if (s.label !== "STRONG") return null;
+  const parts: string[] = [];
+  if (s.fdr10_survives === false) parts.push("doesn't survive the correction");
+  const h = s.holdout;
+  const v = h ? h.verdict ?? (h.held_up === true ? "held up" : h.held_up === false ? "did not hold" : "too few cases to check") : null;
+  if (v === "too few cases to check") parts.push("too few cases in each half");
+  else if (v === "did not hold") parts.push("didn't hold up in both halves");
+  if (!parts.length) return null;
+  const t = parts.join(" · ");
+  return t[0].toUpperCase() + t.slice(1);
+}
 
 /** Market card: "The market fell a week after 10 of 15 rate jumps." */
 export function liteMarket(m: MarketResult): string {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { HitDots, HoldoutNote, LabelTag } from "@/components/bits";
+import { HitDots, HoldoutNote, Verdict } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
 import { Why } from "@/components/Why";
 import { ApiProblem, Loading } from "@/components/Problem";
@@ -191,7 +191,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       )}
 
       <div className={`verdict ${tone}`} role="status">
-        <span className="pro-only"><LabelTag label={r.label} /></span>
+        <span className="pro-only"><Verdict s={r} /></span>
         <p><b>{r.label === "NO DATA" ? liteHistory(r, ticker) : liteVerdict(r, ticker)}</b></p>
       </div>
 

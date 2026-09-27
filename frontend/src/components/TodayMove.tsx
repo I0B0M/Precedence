@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LabelTag } from "@/components/bits";
+import { Verdict } from "@/components/bits";
 import { api, type CompanyToday } from "@/lib/api";
 import { dateTimeET, money, pct, shortDate } from "@/lib/format";
 import { FORM_WORDS } from "@/lib/words";
@@ -122,10 +122,10 @@ export function TodayMove({ ticker }: { ticker: string }) {
             <p className="list-head">Signals firing now</p>
             {e.signals_firing.map((s) => (
               <div key={s.signal} className="list-row">
-                <span>{s.lite} <LabelTag label={s.label} />
+                <span>{s.lite} <Verdict s={s} />
                   <span className="note" style={{ display: "block" }}>
                     {s.note}{s.in_window ? " · became known in this window" : ""}
-                    {s.fdr10_survives != null ? ` · survives the correction: ${s.fdr10_survives ? "yes" : "no"}` : ""}
+                    {s.fdr10_survives === true ? " · survives the correction" : ""}
                   </span>
                 </span>
                 <span className="mute">{dateTimeET(s.known_at)}</span>
