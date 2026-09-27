@@ -104,7 +104,7 @@ export default function SignalLab() {
       {signal === "rate_jump" && (
         <div className="card">
           <h3>First, the whole market</h3>
-          <MarketCard where="below" />
+          <MarketCard />
         </div>
       )}
 

@@ -83,12 +83,12 @@ export default function CompanyScreen() {
               <p className="say-big"><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
               <HitDots cases={main.cases ?? []} vsMarket={main.vs_market} />
               <p><b>{liteVerdict(main)}</b></p>
-              {main.signal === "rate_jump" && <MarketCard where="above" />}
+              {main.signal === "rate_jump" && <MarketCard />}
             </>
           ) : (
             <>
               <p className="say-big">{co.kind === "etf" ? "A fund: many stocks in one." : "Nothing unusual right now."}</p>
-              {isFund && <MarketCard where="self" onlyFor={co.ticker} />}
+              {isFund && <MarketCard onlyFor={co.ticker} />}
               {isFund && <Link className="linkb" href={`/fund/${co.ticker}`}>See what&apos;s inside {co.ticker} ›</Link>}
             </>
           )}
@@ -196,7 +196,7 @@ export default function CompanyScreen() {
             </div>
             <p className="note">STRONG only when the range&apos;s low end beats the normal-day rate. Fewer than 10 cases is always WEAK.
               Timed from SEC acceptance; measured from the next market open.</p>
-            {rateJump && <MarketCard where="above" />}
+            {rateJump && <MarketCard />}
             <ScanLine scan={scan} />
           </div>
         )}

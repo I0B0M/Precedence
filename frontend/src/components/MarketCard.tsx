@@ -7,8 +7,8 @@ import { dateTimeET, horizonWords, whole } from "@/lib/format";
 import { liteMarket } from "@/lib/words";
 
 /** The rate-jump test run on the market itself (SPY). A rate jump hits every stock on the same days,
- *  so the per-stock result is measured against this. `where` says where the stock result sits on the page. */
-export function MarketCard({ where, onlyFor }: { where: "above" | "below" | "self"; onlyFor?: string }) {
+ *  so the per-stock result is measured against this. `onlyFor`: show it only on that symbol's page. */
+export function MarketCard({ onlyFor }: { onlyFor?: string }) {
   const [m, setM] = useState<MarketResult | null>(null);
   useEffect(() => {
     api.marketRateJump().then(setM).catch(() => setM(null));
