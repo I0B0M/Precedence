@@ -53,7 +53,7 @@ export interface FundHolding {
   in_stone: boolean; // Stone has prices and signals for it
   state: State | null; // null when not tracked
   firing: { signal: string; label: Label }[];
-  lite_line: string | null; // e.g. "Executives sold shares, and for this stock that has mattered before."
+  lite_line: string | null; // e.g. "Insiders sold shares, and for this stock that has mattered before."
 }
 
 export interface FundPage {

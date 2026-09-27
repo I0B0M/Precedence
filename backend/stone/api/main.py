@@ -23,6 +23,7 @@ from stone.ingest.tickers import HOLDINGS_FROM, RENAMED
 from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
+from stone.signals.scan import fdr10_by_signal
 from stone.sources.gemini import MODEL as GEMINI_MODEL
 from stone.sources.gemini import GeminiClient, ScreenshotUnreadable, first_sentences
 from stone.sources import census
@@ -135,7 +136,7 @@ def company(ticker: str, c: psycopg.Connection = Conn):
                            "price": float(s["price"]) if s["price"] is not None else None} for s in sales],
         "facts": latest_facts(c, t),
         "rate": {"day": rate["day"].isoformat(), "value": float(rate["value"])} if rate else None,
-        "signals": [result_json(r) for r in results or []],
+        "signals": [result_json(r, fdr10=fdr10_by_signal(c, t)) for r in results or []],
         "state": state_of(results),
     }
 
@@ -345,7 +346,7 @@ def lab(ticker: str, signal: str, c: psycopg.Connection = Conn):
         raise HTTPException(404, f"Unknown signal {signal}")
     if co["kind"] != "stock":
         raise HTTPException(400, "Signals run on stocks, not funds")
-    return result_json(service.run_one(c, co["ticker"], signal))
+    return result_json(service.run_one(c, co["ticker"], signal), fdr10=fdr10_by_signal(c, co["ticker"]))
 
 
 class HoldingIn(BaseModel):
@@ -458,7 +459,9 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
             "direct": row.direct, "via_etf": row.via_etf, "total": row.shown,
             "share_of_total": row.shown / total if total else None,
             "bad_day_return": bad, "bad_day_loss": bad * row.shown if bad is not None else None,
-            "state": state_of(results), "firing": [result_json(r, with_cases=False) for r in results or [] if r.firing],
+            "state": state_of(results),
+            "firing": [result_json(r, with_cases=False, fdr10=fdr10_by_signal(c, tested))
+                       for r in results or [] if r.firing],
             "children": [{"symbol": k, "name": known[k]["name"], "total": v}
                          for k, v in sorted(row.children.items(), key=lambda kv: -kv[1])],
         })
