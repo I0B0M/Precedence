@@ -46,6 +46,14 @@ export function OtherAssetsForms() {
   const year = /^\d{4}$/.test(bought.trim()) ? Number(bought.trim()) : null;
   const homeOk = place.trim().length > 1 && num(price) != null && year != null && year >= 1975 && year <= new Date().getFullYear() && !homeBusy;
   const fundRows = funds.filter((f) => f.name.trim() && num(f.amount) != null);
+  // A disabled button always says what it's waiting for, once something has been typed.
+  const homeMissing = [
+    place.trim().length > 1 ? null : "the address or ZIP",
+    num(price) != null ? null : "what you paid",
+    year != null && year >= 1975 && year <= new Date().getFullYear() ? null : "the year you bought it",
+  ].filter(Boolean) as string[];
+  const homeStarted = !!(place.trim() || price.trim() || bought.trim());
+  const fundWaiting = !fundRows.length && funds.some((f) => f.name.trim() || f.amount.trim());
 
   /** Ask for the estimate (an address, or a bare 5-digit ZIP), then save the home either way. */
   async function addHome() {
@@ -105,6 +113,9 @@ export function OtherAssetsForms() {
         <button className="btn" type="button" disabled={!homeOk} style={{ alignSelf: "flex-start" }} onClick={addHome}>
           {homeBusy ? "Estimating…" : "Add this home"}
         </button>
+        {!homeOk && !homeBusy && homeStarted && homeMissing.length > 0 && (
+          <p className="note">Add {homeMissing.length > 1 ? `${homeMissing.slice(0, -1).join(", ")} and ${homeMissing[homeMissing.length - 1]}` : homeMissing[0]}.</p>
+        )}
         {homeMsg && <p className={homeMsg.ok ? "okline" : "badline"}>{homeMsg.text}</p>}
         <p className="note">A ZIP code works too. An estimate, never a price.</p>
       </div>
@@ -128,6 +139,7 @@ export function OtherAssetsForms() {
         <button className="btn" type="button" disabled={!fundRows.length || fundBusy} style={{ alignSelf: "flex-start" }} onClick={addFunds}>
           {fundBusy ? "Looking up…" : `Add ${fundRows.length > 1 ? `${fundRows.length} funds` : "this fund"}`}
         </button>
+        {fundWaiting && !fundBusy && <p className="note">Add the fund and the amount in it.</p>}
         {fundMsg && <p className="okline">Saved. {fundMsg}</p>}
         <p className="note">A ticker like FXAIX works best.</p>
       </div>

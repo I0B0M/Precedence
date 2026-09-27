@@ -41,16 +41,19 @@ async function fillTyped(rows: EditRow[]): Promise<{ rows: EditRow[]; priced: { 
   return { rows: out, priced, unpriced };
 }
 
-type Example = { rows: EditRow[]; total: string; asOf: string | null };
+// check: the same reconcile "Check it adds up" runs, so its ✓ line shows at once; null on the saved-data demo, which can't run it.
+type Example = { rows: EditRow[]; total: string; asOf: string | null; check: Reconciled | null };
 
-/** Real tickers at their latest closes, with the matching total, so Check → Save takes two taps. Nothing is saved here. */
+/** Real tickers at their latest closes, with the matching total, already checked, so Save works in one tap. Nothing is saved here. */
 async function loadExample(): Promise<Example | null> {
   try {
     const cos = await api.companies();
     const picks = EXAMPLE.map(([t, sh]) => ({ c: cos.find((x) => x.ticker === t), sh })).filter((p) => p.c?.last_close != null);
     if (!picks.length) return null;
     const rows = picks.map(({ c, sh }) => ({ symbol: c!.ticker, shares: String(sh), price: c!.last_close!.toFixed(2), value: (sh * c!.last_close!).toFixed(2) }));
-    return { rows, total: rows.reduce((a, r) => a + Number(r.value), 0).toFixed(2), asOf: picks[0].c!.as_of };
+    const total = rows.reduce((a, r) => a + Number(r.value), 0).toFixed(2);
+    const check = SAVED ? null : await api.reconcile(rows.map(toRead), Number(total)).catch(() => null);
+    return { rows, total, asOf: picks[0].c!.as_of, check };
   } catch {
     return null;
   }
@@ -85,10 +88,10 @@ export default function ImportScreen() {
     if (!ex) return setCheckErr(true);
     setRows(ex.rows);
     setTotal(ex.total);
-    setCheck(null);
     setCheckErr(false);
     setEmpty(false);
     setExample(ex.asOf);
+    setCheck(ex.check);
   }
   // Fill the table, then bring it into view (the button sits at the top of the page).
   const fillAndShow = () => loadExample().then((ex) => {
@@ -183,7 +186,9 @@ export default function ImportScreen() {
 
   // Typed in with no screenshot total: nothing to reconcile against, so every row just needs a value.
   const typedOk = check?.status === "no_total" && check.rows.length > 0 && check.rows.every((r) => r.ok);
-  const canSave = check?.status === "ok" || typedOk;
+  // example: set while the example rows are untouched (any edit clears it), so they can be saved without the check.
+  const canSave = check?.status === "ok" || typedOk || example != null;
+  const typed = rows.some((r) => r.symbol.trim());
   const shots = status?.screenshots === true; // the upload shows only when the API says it can read one
 
   return (
@@ -275,7 +280,7 @@ export default function ImportScreen() {
         </div>
         <div className="row-flex">
           <label htmlFor="total"><b>Total your app shows</b> <span className="note">optional</span></label>
-          <input id="total" className="field" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); }} inputMode="decimal"
+          <input id="total" className="field" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); setExample(null); }} inputMode="decimal"
             style={{ width: 160 }} />
           <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
@@ -297,7 +302,9 @@ export default function ImportScreen() {
         ))}
         <div className="row-flex">
           <button className="btn" type="button" disabled={!canSave} onClick={save}>Save as my holdings</button>
-          {check && !canSave && <span className="note">Needs a price on every row{total.trim() ? " and a matching total" : ""}.</span>}
+          {!canSave && typed && (
+            <span className="note">{check ? `Needs a price on every row${total.trim() ? " and a matching total" : ""}.` : "Press Check it adds up first."}</span>
+          )}
         </div>
       </div>
 
