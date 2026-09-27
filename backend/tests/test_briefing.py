@@ -134,7 +134,7 @@ def test_no_data_and_quiet_signals():
     b = company_briefing(company(signals=[no_data, quiet]))
     assert not any("executives filed" in t for t in texts(b))
     assert "When executives sold shares, it has mattered for Amazon before, but that isn't happening now." in texts(b)
-    assert texts(b)[-1] == "Stone ran 1 test on Amazon, and nothing happening now has mattered before."
+    assert texts(b)[-1] == "Precedence ran 1 test on Amazon, and nothing happening now has mattered before."
 
 
 def test_a_calm_portfolio_says_so_and_nothing_else_is_invented():
@@ -144,9 +144,9 @@ def test_a_calm_portfolio_says_so_and_nothing_else_is_invented():
              "exposure": [{"symbol": "AMZN", "state": "CALM", "total": 2496.3, "share_of_total": 1.0}], "funds": []}
     b = portfolio_briefing(board, {"AMZN": co}, None, None)
     assert texts(b) == [
-        "Here is your Stone briefing for Friday, September 25: your 1 holding is worth $2,496, up 0.1% on the day.",
+        "Here is your Precedence briefing for Friday, September 25: your 1 holding is worth $2,496, up 0.1% on the day.",
         "It is calm: nothing happening now has mattered for it before.",
-        "That's everything: Stone ran 1 test on your holdings, and nothing happening now has mattered before.",
+        "That's everything: Precedence ran 1 test on your holdings, and nothing happening now has mattered before.",
     ]
     assert all(not check(line) for line in b.lines)
 
@@ -184,7 +184,7 @@ def test_saved_portfolio_script_leads_with_what_needs_a_look(saved):
     assert t[4] == "A stricter test calls this borderline, and there are too few cases yet to check it on each half of the history."
     assert "The S&P 500 fund was lower 5 trading days later 10 of the last 15 times, against 38% of normal days." in t
     assert not any("held up" in x for x in t)  # no saved result has 10+ cases in each half
-    assert t[-1] == "That's everything: Stone ran 16 tests on your holdings, and only 2 of the signals happening now have mattered before."
+    assert t[-1] == "That's everything: Precedence ran 16 tests on your holdings, and only 2 of the signals happening now have mattered before."
     assert len(t) <= 16
     pro = {line.id: line.pro for line in saved["portfolio"].lines}
     assert pro["AMZN:insider_cluster:record"] == (
@@ -235,5 +235,5 @@ def test_build_writes_what_the_api_would_send_and_refuses_a_failing_line(tmp_pat
 def test_an_untested_fund_or_a_company_without_prices_says_so():
     fund = {**company("QQQ", "Invesco QQQ Trust", "etf"), "state": None, "last": None}
     b = company_briefing(fund)
-    assert texts(b) == ["Stone hasn't tested any signals for Invesco QQQ Trust yet, so it can't say whether news matters here."]
+    assert texts(b) == ["Precedence hasn't tested any signals for Invesco QQQ Trust yet, so it can't say whether news matters here."]
     assert not b.held_back and b.as_of == ""

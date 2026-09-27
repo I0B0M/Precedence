@@ -13,7 +13,7 @@ describe("composeScript on the saved board", () => {
 
   it("opens with the total and closes with the disclaimer, in that order", () => {
     expect(script.lines[0].text).toMatch(/^Everything you own is worth \$16,627 at the close on Sep 25, 2026/);
-    expect(script.lines[script.lines.length - 1].text).toMatch(/Stone never places an order\.$/);
+    expect(script.lines[script.lines.length - 1].text).toMatch(/Precedence never places an order\.$/);
   });
 
   it("says Heads up for AMZN and SPY with the numbers Lite shows", () => {
@@ -73,7 +73,7 @@ describe("the experts on edge cases", () => {
     const s = composeScript({ portfolio: empty, risk: null });
     expect(s.lines.map((l) => l.text)).toEqual([
       "Everything you own is worth $0 at the latest close.",
-      "Nothing needs you today. That's the briefing. Nothing here is advice, and Stone never places an order.",
+      "Nothing needs you today. That's the briefing. Nothing here is advice, and Precedence never places an order.",
     ]);
     expect(openingExpert({ portfolio: empty, risk: null }, {})[0].text).not.toMatch(/NaN|Infinity/);
   });

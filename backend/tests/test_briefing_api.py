@@ -49,3 +49,14 @@ def test_portfolio_briefing_names_every_heads_up(client):
     spoken_ok(body)
     watch = [e["name"] for e in board["exposure"] if e["state"] == "WATCH" and e["symbol"] in {"HLCN", "BRD500", "ORCA"}]
     assert all(name in body["lines"][1]["text"] for name in watch) or not watch
+
+
+def test_the_briefing_says_precedence_never_stone(client):
+    """The product is Precedence on screen and the briefing is read aloud; `stone` is only the code's package name."""
+    import json
+    from stone.config import REPO_DIR
+    holdings = [{"symbol": "HLCN", "shares": 10}, {"symbol": "BRD500", "shares": 2}]
+    live = [client.get("/api/briefing/HLCN").json(), client.post("/api/briefing/portfolio", json={"holdings": holdings}).json()]
+    assert all(b["generated_by"].startswith("Precedence expert panel") for b in live)
+    saved = [p.read_text() for p in (REPO_DIR / "frontend" / "public" / "saved").rglob("*.json")]
+    assert saved and not [t for t in [json.dumps(b) for b in live] + saved if "Stone" in t]

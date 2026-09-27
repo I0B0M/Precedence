@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from stone.briefing import experts as ex
 from stone.briefing.lines import Line, Point, check, day_words, money, pct, speakable, up_down
 
-GENERATED_BY = "Stone expert panel: tested rules, no language model"
+GENERATED_BY = "Precedence expert panel: tested rules, no language model"
 PORTFOLIO_LINES = 16  # about a minute and a half spoken
 COMPANY_LINES = 10
 PER_EXPERT = 3  # points one expert may have spoken
@@ -112,9 +112,9 @@ def company_briefing(detail: dict) -> Briefing:
     ran, proven = tests_run([detail])
     cites = tuple(f"signal:{s['signal']}" for s in detail.get("signals") or []) or (f"company:{ticker}",)
     if not ran:
-        said = f"Stone hasn't tested any signals for {name} yet, so it can't say whether news matters here."
+        said = f"Precedence hasn't tested any signals for {name} yet, so it can't say whether news matters here."
     else:
-        said = f"Stone ran {ran} test{'' if ran == 1 else 's'} on {name}, and " + (
+        said = f"Precedence ran {ran} test{'' if ran == 1 else 's'} on {name}, and " + (
             f"{proven} of what is happening now has mattered before." if proven
             else "nothing happening now has mattered before.")
     closing = Line(f"{ticker}:closing", "note" if proven or not ran else "calm", said, (ran, proven), cites,
@@ -140,13 +140,13 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
     before = sum(r["value"] / (1 + r["change"]) for r in rows if r.get("change") is not None)
     now = sum(r["value"] for r in rows if r.get("change") is not None)
     if rows:
-        hello = f"Here is your Stone briefing for {day_words(as_of, weekday=True)}: your" if as_of else "Your"
+        hello = f"Here is your Precedence briefing for {day_words(as_of, weekday=True)}: your" if as_of else "Your"
         moved = f", {up_down(now - before)} {pct(now / before - 1, 1)} on the day" if before else ""
         opening.append(Line("portfolio:total", "note",
                             f"{hello} {len(rows)} {'holding is' if len(rows) == 1 else 'holdings are'} worth "
                             f"{money(total)}{moved}.",
                             (len(rows), total, *((now / before - 1,) if before else ())),
-                            (f"price:{as_of}",) if as_of else ("portfolio:total",), None, "Stone briefing", "/"))
+                            (f"price:{as_of}",) if as_of else ("portfolio:total",), None, "Precedence briefing", "/"))
         watch = [r["symbol"] for r in rows if states.get(r["symbol"]) == "WATCH"]
         calm = [r["symbol"] for r in rows if states.get(r["symbol"]) == "CALM"]
         if watch:
@@ -175,9 +175,9 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
 
     ran, proven = tests_run(held)
     if not ran:
-        said = "That's everything: Stone hasn't tested any signals for these holdings yet."
+        said = "That's everything: Precedence hasn't tested any signals for these holdings yet."
     else:
-        said = f"That's everything: Stone ran {ran} test{'' if ran == 1 else 's'} on your holdings, and " + (
+        said = f"That's everything: Precedence ran {ran} test{'' if ran == 1 else 's'} on your holdings, and " + (
             f"only {proven} of the signals happening now {'has' if proven == 1 else 'have'} mattered before."
             if proven else "nothing happening now has mattered before.")
     closing = Line("portfolio:closing", "calm", said, (ran, proven), ("portfolio:states",), None, "That's all", "/")
