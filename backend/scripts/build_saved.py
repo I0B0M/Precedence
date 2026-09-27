@@ -9,10 +9,16 @@ uses), and every such number is labeled with that source:
   - high and low for each stock's daily bars (the fixtures carry open and close only), for the candles;
   - SPY's daily bars (no fixture has them), for SPY's chart, the board's sparkline and the risk card.
 The risk card itself is QuantStats (stone/portfolio/risk.py) run on those closes.
+/today (market and example symbols), each saved ticker's /today and MSFT's company page are copied from the
+running API (STONE_API, default http://localhost:8000), refused unless it's on the same trading day.
+
+    uv run python scripts/build_saved.py --live-only  # just those, leaving the other saved files as they are
 """
 
 import json
+import os
 import shutil
+import sys
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -54,6 +60,31 @@ as_of = board["meta"]["as_of"]
 stocks = sorted({h["symbol"] for h in request["holdings"]} - {MARKET})
 companies = {t: fixture(f"{t}/company.json")["data"] for t in stocks}
 first_day = min(p["day"] for c in companies.values() for p in c["prices"])
+API = os.getenv("STONE_API", "http://localhost:8000")
+
+
+def live_extras() -> None:
+    """Responses the saved demo also needs that the fixtures don't carry, copied from the running API (GET only):
+    /api/today with and without the example's symbols, each saved ticker's /today, and MSFT (a look-through
+    sparkline on the board). Refused unless the API's last trading day is the saved data's."""
+    import httpx
+    get = lambda path: httpx.get(f"{API}{path}", timeout=120).raise_for_status().json()
+    market_day = get("/api/today")
+    if market_day["day"] != as_of:
+        raise SystemExit(f"The API at {API} is on {market_day['day']}, the saved data on {as_of}; not mixing them.")
+    symbols = ",".join(h["symbol"] for h in request["holdings"])  # the example's order, as the start screen asks
+    files = {"today": market_day, f"today/{symbols}": get(f"/api/today?symbols={symbols}"),
+             "companies/MSFT": get("/api/companies/MSFT"),
+             **{f"companies/{t}/today": get(f"/api/companies/{t}/today") for t in [*stocks, MARKET]}}
+    for path, data in files.items():
+        if "Stone" in json.dumps(data):
+            raise SystemExit(f"{path}: says 'Stone'; the product is Precedence on screen.")
+        write(path, data)
+
+
+if "--live-only" in sys.argv:  # just the files above, leaving the rest of frontend/public/saved as it is
+    live_extras()
+    raise SystemExit(0)
 
 bars = yf.download([*stocks, MARKET], start=first_day, end=date.fromisoformat(as_of) + timedelta(days=1),
                    auto_adjust=False, progress=False, group_by="ticker", timeout=30)
@@ -181,5 +212,6 @@ write(f"portfolio/risk/{key}", {
 write("index", {"as_of": as_of, "tickers": [*stocks, MARKET], "example": request["holdings"], "example_key": key,
                 "sources": {"fixtures": "frontend/fixtures (real database export)", "fill_ins": YAHOO}})
 
+live_extras()  # /today and MSFT, from the running API
 saved.finish(OUT)  # strict and the current hold-out verdict, rebuilt from the files just written
 saved_briefings.build(OUT)  # the narration tab's lines, from the finished files
