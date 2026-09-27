@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Allocation } from "@/components/Allocation";
 import { BadgeKey, LabelTag, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
@@ -96,7 +97,7 @@ export default function HoldingsBoard() {
           {board.subtotals?.includes_home_estimate && <p className="note">Includes a home estimate</p>}
           {todayMove != null && (
             <p className="sc-change">
-              <span className={todayMove < 0 ? "down" : "up"}>{todayMove < 0 ? "−" : "+"}{money(Math.abs(todayMove))} ({pct(todayRel)})</span>
+              <span className={todayMove < 0 ? "down" : "up"}>{todayMove < 0 ? "−" : "+"}{money(Math.abs(todayMove))} ({pct(todayRel, true, todayRel != null && Math.abs(todayRel) < 0.001 ? 2 : 1)})</span>
               <span className="mute lite-only"> at the last close</span>
               <span className="mute pro-only"> {board.price_as_of ? `on ${shortDate(board.price_as_of)}` : "at the latest close"}</span>
             </p>
@@ -123,6 +124,8 @@ export default function HoldingsBoard() {
           {todayMove == null && (board.price_as_of ? `Values at the ${shortDate(board.price_as_of)} close.` : "Values at the latest close.")}
         </p>
       </div>
+
+      <Allocation board={board} />
 
       <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
 

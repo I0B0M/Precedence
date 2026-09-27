@@ -94,6 +94,13 @@ html[data-mode="pro"] .stack.pro-only { display: flex !important; }
 html[data-mode="pro"] .grid2.pro-only { display: grid !important; }
 /* Pro adds layers under the same answer Lite gives; each added layer carries a gold rule on its left. */
 html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-left: 12px; }
+/* Portfolio: everything you own as one bar (stocks / funds / 401(k) / home), 2px gaps between parts, key below. */
+.alloc-wrap { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 20px; }
+.alloc { display: flex; gap: 2px; height: 14px; border-radius: 4px; overflow: hidden; }
+.alloc-seg { min-width: 4px; flex-basis: 0; }
+.alloc-key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 14px; }
+.alloc-key li { display: flex; align-items: center; gap: 6px; }
+.alloc-key i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 /* Stock page, what happened: rows wrap, and on a phone each Pro fact stacks (label over value) so nothing overlaps. */
 .today-move .list-row { flex-wrap: wrap; row-gap: 2px; }
 .today-move .list-row > span:first-child { flex: 1 1 14em; }
