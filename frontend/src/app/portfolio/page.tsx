@@ -138,6 +138,7 @@ export default function HoldingsBoard() {
       </div>
 
       <div className="stack" style={{ gap: 6, marginTop: 14 }}>
+        <div className="stack pro-only" style={{ gap: 6 }}>
         {board.funds.map((f) => <FundLine key={f.symbol} f={f} />)}
         {splitFunds.length > 0 && (
           <p className="note">
@@ -145,22 +146,21 @@ export default function HoldingsBoard() {
             so a stock you own through {splitFunds.length > 1 ? "those funds" : "that fund"} shows up here too.
           </p>
         )}
+        </div>
         {board.unknown.length > 0 && <p className="badline">No data yet for {board.unknown.join(", ")}.</p>}
       </div>
 
       <OtherAssetsRows />
 
-      <div className="row-flex" style={{ marginTop: 20 }}>
-        <Link className="btn small" href="/import">Add an account</Link>
-        {status?.data === "sample" && (
+      {status?.data === "sample" && (
+        <div className="row-flex" style={{ marginTop: 20 }}>
           <button className="linkb" type="button" onClick={() => setHoldings(SAMPLE_PORTFOLIO)}>Reset to the sample portfolio</button>
-        )}
-      </div>
+        </div>
+      )}
 
       {nextStock && (
         <div className="next-step">
-          <p>{nextStock.state === "WATCH" ? `See why ${nextStock.symbol} needs a look.` : `See what's going on with ${nextStock.symbol}.`}</p>
-          <Link className="btn t-go" href={`/company/${nextStock.symbol}`}>Open {nextStock.symbol}</Link>
+          <Link className="btn t-go" href={`/company/${nextStock.symbol}`}>Look at {nextStock.symbol} →</Link>
         </div>
       )}
     </section>
