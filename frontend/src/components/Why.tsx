@@ -31,7 +31,8 @@ export function Why({ signal: s, scan, source, asOf, filings, rows, what }: WhyP
     } else {
       lines.push(["Cases", `${s.n} in about two years of daily prices`]);
       if (s.n) lines.push(["Came true", `${s.hits} of ${s.n} (${whole(s.hit_rate)}), ${s.vs_market ? "did worse than SPY" : "was lower"} after ${s.horizon} trading days`]);
-      lines.push(["Normal rate", `${whole(s.normal_rate)} of ${s.normal_n} ordinary days, measured the same way`]);
+      // Normal days are start days whose whole window touches no event, so a stock with frequent events has fewer of them.
+      lines.push(["Normal rate", `${whole(s.normal_rate)} of ${s.normal_n} ordinary days, measured the same way. An ordinary day is one whose whole ${s.horizon}-trading-day window touches no event, so frequent events leave fewer of them`]);
       if (s.n) lines.push(["90% range", `${whole(s.low)}–${whole(s.high)} (Wilson)`]);
       lines.push(["Verdict", `${s.label}: STRONG only if the whole range beats the normal rate; under 10 cases is WEAK`]);
       if (s.holdout) {
