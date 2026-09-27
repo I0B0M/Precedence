@@ -17,14 +17,14 @@ import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 type Chip = { key: string; label: React.ReactNode; row?: number }; // row: index into the card's rows, for the line
 type LinePos = { key: string; x1: number; y1: number; x2: number; y2: number };
 
-// The chips' own spots around the orb (desktop only — hidden on a phone, see briefing.css). Tuned for the
-// ~340px orb Stage renders in the hero; negative offsets are the point, so a couple can overlap the card's edge.
+// The chips' own spots around the orb (desktop only — hidden on a phone, see briefing.css). They stay inside
+// the orb's column: out past it they sat on the portfolio card and, scrolled, beside the sticky header.
 const CHIP_POS: React.CSSProperties[] = [
   { top: -16, left: "50%", transform: "translateX(-50%)" },
-  { top: 36, left: -78 },
-  { top: 168, left: -96 },
-  { top: 224, right: -58 },
-  { top: 64, right: -92 },
+  { top: 40, left: 0 },
+  { top: 176, left: 0 },
+  { top: 232, right: 0 },
+  { top: 72, right: 0 },
 ];
 
 // Brief: "more accessible … engaging" · "understanding what they own". Trimmed to the hero, the portfolio
@@ -62,7 +62,10 @@ export default function Home() {
   const cardBoard = returning ? myBoard : board;
   const stateOf = (sym: string) => cardBoard?.exposure.find((e) => e.symbol === sym)?.state ?? null;
   const stateWord = (sym: string) => (stateOf(sym) === "WATCH" ? "Heads up" : cardBoard ? "Calm" : "…");
-  const cardRows = returning ? (mine ?? []) : EXAMPLE_PORTFOLIO;
+  // The card shows your three largest holdings, so the chips name the same three, in the same order: each
+  // chip's line then lands on its own row.
+  const myTop = [...(myBoard?.rows ?? [])].sort((a, b) => b.value - a.value).slice(0, 3);
+  const cardRows: { symbol: string }[] = returning ? myTop : EXAMPLE_PORTFOLIO;
   const chips: Chip[] = [
     { key: "total", label: <><b>{cardBoard ? money(cardBoard.subtotals?.total ?? cardBoard.total) : "…"}</b> total</> },
     ...cardRows.slice(0, 3).map((h, i): Chip => ({ key: h.symbol, label: <><b>{h.symbol}</b> {stateWord(h.symbol)}</>, row: i })),
@@ -152,7 +155,7 @@ export default function Home() {
               <span className="bignum price home-example-total">{myBoard ? money(myBoard.subtotals?.total ?? myBoard.total) : "—"}</span>
               {myBoard?.subtotals?.includes_home_estimate && <span className="note">Includes a home estimate</span>}
               {/* Your three largest holdings, with their badges. */}
-              {[...(myBoard?.rows ?? [])].sort((a, b) => b.value - a.value).slice(0, 3).map((r, i) => {
+              {myTop.map((r, i) => {
                 const e = myBoard?.exposure.find((x) => x.symbol === r.symbol);
                 return (
                   <span className="home-example-row" key={r.symbol} ref={(el) => { rowRefs.current[i] = el; }}>
