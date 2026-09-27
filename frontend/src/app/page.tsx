@@ -7,13 +7,13 @@ import { StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { ChartPanel, DotsArt, FundsPanel, IconChecked, IconHonest, IconSources, IconTested, Mark, PaperPanel, RangeArt } from "@/components/landing/Art";
 import { HeroLoop, JoinLoop } from "@/components/landing/Loops";
-import { api, type CompanyDetail, type FundPage, type PortfolioOut, type Status, type Today } from "@/lib/api";
+import { api, type CompanyDetail, type FundPage, type PortfolioOut, type Scan, type Status, type Today } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { PRACTICE_CASH } from "@/lib/practice";
 
 // The example the landing shows, and the one /import?example=1 fills in.
 const EXAMPLE = [{ symbol: "BX", shares: 10 }, { symbol: "AMZN", shares: 5 }, { symbol: "SPY", shares: 3 }];
-// Not served by the API yet (no all-time totals endpoint): from the database load, Sept 2026.
+// Not served by the API yet (no all-time totals endpoint): counted in the database load, as of Sep 25.
 const INSIDER_TRADES = 35797;
 
 const Lockup = ({ word }: { word: string }) => (
@@ -28,6 +28,7 @@ export default function Landing() {
   const [today, setToday] = useState<Today | null>(null);
   const [spy, setSpy] = useState<FundPage | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
+  const [scan, setScan] = useState<Scan | null>(null);
 
   useEffect(() => {
     api.portfolio(EXAMPLE).then(setBoard).catch(() => {});
@@ -36,6 +37,7 @@ export default function Landing() {
     api.today().then(setToday).catch(() => {});
     api.fund("SPY").then(setSpy).catch(() => {});
     api.status().then(setStatus).catch(() => {});
+    api.scan().then(setScan).catch(() => {});
   }, []);
 
   const rate = today?.market.rate;
@@ -77,7 +79,7 @@ export default function Landing() {
       </section>
 
       <section className="lp-stats" aria-label="What's under the hood">
-        <div className="lp-stat"><b>{INSIDER_TRADES.toLocaleString("en-US")}</b><span>insider trades read from SEC Form 4s</span></div>
+        <div className="lp-stat"><b>{INSIDER_TRADES.toLocaleString("en-US")}</b><span>insider trades read from SEC Form 4s, as of Sep 25</span></div>
         <div className="lp-stat"><b>{spy ? spy.total_holdings_count : "…"}</b><span>companies inside SPY, as of {day(spy?.holdings_as_of)}</span></div>
         <div className="lp-stat"><b>{rate ? `${rate.value.toFixed(2)}%` : "…"}</b><span>10-year Treasury (FRED), {day(rate?.day)}</span></div>
         <div className="lp-stat"><b>{stocks ?? "…"}</b><span>stocks tested, priced at the {day(board?.price_as_of)} close</span></div>
@@ -129,7 +131,7 @@ export default function Landing() {
         <div className="lp-feature-col">
           <Lockup word="Paper trading" />
           <p className="lp-t-h40 lp-feature-title">Try a trade with pretend money</p>
-          <p className="lp-t-body lp-feature-text">{money(PRACTICE_CASH)} of pretend cash at Friday&rsquo;s close. Nothing is sent.</p>
+          <p className="lp-t-body lp-feature-text">{money(PRACTICE_CASH)} of pretend cash, under a yellow &ldquo;Not real money&rdquo; bar.</p>
           <Link className="lp-pill lp-btn-accent" href="/paper"><span>Try paper trading</span></Link>
         </div>
       </section>
@@ -137,17 +139,17 @@ export default function Landing() {
       <section className="lp-protect">
         <h2 className="lp-t-h52 lp-protect-title">Honest about what isn&rsquo;t proven</h2>
         <div className="lp-protect-grid">
-          <div className="lp-protect-item"><IconTested /><h5>309 pairs tested. None survive the correction.</h5></div>
+          <div className="lp-protect-item"><IconTested /><h5>{scan ? `${scan.tested} pairs tested. ${scan.strong} looked strong, about ${Math.round(scan.expected_by_chance)} by luck.` : "…"}</h5></div>
+          <div className="lp-protect-item"><IconChecked /><h5>{scan?.strong_fdr10 != null ? `${scan.strong_fdr10} survive the correction, as of ${day(scan.as_of)}.` : "…"}</h5></div>
           <div className="lp-protect-item"><IconHonest /><h5>When something isn&rsquo;t proven, it says so.</h5></div>
           <div className="lp-protect-item"><IconSources /><h5>Real SEC, Fed and price data. No samples.</h5></div>
-          <div className="lp-protect-item"><IconChecked /><h5>109 backend tests pass. 26 of 26 breaks caught.</h5></div>
         </div>
       </section>
 
       <section className="lp-learn">
         <div className="lp-learn-inner">
           <h2 className="lp-t-h52 lp-learn-title">Lite for everyone. Pro shows the working.</h2>
-          <p className="lp-t-body lp-learn-text">Tap the castle to see the cases behind every number.</p>
+          <p className="lp-t-body lp-learn-text">Tap the castle. Pro shows the working behind every result.</p>
           <Link className="lp-pill lp-btn-white" href="/learn"><span>What the badges mean</span></Link>
           <div className="lp-learn-card" aria-hidden="true">
             <h4>The badges</h4>
