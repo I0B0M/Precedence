@@ -8,7 +8,7 @@ import { Why } from "@/components/Why";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { api, type CompanyRow, type SignalResult } from "@/lib/api";
 import { horizonWords, pct, shortDate, whole } from "@/lib/format";
-import { hitWords, liteHistory, liteVerdict } from "@/lib/words";
+import { eventRowWords, hitWords, liteAnswer, liteHistory, liteQuestion, liteVerdict } from "@/lib/words";
 
 type Spec = { key: string; lite: string; pro: string; horizon: number };
 
@@ -144,6 +144,25 @@ function CountUp({ to, ms }: { to: number; ms: number }) {
   return <>{v}%</>;
 }
 
+/** One row of the Signals Lite comparison: a label, filled/hollow dots, and the count in words. */
+function DotRow({ label, filled, total, color, count }: { label: string; filled: number; total: number; color: string; count: string }) {
+  return (
+    <div className="row-flex" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+      <span style={{ minWidth: "13ch" }}>{label}</span>
+      <span aria-hidden style={{ display: "inline-flex", gap: 4, flexWrap: "wrap" }}>
+        {Array.from({ length: total }, (_, i) => (
+          <i key={i} style={{
+            width: 12, height: 12, borderRadius: "50%", display: "inline-block",
+            background: i < filled ? color : "transparent",
+            boxShadow: i < filled ? "none" : "inset 0 0 0 1.5px var(--mark)",
+          }} />
+        ))}
+      </span>
+      <span className="mute">{count}</span>
+    </div>
+  );
+}
+
 function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
   const cases = r.cases ?? [];
   const span = horizonWords(r.horizon).replace("a ", "");
@@ -154,12 +173,25 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
   const tone = r.label === "STRONG" ? "strong" : r.label === "NO DATA" ? "nodata" : "weak";
   return (
     <div className="card lab-result" style={timing}>
-      <h2>{ticker}: <span className="lite-only">{r.lite.toLowerCase()}</span><span className="pro-only">{r.pro}</span></h2>
+      <h2>
+        <span className="lite-only">{liteQuestion(r.signal, ticker, r.vs_market)}</span>
+        <span className="pro-only">{ticker}: {r.pro}</span>
+      </h2>
 
-      <HitDots cases={cases} vsMarket={r.vs_market} />
+      <div className="pro-only">
+        <HitDots cases={cases} vsMarket={r.vs_market} />
+      </div>
+
+      {r.n > 0 && r.normal_rate != null && (
+        <div className="lite-only stack" style={{ gap: 10 }}>
+          <DotRow label={eventRowWords(r.signal)} filled={r.hits} total={r.n} color="var(--gold)" count={`${r.hits} of ${r.n}`} />
+          <DotRow label={`In a normal ${span}`} filled={Math.round(r.normal_rate * r.n)} total={r.n} color="var(--text-2)"
+            count={`about ${Math.round(r.normal_rate * r.n)} of ${r.n}`} />
+        </div>
+      )}
 
       {r.n > 0 && (
-        <div className="versus">
+        <div className="versus pro-only">
           <div>
             <div className="bignum" aria-label={whole(r.hit_rate)}>{r.hit_rate == null ? "—" : <CountUp to={Math.round(r.hit_rate * 100)} ms={fill} />}</div>
             <p className="note">{r.hits} of {r.n} times, it {hitWords(r)}</p>
@@ -176,9 +208,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       {r.n > 0 && (
         <div className="stack lab-after pro-only" style={{ gap: 4 }}>
           <span className="note">
-            <span className="lite-only">The dark bar is where the real rate likely is. The blue line is a normal {span}.
-              If the whole bar is right of the line, it&apos;s a real pattern.</span>
-            <span className="pro-only">90% Wilson interval for P({r.vs_market ? "worse than SPY" : "lower"} after {r.horizon}d) vs normal-day rate ({r.normal_hits}/{r.normal_n}).</span>
+            90% Wilson interval for P({r.vs_market ? "worse than SPY" : "lower"} after {r.horizon}d) vs normal-day rate ({r.normal_hits}/{r.normal_n}).
           </span>
           <div className="rangebar" role="img" aria-label={`Range ${whole(r.low)} to ${whole(r.high)}, normal ${whole(r.normal_rate)}`}>
             <div className="track" />
@@ -192,7 +222,8 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
 
       <div className={`verdict ${tone}`} role="status">
         <span className="pro-only"><Verdict s={r} /></span>
-        <p><b>{r.label === "NO DATA" ? liteHistory(r, ticker) : liteVerdict(r, ticker)}</b></p>
+        <p className="pro-only"><b>{r.label === "NO DATA" ? liteHistory(r, ticker) : liteVerdict(r, ticker)}</b></p>
+        <p className="lite-only"><b>{r.n === 0 ? liteHistory(r, ticker) : liteAnswer(r)}</b></p>
       </div>
 
       {r.holdout && (
@@ -202,7 +233,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       {r.firing && (
         <p className={r.label === "STRONG" ? "watchline" : "okline"}>
           <b>Happening now</b>
-          <span className="lite-only"> ({shortDate(r.firing.known_at)}). {r.label === "STRONG" ? `That's why ${ticker} is Heads up.` : `No clear pattern, so ${ticker} stays Calm.`}</span>
+          <span className="lite-only"> ({shortDate(r.firing.known_at)}).</span>
           <span className="pro-only">: {r.firing.note}. {r.label === "STRONG" ? "This is why the stock is on WATCH." : "Not proven for this stock, so it stays CALM."}</span>
         </p>
       )}
