@@ -48,6 +48,23 @@ def result_json(r: engine.Result, with_cases: bool = True, fdr10: dict[str, bool
     return out
 
 
+WITH_MARKET_BAND = 0.005  # within half a percentage point of the market's one-day move = "with the market"
+
+
+def vs_market_words(stock: float | None, market: float | None, band: float = WITH_MARKET_BAND) -> str | None:
+    """How big a stock's one-day move was next to the market's. Size only, and never a reason for it."""
+    if stock is None or market is None:
+        return None
+    if round(abs(stock - market), 6) <= band:  # rounded so an exact half point counts as "with"
+        return "with the market"
+    return "more than the market" if abs(stock) > abs(market) else "less than the market"
+
+
+# The `source` values stored with each row, in words for the page
+SOURCE_NAMES = {"alpaca-iex": "Alpaca market data (IEX feed)", "sec": "SEC EDGAR", "fred": "FRED, St. Louis Fed",
+                "sample": "Sample data (made up)"}
+
+
 def filing_url(cik: int | None, accession: str, primary_doc: str | None, source: str) -> str | None:
     if source != "sec" or not cik:
         return None
