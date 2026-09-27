@@ -198,8 +198,9 @@ def test_saved_portfolio_script_leads_with_what_needs_a_look(saved):
     assert t[1] == "Amazon and the S&P 500 fund need a look; the other 4 are calm."
     assert t[2].startswith("Amazon executives filed 3 or more share sales within 10 days")
     assert t[3] == "Amazon was lower 20 trading days later 6 of the last 12 times, against 26% of normal days."
-    # the saved fixtures predate fdr10_survives, so the correction goes unsaid here rather than guessed
-    assert t[4] == "There are too few cases yet to check it on each half of the history."
+    # fdr10_survives copied into the saved data from the same trading day's API: the landing's "0 survive"
+    assert t[4] == ("It doesn't survive the correction for testing many stocks at once, and there are too few cases "
+                    "yet to check it on each half of the history.")
     assert "The S&P 500 fund was lower 5 trading days later 10 of the last 15 times, against 38% of normal days." in t
     assert not any("held up" in x for x in t)  # no saved result has 10+ cases in each half
     assert t[-1] == "That's everything: Precedence ran 16 tests on your holdings, and only 2 of the signals happening now have mattered before."

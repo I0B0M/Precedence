@@ -82,6 +82,30 @@ def live_extras() -> None:
             raise SystemExit(f"{path}: says 'Stone'; the product is Precedence on screen.")
         write(path, data)
 
+    # fdr10_survives (the correction for testing many stocks at once) on every saved signal: the fixtures were
+    # exported before the field existed. It's the only field added; no other saved number changes.
+    fdr = {(t, s["signal"]): s.get("fdr10_survives") for t in stocks for s in get(f"/api/companies/{t}")["signals"]}
+
+    def mark(ticker: str, signal: dict) -> None:
+        if "signal" in signal:
+            signal["fdr10_survives"] = fdr.get((ticker, signal["signal"]))  # None: not in that run (the market card)
+
+    for t in stocks:
+        c = json.loads((OUT / "companies" / f"{t}.json").read_text())
+        for s in c["signals"]:
+            mark(t, s)
+        write(f"companies/{t}", c)
+        for lab in sorted((OUT / "lab" / t).glob("*.json")):
+            doc = json.loads(lab.read_text())
+            mark(t, doc)
+            write(f"lab/{t}/{lab.stem}", doc)
+    for board in sorted((OUT / "portfolio").glob("*.json")):
+        doc = json.loads(board.read_text())
+        for e in doc.get("exposure") or []:
+            for s in e.get("firing") or []:
+                mark(e["symbol"], s)
+        write(f"portfolio/{board.stem}", doc)
+
 
 if "--live-only" in sys.argv:  # just the files above, leaving the rest of frontend/public/saved as it is
     live_extras()
