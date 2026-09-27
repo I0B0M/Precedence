@@ -81,4 +81,41 @@ mutv "rebuild tries only the event shown" "list(range(max(busy_until, last - h +
 mutv "rebuild skips the normal-day count" 'if len(starts) == signal["normal_n"]:' "if True:"
 mutv "rebuild counts N / h periods"      "periods.add(engine.periods_spanned(starts, h))" "periods.add(len(starts) / h)"
 cmp -s "$BAK" "$V" && echo "views.py restored, identical to original"
+
+# The briefing (stone/briefing): the number check, the gate and the templates, checked by test_briefing.py
+mutb() {
+  local file="$1" desc="$2" from="$3" to="$4"
+  cp "$file" "$BAK"
+  python3 - "$file" "$from" "$to" <<'PY'
+import sys
+p, a, b = sys.argv[1:]
+s = open(p).read()
+assert s.count(a) >= 1, f"pattern not found: {a}"
+open(p, "w").write(s.replace(a, b, 1))
+PY
+  if uv run pytest -q tests/test_briefing.py >"$OUT" 2>&1; then
+    echo "SURVIVED (bad): $desc"
+  else
+    echo "killed: $desc  -> $(grep -c FAILED "$OUT") test(s) red"
+  fi
+  cp "$BAK" "$file"
+}
+L=stone/briefing/lines.py; X=stone/briefing/experts.py; P=stone/briefing/panel.py
+mutb $L "check never looks at numbers"       'if not grounded(t, line.evidence)]'         'if False]'
+mutb $L "rounding ignores the places shown"  'if f"{c / scale:.{places}f}" == target:'    'if round(c / scale) == round(float(digits)):'
+mutb $L "percent of a fraction not allowed"  'for c in (abs(e), abs(e) * 100):'           'for c in (abs(e),):'
+mutb $L "millions/billions not scaled"       'scale = _SCALE.get(m.group(3) or "", 1.0)'  'scale = 1.0'
+mutb $L "no word limit"                      'if words > MAX_WORDS:'                      'if False:'
+mutb $L "initials end a sentence"            'if not re.search(r"(?:^|\s)[A-Z]$", text[:m.start()]))' ')'
+mutb $L "dates count as claims"              're.compile(r"\b(?:19|20)\d{2}\b"),'         ''
+mutb $L "company names count as claims"      'text = text.replace(name, " ")'            'pass'
+mutb $P "gate keeps a failing point"         'if problems:'                               'if False:'
+mutb $P "gate has no per-expert cap"         'elif per.get(p.expert, 0) >= per_expert:'   'elif False:'
+mutb $P "gate speaks lowest first"           'sorted(points, key=lambda p: -p.salience)'  'sorted(points, key=lambda p: p.salience)'
+mutb $X "held_up said without a verdict"     '(signal.get("holdout") or {}).get("verdict")' '("held up" if signal.get("holdout") else None)'
+mutb $X "borderline flipped"                 'STRICT_WORDS[st["diff_low"] > 0]'           'STRICT_WORDS[st["diff_low"] <= 0]'
+mutb $X "market-relative said as lower"      'if signal.get("vs_market")'                 'if False'
+mutb $X "filings older than a week"          'end - timedelta(days=FILINGS_DAYS) < date.fromisoformat(filed) <= end' 'date.fromisoformat(filed) <= end'
+mutb $X "Form 4s read as filings"            'form.startswith("4") or '                   ''
+for f in $L $X $P; do git diff --quiet -- "$f" && echo "$f restored, identical to original"; done
 rm "$BAK" "$OUT"

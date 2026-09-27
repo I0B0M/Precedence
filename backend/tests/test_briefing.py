@@ -1,19 +1,14 @@
 """The briefing: every line grounded in its evidence, the gate's choices, and the saved demo's script."""
 
 import json
-import sys
+import shutil
 
 import pytest
 
 from stone.briefing import experts as ex
+from stone.briefing import saved as saved_briefings
 from stone.briefing.lines import Line, Point, check, claims, grounded
 from stone.briefing.panel import briefing_json, company_briefing, gate, portfolio_briefing
-from stone.config import REPO_DIR
-
-sys.path.insert(0, str(REPO_DIR / "backend" / "scripts"))
-import build_briefings  # noqa: E402
-
-SAVED = REPO_DIR / "frontend" / "public" / "saved"
 
 
 def line(text: str, evidence=(), cites=("signal:rate_jump",), tone="note") -> Line:
@@ -170,15 +165,8 @@ def test_filings_from_the_last_week_only_and_never_form_4():
 
 @pytest.fixture(scope="module")
 def saved() -> dict:
-    index = build_briefings.read("index")
-    companies = {t: build_briefings.current(build_briefings.read(f"companies/{t}")) for t in index["tickers"]}
-    market = build_briefings.read("market/rate_jump")
-    key = index["example_key"]
-    risk = json.loads((SAVED / "portfolio" / "risk" / f"{key}.json").read_text())
-    out = {t: company_briefing(d) for t, d in companies.items()}
-    out["portfolio"] = portfolio_briefing(build_briefings.read(f"portfolio/{key}"), companies,
-                                          {"symbol": "SPY", **market}, risk, key)
-    return out
+    found = saved_briefings.briefings()
+    return {("portfolio" if "/portfolio/" in path else path.split("/")[-1]): b for path, b in found.items()}
 
 
 def test_every_saved_line_passes_the_check_and_nothing_failed(saved):
@@ -211,3 +199,17 @@ def test_saved_json_matches_the_tab_contract(saved):
     assert p["key"] == "AAPL-10_AMZN-10_BX-10_JPM-10_NVDA-10_SPY-5"
     assert {e["name"] for e in p["panel"]["experts"]} >= {"signals", "market", "risk", "look-through"}
     assert "S and P 500" in next(ln["say"] for ln in p["lines"] if "S&P 500" in ln["text"])
+
+
+def test_build_writes_what_the_api_would_send_and_refuses_a_failing_line(tmp_path, monkeypatch):
+    out = tmp_path / "saved"
+    shutil.copytree(saved_briefings.SAVED, out, ignore=shutil.ignore_patterns("briefing"))
+    written = saved_briefings.build(out)
+    assert {f.relative_to(out).as_posix() for f in written} >= {
+        "briefing/BX.json", "briefing/SPY.json", "briefing/portfolio/AAPL-10_AMZN-10_BX-10_JPM-10_NVDA-10_SPY-5.json"}
+    assert json.loads((out / "briefing" / "BX.json").read_text()) == briefing_json(saved_briefings.briefings(out)["briefing/BX"])
+    shutil.rmtree(out / "briefing")
+    monkeypatch.setattr("stone.briefing.experts.pct", lambda x, places=0: "99%")  # a template printing a wrong number
+    with pytest.raises(saved_briefings.FailedCheck):
+        saved_briefings.build(out)
+    assert not (out / "briefing").exists()  # nothing half-written
