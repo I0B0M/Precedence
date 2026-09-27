@@ -6,7 +6,8 @@ import { HitDots, HoldoutNote, Verdict } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
 import { Why } from "@/components/Why";
 import { ApiProblem, Loading } from "@/components/Problem";
-import { api, type CompanyRow, type SignalResult } from "@/lib/api";
+import { api, EXAMPLE_PORTFOLIO, type CompanyRow, type SignalResult } from "@/lib/api";
+import { Stage } from "@/components/briefing/Stage";
 import { horizonWords, pct, shortDate, whole } from "@/lib/format";
 import { eventRowWords, hitWords, liteAnswer, liteHistory, liteQuestion, liteVerdict } from "@/lib/words";
 
@@ -69,6 +70,8 @@ export default function SignalLab() {
             Compared with the same stock&apos;s normal days, measured the same way; 90% Wilson range.</span>
         </p>
       </div>
+      {/* The briefing: what these signals mean for what you own (the example until you add holdings). */}
+      <Stage fallback={EXAMPLE_PORTFOLIO} compact />
 
       <div className="grid2 lab-pick">
         <div className="stack" style={{ gap: 10 }}>

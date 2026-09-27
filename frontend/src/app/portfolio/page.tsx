@@ -141,7 +141,7 @@ export default function HoldingsBoard() {
         </p>
       </div>
 
-      <div className="pf-briefing"><Stage /></div>
+      <div className="pf-briefing"><Stage compact /></div>
       <Allocation board={board} />
       <OwnMap board={board} />
       {holdings && holdings.length > 0 && <RiskCard holdings={holdings} />}

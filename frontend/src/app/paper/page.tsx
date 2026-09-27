@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { Why } from "@/components/Why";
-import { api, type CompanyRow, type PortfolioOut } from "@/lib/api";
+import { api, EXAMPLE_PORTFOLIO, type CompanyRow, type PortfolioOut } from "@/lib/api";
+import { Stage } from "@/components/briefing/Stage";
 import { money, shortDate } from "@/lib/format";
 import { readHoldings } from "@/lib/holdings";
 import { freshPractice, placeTrade, PRACTICE_CASH, resetPractice, tradeProblem, usePractice, type PracticeState } from "@/lib/practice";
@@ -103,6 +104,8 @@ export default function PracticeScreen() {
     <section className="stack" style={{ gap: 24 }}>
       <div className="practice-banner" role="note">Practice money. Not real. No order is ever sent.</div>
       <h1>{Object.keys(s.seeded ?? {}).length ? <>Your holdings plus {money(PRACTICE_CASH)} of pretend cash</> : <>Trade with {money(PRACTICE_CASH)} of pretend money</>}</h1>
+      {/* The briefing on what you own, before you practise with it (the example until you add holdings). */}
+      <Stage fallback={EXAMPLE_PORTFOLIO} compact />
 
       <div className="pf-head" style={{ margin: 0 }}>
         <div className="stack" style={{ gap: 4 }}>
