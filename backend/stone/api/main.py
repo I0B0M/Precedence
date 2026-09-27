@@ -34,6 +34,7 @@ from stone.sources.private_funds import month_back
 from stone.sources.gemini import MODEL as GEMINI_MODEL
 from stone.sources.gemini import IMAGE_TYPES, GeminiClient, ScreenshotUnreadable, first_sentences
 from stone.sources.gemini import connected as gemini_connected
+from stone.sources.gemini import screenshot_key
 from stone.sources.ollama import OllamaClient
 from stone.sources import census
 from stone.sources.fhfa import SOURCE as HPI_SOURCE
@@ -116,9 +117,12 @@ def status(c: psycopg.Connection = Conn):
         "select source, count(*) as n from companies group by source").fetchall()}
     real = sum(n for s, n in counts.items() if s != "sample")
     data = "empty" if not counts else "sample" if not real else "mixed" if "sample" in counts else "real"
-    gemini = gemini_connected(config.load())
-    # summaries / screenshots: false means those endpoints answer 503, so pages can skip calling them
-    return {"data": data, "companies_by_source": counts, "summaries": gemini, "screenshots": gemini}
+    settings = config.load()
+    gemini = gemini_connected(settings)
+    # summaries / screenshots: false means those endpoints answer 503, so pages can skip calling them.
+    # screenshot_sample: the sample screen has been read before, so "Try it with a sample" works even without a key.
+    return {"data": data, "companies_by_source": counts, "summaries": gemini, "screenshots": gemini,
+            "screenshot_sample": sample_screenshot_read(settings)}
 
 
 @app.get("/api/companies")
@@ -926,6 +930,13 @@ def filing_summary(accession: str, c: psycopg.Connection = Conn):
 
 
 MAX_SCREENSHOT_BYTES = 15 * 1024 * 1024  # Gemini takes inline images up to ~20 MB per request
+# The page's "Try it with a sample screenshot" (frontend/public/samples/, the same bytes): a made-up broker screen.
+SAMPLE_SCREENSHOT = config.BACKEND_DIR / "tests" / "fixtures" / "demo_screenshot.png"
+
+
+def sample_screenshot_read(settings: config.Settings) -> bool:
+    """Whether Gemini's reading of the sample screen is saved (it has been read once, with a key)."""
+    return GeminiClient(settings, offline=True).http.path_for(screenshot_key(SAMPLE_SCREENSHOT.read_bytes())).exists()
 
 
 @app.post("/api/import/screenshot")
@@ -935,12 +946,15 @@ async def import_screenshot(file: UploadFile = File(...)):
     image = await file.read()
     if len(image) > MAX_SCREENSHOT_BYTES:
         raise HTTPException(413, "That screenshot is too large (over 15 MB).")
+    settings = config.load()
     try:
-        client = GeminiClient(config.load())
+        client = GeminiClient(settings)
     except NotConnected:
-        raise HTTPException(503, "Screenshot reading isn't connected yet (GEMINI_API_KEY is not set).")
+        client = GeminiClient(settings, offline=True)  # without a key, only a screen that was read before
     try:
         read = client.read_screenshot(image, file.content_type)
+    except FileNotFoundError:
+        raise HTTPException(503, "Screenshot reading isn't connected yet (GEMINI_API_KEY is not set).")
     except ScreenshotUnreadable as e:
         raise HTTPException(422, f"{e} You can type the rows instead.")
     except httpx.HTTPError as e:

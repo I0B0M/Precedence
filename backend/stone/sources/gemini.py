@@ -207,6 +207,11 @@ def parse_summary_response(doc: dict) -> FilingRead:
     return filing_read(answer_json(doc, "filing"))
 
 
+def screenshot_key(image: bytes) -> str:
+    """Where a screenshot's reading is cached: per model and per exact image."""
+    return f"screenshot_{MODEL}_{hashlib.sha256(image).hexdigest()[:24]}.json"
+
+
 def connected(settings: Settings) -> bool:
     """Whether Gemini calls (screenshot import, filing summaries) can run at all."""
     return bool(settings.gemini_api_key)
@@ -244,7 +249,7 @@ class GeminiClient:
             raise
 
     def read_screenshot(self, image: bytes, mime_type: str) -> ScreenshotRead:
-        key = f"screenshot_{MODEL}_{hashlib.sha256(image).hexdigest()[:24]}.json"
+        key = screenshot_key(image)
         parts = [{"inline_data": {"mime_type": mime_type, "data": base64.b64encode(image).decode()}},
                  {"text": PROMPT}]
         return self.parsed(key, self.generate(key, parts, RESPONSE_SCHEMA, timeout=60), parse_response)

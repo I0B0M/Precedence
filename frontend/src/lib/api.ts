@@ -143,7 +143,11 @@ export interface Status {
   companies_by_source: Record<string, number>;
   summaries?: boolean; // false: /api/filings/{acc}/summary answers 503, so don't call it
   screenshots?: boolean; // false: /api/import/screenshot answers 503 (same key as summaries)
+  screenshot_sample?: boolean; // the sample screen has been read once, so its reading works without the key
 }
+
+/** The made-up broker screen /import offers to try (backend/tests/fixtures/demo_screenshot.png, the same bytes). */
+export const SAMPLE_SCREENSHOT = "/samples/demo_screenshot.png";
 
 export interface CompanyRow {
   ticker: string;
@@ -621,5 +625,12 @@ export const api = {
     const form = new FormData();
     form.append("file", file);
     return call<Reconciled>("/api/import/screenshot", { method: "POST", body: form });
+  },
+  /** The sample screen, read and checked: sent to the reader like any upload; saved data has that answer saved. */
+  screenshotSample: async (): Promise<Reconciled> => {
+    if (SAVED) return call<Reconciled>("/api/import/screenshot-sample");
+    const res = await fetch(SAMPLE_SCREENSHOT);
+    if (!res.ok) throw new ApiError(404, "The sample screenshot is missing.");
+    return api.screenshot(new File([await res.blob()], "demo_screenshot.png", { type: "image/png" }));
   },
 };

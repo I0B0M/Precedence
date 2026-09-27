@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { OtherAssetsForms } from "@/components/OtherAssets";
 import { SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
-import { api, ApiError, EXAMPLE_PORTFOLIO, SAVED, type ReadRow, type Reconciled, type Status } from "@/lib/api";
+import { api, ApiError, EXAMPLE_PORTFOLIO, SAMPLE_SCREENSHOT, SAVED, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { andList, money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
+import { screenshotChoice, shotError } from "@/lib/importing";
 import { PRACTICE_CASH } from "@/lib/practice";
 import { addPrivateFund, addProperty, addRetirement, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
 
@@ -101,6 +102,8 @@ export default function ImportScreen() {
   const [priced, setPriced] = useState<{ symbol: string; day: string | null }[]>([]);
   const [unpriced, setUnpriced] = useState<string[]>([]);
   const [example, setExample] = useState<string | null>(null); // the close date, while example rows are in the table
+  const [sample, setSample] = useState(false); // the sample screen's rows are in the table, untouched
+  const [statusFailed, setStatusFailed] = useState(false);
   const other = useOtherAssets();
 
   function applyExample(ex: Example | null) {
@@ -112,39 +115,40 @@ export default function ImportScreen() {
     setExample(ex.asOf);
     setCheck(ex.check);
   }
+  const showRows = () => {
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    setTimeout(() => document.getElementById("check-rows")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }), 50);
+  };
   // Fill the table, then bring it into view (the button sits at the top of the page).
   const fillAndShow = () => loadExample().then((ex) => {
     applyExample(ex);
     seedExampleExtras(other);
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    setTimeout(() => document.getElementById("check-rows")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }), 50);
+    showRows();
   });
 
   useEffect(() => {
-    api.status().then(setStatus).catch(() => {});
+    api.status().then(setStatus).catch(() => setStatusFailed(true));
     if (new URLSearchParams(window.location.search).get("example") === "1") {
       loadExample().then((ex) => { applyExample(ex); seedExampleExtras(other); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function upload(file: File) {
+  /** Read a screenshot (yours, or the sample screen) and check it adds up; the rows land in the table below. */
+  async function readShot(read: () => Promise<Reconciled>, isSample: boolean) {
     setBusy(true);
     setNote(null);
     try {
-      const r = await api.screenshot(file);
-      setRows(r.rows.map(toEdit));
+      const r = await read();
+      setRows(r.rows.length ? r.rows.map(toEdit) : [blank()]);
       setTotal(r.printed_total?.toString() ?? "");
       setCheck(r);
+      setExample(null);
+      setSample(isSample);
+      showRows();
     } catch (e) {
-      // 413/415/422: the API's own detail says what was wrong with the file. 502/503: the reader is down or not
-      // connected; its detail names env vars and models, so it gets our wording, as does not reaching us at all.
-      const status = e instanceof ApiError ? e.status : 0;
-      setNote([413, 415, 422].includes(status)
-        ? `${(e as ApiError).message} Type the rows below instead.`
-        : status === 502 || status === 503
-          ? "Screenshot reading is off right now. Type the rows below instead."
-          : "Can't reach our server. Type the rows below instead.");
+      const err = e instanceof ApiError ? e : null;
+      setNote(shotError(err?.status ?? 0, err?.message ?? "", choice, SAVED));
     } finally {
       setBusy(false);
     }
@@ -202,6 +206,7 @@ export default function ImportScreen() {
 
   const edit = (i: number, k: keyof EditRow, v: string) => {
     setExample(null);
+    setSample(false);
     setEmpty(false);
     setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
     setCheck(null);
@@ -212,7 +217,8 @@ export default function ImportScreen() {
   // example: set while the example rows are untouched (any edit clears it), so they can be saved without the check.
   const canSave = check?.status === "ok" || typedOk || example != null;
   const typed = rows.some((r) => r.symbol.trim());
-  const shots = status?.screenshots === true; // the upload shows only when the API says it can read one
+  const choice = screenshotChoice(status, SAVED); // upload, the sample only, or neither: from what the API says
+  const shots = choice != null && choice.can !== "none";
 
   return (
     <section className="stack" style={{ gap: 22 }}>
@@ -222,8 +228,8 @@ export default function ImportScreen() {
         <p className="lede">Read-only. Never trades or moves money.</p>
       </div>
 
-      {/* Every way in, real state each: two aren't built (never a fake "Coming soon" button, just no button at
-       *  all), the screenshot reader needs a key we don't have, practice money is real and one tap away. */}
+      {/* Every way in, real state each: what isn't built says "Coming next" (never a fake button); the screenshot
+       *  says whether it can read yours, only the sample, or neither; practice money is real and one tap away. */}
       <div className="card">
         <h3>Bring your money in</h3>
         <p className="note">No account needed to start.</p>
@@ -232,10 +238,17 @@ export default function ImportScreen() {
             <span><b>Robinhood</b><span className="note" style={{ display: "block" }}>Connect · read-only</span></span>
             <span className="note">Coming next</span>
           </div>
-          <div className="list-row" style={{ alignItems: "center" }}>
-            <span><b>Screenshot</b><span className="note" style={{ display: "block" }}>Any app, any account</span></span>
-            <span className="note">Coming next</span>
-          </div>
+          {shots ? (
+            <a href="#screenshot-drop" className="list-row" style={{ alignItems: "center", textDecoration: "none", color: "inherit" }}>
+              <span><b>Screenshot</b><span className="note" style={{ display: "block" }}>{choice.note}</span></span>
+              <span className="chev" aria-hidden>›</span>
+            </a>
+          ) : (
+            <div className="list-row" style={{ alignItems: "center" }}>
+              <span><b>Screenshot</b><span className="note" style={{ display: "block" }}>Any app, any account</span></span>
+              <span className="note">{choice?.note ?? (statusFailed ? "Can't reach our server" : "Checking…")}</span>
+            </div>
+          )}
           <div className="list-row" style={{ alignItems: "center" }}>
             <span><b>Crypto wallet</b><span className="note" style={{ display: "block" }}>Paste an address</span></span>
             <span className="note">Coming next</span>
@@ -258,16 +271,22 @@ export default function ImportScreen() {
       {shots && <>
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Or add a screenshot</h2>
-        <p className="mute">Checked against the total on your screen.</p>
+        <p className="mute">Reads the screenshot, then checks it against the total on your screen.</p>
       </div>
 
       <div className="drop" id="screenshot-drop" style={{ scrollMarginTop: 110 }}>
-        <b>Any app: Cash App, Webull, Fidelity…</b>
-        <label className={`btn${busy ? " is-busy" : ""}`}>
-          <input className="sr-only" type="file" accept="image/*" disabled={busy}
-            onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
-          {busy ? "Reading…" : "Choose a screenshot"}
-        </label>
+        {choice.can === "upload" ? <>
+          <b>Any app: Cash App, Webull, Fidelity…</b>
+          <label className={`btn${busy ? " is-busy" : ""}`}>
+            <input className="sr-only" type="file" accept="image/*" disabled={busy}
+              onChange={(e) => e.target.files?.[0] && readShot(() => api.screenshot(e.target.files![0]), false)} />
+            {busy ? "Reading…" : "Choose a screenshot"}
+          </label>
+        </> : <b>{choice.note}</b>}
+        <button className={choice.can === "upload" ? "linkb" : `btn${busy ? " is-busy" : ""}`} type="button" disabled={busy}
+          onClick={() => readShot(api.screenshotSample, true)}>
+          {busy && choice.can !== "upload" ? "Reading…" : "Try it with a sample screenshot"}
+        </button>
         {note && <span className="badline">{note}</span>}
         {status?.data === "sample" && (
           <button className="linkb" type="button" onClick={tryExample}>Try the example (sample data, one blurry number)</button>
@@ -280,6 +299,15 @@ export default function ImportScreen() {
         <p className="note">Ticker and shares.</p>
         {example && (
           <p className="example-note"><b>Example, not yours.</b> Prices at the {shortDate(example)} close. Not saved until you press Save.</p>
+        )}
+        {sample && (
+          <div className="sample-shot">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={SAMPLE_SCREENSHOT} width={780} height={1300}
+              alt="The sample screen: a made-up Demo Broker account with BX, AMZN, NVDA, SPY and cash, total $18,236.86" />
+            <p className="example-note"><b>Sample screen, not yours.</b> The rows below are what was read from it, then checked
+              against its total. Not saved until you press Save.</p>
+          </div>
         )}
         <div className="tscroll">
           <table className="readtable">
@@ -316,7 +344,7 @@ export default function ImportScreen() {
         </div>
         <div className="row-flex">
           <label htmlFor="total"><b>Total your app shows</b> <span className="note">optional</span></label>
-          <input id="total" className="field" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); setExample(null); }} inputMode="decimal"
+          <input id="total" className="field" value={total} onChange={(e) => { setTotal(e.target.value); setCheck(null); setExample(null); setSample(false); }} inputMode="decimal"
             style={{ width: 160 }} />
           <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>

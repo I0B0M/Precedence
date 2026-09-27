@@ -60,7 +60,8 @@ API = os.getenv("STONE_API", "http://localhost:8000")
 
 
 def live_extras() -> None:
-    """Responses the saved demo also needs that the fixtures don't carry, copied from the running API (GET only):
+    """Responses the saved demo also needs that the fixtures don't carry, copied from the running API (GETs, and
+    the sample screenshot's reading below):
     /api/today with and without the example's symbols, each saved ticker's /today, and MSFT (a look-through
     sparkline on the board). Refused unless the API's last trading day is the saved data's."""
     import httpx
@@ -101,6 +102,24 @@ def live_extras() -> None:
             for s in e.get("firing") or []:
                 mark(e["symbol"], s)
         write(f"portfolio/{board.stem}", doc)
+    sample_screenshot(httpx)
+
+
+def sample_screenshot(httpx) -> None:
+    """The /import page's "Try it with a sample screenshot": the running API reads the sample screen (Gemini with a
+    key, or its saved reading) and checks it adds up; that answer is saved. The one POST here. When the API can't
+    read it, nothing is saved and the page says reading needs a key, rather than showing rows nobody read."""
+    from stone.api.main import SAMPLE_SCREENSHOT
+    r = httpx.post(f"{API}/api/import/screenshot", timeout=120,
+                   files={"file": (SAMPLE_SCREENSHOT.name, SAMPLE_SCREENSHOT.read_bytes(), "image/png")})
+    status = json.loads((OUT / "status.json").read_text())
+    status["screenshot_sample"] = r.status_code == 200
+    if r.status_code == 200:
+        write("import/screenshot-sample", r.json())
+    else:
+        (OUT / "import" / "screenshot-sample.json").unlink(missing_ok=True)
+        print(f"sample screenshot not saved: the API answered {r.status_code} ({r.json().get('detail')})")
+    write("status", status)
 
 
 if "--live-only" in sys.argv:  # just the files above, leaving the rest of frontend/public/saved as it is
