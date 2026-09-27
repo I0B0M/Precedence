@@ -103,7 +103,10 @@ export default function CompanyScreen() {
                       // One Form 4 can have several sale lines: add them up. The date is the trade, not the filing.
                       const lines = d.insider_sales.filter((x) => x.accession === s0.accession);
                       const shares = lines.reduce((a, x) => a + (x.shares ?? 0), 0);
-                      const when = shortDate(s0.transaction_date ?? s0.accepted_at).replace(/, \d{4}$/, "");
+                      const md = (iso: string) => shortDate(iso).replace(/, \d{4}$/, "");
+                      // The trade date, and when it was reported if that's a different day (the date the rest of the page uses).
+                      const traded = s0.transaction_date ? md(s0.transaction_date) : null, reported = md(s0.accepted_at);
+                      const when = traded && traded !== reported ? `${traded} (reported ${reported})` : reported;
                       return (
                         <p className="note">Latest sale: {personName(s0.owner_name) ?? "An insider"}{s0.owner_title ? `, ${s0.owner_title},` : ""} sold{" "}
                           {shares > 0 ? `${shares.toLocaleString("en-US")} shares` : "shares"} on {when}.
