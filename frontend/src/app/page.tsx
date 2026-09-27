@@ -78,7 +78,7 @@ export default function Home() {
         <div className="home-inner home-hero-grid">
           <div className="stack" style={{ gap: 20 }}>
             <p className="home-lockup"><Mark /><b>Precedence</b> <span>for everyday investors</span></p>
-            <h1>See what&rsquo;s happening to what you own</h1>
+            <h1>Your wealth, governed with clarity.</h1>
             <p className="lede">
               {PROMISE_WORDS.hero} It doesn&rsquo;t predict.{" "}
               <Link className="home-link" href="/signals">How we check</Link>
