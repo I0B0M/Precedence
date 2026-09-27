@@ -364,3 +364,61 @@ def test_filing_summary_errors(client, monkeypatch):
     assert r.status_code == 503 and "GEMINI_API_KEY" in r.json()["detail"]
     assert client.get("/api/filings/NOPE-123/summary").status_code == 404
     assert client.get("/api/filings/SAMPLE-HLCN-4-121/summary").status_code == 400  # Form 4s aren't summarized
+
+
+@pytest.fixture
+def hpi_rows():
+    """A few FHFA-shaped index values for Miami: ZIP 33133 starts in 2012, the county and state go back further."""
+    conn = db.connect(os.environ["DATABASE_URL"])
+    db.apply_schema(conn)
+    rows = [("zip5", "33133", 2012, 200.0), ("zip5", "33133", 2025, 500.0),
+            ("county", "12086", 2005, 150.0), ("county", "12086", 2025, 450.0),
+            ("state", "FL", 2005, 140.0), ("state", "FL", 2025, 350.0)]
+    conn.cursor().executemany("insert into house_price_index values (%s, %s, %s, %s, 'test') on conflict do nothing",
+                              rows)
+    conn.commit()
+    yield
+    conn.execute("delete from house_price_index where source = 'test'")
+    conn.commit()
+
+
+def test_home_estimate_from_an_address_uses_the_zip_index(client, monkeypatch, hpi_rows):
+    import stone.api.main as m
+    from stone.sources.census import Geocode
+    monkeypatch.setattr(m, "geocode_address", lambda a: Geocode("3500 PAN AMERICAN DR, MIAMI, FL, 33133",
+                                                                  "33133", "12086", "FL"))
+    e = client.post("/api/estimate/home", json={"address": "3500 Pan American Dr, Miami, FL",
+                                                 "paid": 400000, "bought_year": 2012}).json()
+    assert e["kind"] == "property" and e["located_by"] == "address" and e["state"] is None
+    assert (e["zip"], e["county_fips"], e["us_state"]) == ("33133", "12086", "FL")
+    assert e["estimate"] == pytest.approx(1_000_000) and e["index_change"] == pytest.approx(1.5)
+    assert e["index_level"] == "zip5" and e["as_of"] == "2025" and e["geocoder"] == "US Census Geocoder"
+    assert "ZIP" in e["source"] and e["method"] == "paid × FHFA ZIP5 index change"
+
+
+def test_home_estimate_falls_back_to_county_and_zip_only_skips_the_geocoder(client, monkeypatch, hpi_rows):
+    import stone.api.main as m
+    from stone.sources.census import Geocode
+    monkeypatch.setattr(m, "geocode_address", lambda a: Geocode("X", "33133", "12086", "FL"))
+    e = client.post("/api/estimate/home", json={"address": "somewhere", "paid": 300000, "bought_year": 2005}).json()
+    assert e["index_level"] == "county" and e["estimate"] == pytest.approx(900_000) and "county" in e["note"]
+    assert "county" in e["source"].lower()
+
+    def no_geocoder(a):
+        raise AssertionError("the ZIP path must not geocode")
+    monkeypatch.setattr(m, "geocode_address", no_geocoder)
+    z = client.post("/api/estimate/home", json={"zip": "33133", "paid": 400000, "bought_year": 2012}).json()
+    assert z["located_by"] == "zip" and z["address_matched"] is None and z["estimate"] == pytest.approx(1_000_000)
+    after = client.post("/api/estimate/home", json={"zip": "33133", "paid": 400000, "bought_year": 2026}).json()
+    assert after["estimate"] == 400000 and "2025" in after["note"]
+
+
+def test_home_estimate_errors_are_plain(client, monkeypatch, hpi_rows):
+    import stone.api.main as m
+    monkeypatch.setattr(m, "geocode_address", lambda a: None)
+    r = client.post("/api/estimate/home", json={"address": "nowhere", "paid": 1, "bought_year": 2012})
+    assert r.status_code == 422 and "couldn't match" in r.json()["detail"]
+    assert client.post("/api/estimate/home", json={"paid": 1, "bought_year": 2012}).status_code == 422
+    assert client.post("/api/estimate/home", json={"zip": "3313", "paid": 1, "bought_year": 2012}).status_code == 422
+    r = client.post("/api/estimate/home", json={"zip": "33133", "paid": 400000, "bought_year": 1990})
+    assert r.status_code == 422 and "No FHFA index" in r.json()["detail"]  # never a guess

@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from stone import config
 from stone.api.views import filing_url, latest_facts, result_json
+from stone import homes
 from stone.config import NotConnected
 from stone.figures import check_figures, html_to_text
 from stone.portfolio import reconcile as rc
@@ -21,6 +22,8 @@ from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
 from stone.sources.gemini import MODEL as GEMINI_MODEL
 from stone.sources.gemini import GeminiClient, ScreenshotUnreadable, first_sentences
+from stone.sources import census
+from stone.sources.fhfa import SOURCE as HPI_SOURCE
 from stone.sources.sec import SecClient
 
 app = FastAPI(title="Stone")
@@ -386,6 +389,61 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
     price_as_of = max((r.pop("day") for r in rows), default=None)  # the close the values are priced at
     return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds,
             "price_as_of": price_as_of.isoformat() if price_as_of else None}
+
+
+class HomeIn(BaseModel):
+    address: str | None = None  # a full street address, geocoded by the Census
+    zip: str | None = None  # or just a 5-digit ZIP (no geocoding, so no county/state fallback)
+    paid: float
+    bought_year: int
+    bought_month: int | None = None
+
+
+def geocode_address(address: str) -> census.Geocode | None:
+    """Kept separate so tests can stand in for the Census."""
+    return census.CensusGeocoder(config.load()).geocode(address)
+
+
+@app.post("/api/estimate/home")
+def estimate_home(body: HomeIn, c: psycopg.Connection = Conn):
+    """What you paid × how much the FHFA house price index moved since. An estimate, not an appraisal."""
+    if body.paid <= 0:
+        raise HTTPException(422, "Enter what you paid for the home.")
+    matched = county = us_state = None
+    if body.address and body.address.strip():
+        try:
+            g = geocode_address(body.address.strip())
+        except httpx.HTTPError as e:
+            raise HTTPException(502, f"The Census geocoder didn't answer ({e.__class__.__name__}). Try just the ZIP code.")
+        if g is None or not g.zip:
+            raise HTTPException(422, "The Census geocoder couldn't match that address. "
+                                     "Try the full street address with city and state, or just the ZIP code.")
+        located_by, matched, zip5, county, us_state = "address", g.matched, g.zip, g.county_fips, g.state
+    elif body.zip:
+        zip5 = body.zip.strip()
+        if not (len(zip5) == 5 and zip5.isdigit()):
+            raise HTTPException(422, "A ZIP code has 5 digits.")
+        located_by = "zip"
+    else:
+        raise HTTPException(422, "Give a street address or a 5-digit ZIP code.")
+    series: dict[str, dict[int, float]] = {}
+    for level, area in (("zip5", zip5), ("county", county), ("state", us_state)):
+        if area:
+            series[level] = {r["year"]: float(r["hpi"]) for r in c.execute(
+                "select year, hpi from house_price_index where level = %s and area = %s", (level, area)).fetchall()}
+    e = homes.estimate(body.paid, body.bought_year, series)
+    if e["estimate"] is None:
+        raise HTTPException(422, e["note"])
+    level = e["index_level"] or "zip5"
+    note = e["note"]
+    if body.bought_month and e["index_level"]:
+        note = " ".join(filter(None, [note, "The index is yearly, so the purchase month isn't used."]))
+    return {
+        "kind": "property", "located_by": located_by, "address": body.address, "address_matched": matched,
+        "zip": zip5, "county_fips": county, "us_state": us_state, **e, "note": note,
+        "method": homes.METHOD if level == "zip5" else f"paid × FHFA {homes.LEVEL_WORDS[level]} index change",
+        "source": HPI_SOURCE[level], "geocoder": census.NAME if located_by == "address" else None, "state": None,
+    }
 
 
 class ReadRowIn(BaseModel):
