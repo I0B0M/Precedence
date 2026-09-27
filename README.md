@@ -56,6 +56,9 @@ the close on Sep 25, 2026, and shows a SAVED DATA banner. Screenshots and your o
 
 ## Run it
 
+Step-by-step guides for a teammate, from the Netlify demo site to the full app with local models
+and a tunnel: [`docs/deploy/`](docs/deploy/README.md).
+
 ```bash
 cd backend
 cp ../.env.example .env        # fill in keys as sources get connected
