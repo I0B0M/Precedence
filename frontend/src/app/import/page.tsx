@@ -12,6 +12,7 @@ import { screenshotChoice, shotError } from "@/lib/importing";
 import { NotRobinhoodCsv, readRobinhoodCsv, type RobinhoodRead } from "@/lib/robinhood";
 import { walletLine, walletProblem } from "@/lib/wallets";
 import { PRACTICE_CASH } from "@/lib/practice";
+import { EXAMPLE_FXAIX, EXAMPLE_HOME_ESTIMATE } from "@/lib/example-extras";
 import { EXAMPLE_CRYPTO } from "@/lib/crypto";
 import { addCrypto, addPrivateFund, addProperty, addRetirement, addWallet, removeOther, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
 
@@ -31,7 +32,13 @@ async function seedExampleExtras(current: OtherAssets) {
     return; // no localStorage: don't risk seeding twice with nothing to guard it
   }
   addCrypto(EXAMPLE_CRYPTO); // priced from fixed closes, no API: on the saved site too
-  if (SAVED) return;
+  if (SAVED) {
+    // No server here: the same three assets, with the live API's own answers for them saved in lib/example-extras.ts.
+    addRetirement([{ account: "401(k)", name: "FXAIX", amount: 15000, lookup: EXAMPLE_FXAIX }]);
+    if (SHOW_PRIVATE_FUNDS) addPrivateFund("BREIT", 10000);
+    addProperty({ address: "33133", paid: 450000, bought: "2018", estimate: EXAMPLE_HOME_ESTIMATE });
+    return;
+  }
   addRetirement([{ account: "401(k)", name: "FXAIX", amount: 15000, lookup: null }]);
   if (SHOW_PRIVATE_FUNDS) addPrivateFund("BREIT", 10000);
   try {

@@ -12,7 +12,7 @@ import { OtherAssetsRows } from "@/components/OtherAssets";
 import { cryptoTotal } from "@/lib/crypto";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { StartFlow } from "@/components/Today";
-import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
+import { api, SAVED, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { approxMoney, money, pct, shortDate } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
@@ -102,7 +102,12 @@ export default function HoldingsBoard() {
   // The one-line split: only the kinds you actually have money in.
   const stocksSum = board.rows.filter((r) => r.kind === "stock").reduce((a, r) => a + r.value, 0);
   const fundsSum = board.rows.filter((r) => r.kind === "etf").reduce((a, r) => a + r.value, 0);
-  const privateSum = board.subtotals?.private_funds ?? 0;
+  // The saved-data demo's board has no 401(k), home or private fund in it (it's keyed on the stocks alone), so there
+  // their values come from what this browser holds: the amounts entered, and the home's saved FHFA estimate.
+  const localRetirement = SAVED && !board.subtotals?.retirement ? other.retirement.reduce((a, r) => a + r.amount, 0) : 0;
+  const localHome = SAVED && !board.subtotals?.home_estimate ? other.properties.reduce((a, p) => a + (p.estimate?.estimate ?? 0), 0) : 0;
+  const localPrivate = SAVED && !board.subtotals?.private_funds ? other.privateFunds.reduce((a, f) => a + f.amount, 0) : 0;
+  const privateSum = (board.subtotals?.private_funds ?? 0) + localPrivate;
   const privateLabel = privateRows.length ? privateRows.map((r) => r.fund).join(" & ") : "Private funds";
   const cryptoSum = cryptoTotal(other.crypto); // at the Sep 25 closes (lib/crypto.ts), labelled so on every row
   const ownRow = (r: PortfolioOut["rows"][number]) => {
@@ -110,8 +115,8 @@ export default function HoldingsBoard() {
     return e ? <HoldingRow key={`own-${r.symbol}`} e={e} kind={r.kind} value={r.value} change={r.change} spark={sparks[r.symbol]} /> : null;
   };
   const split: [string, number, boolean?][] = ([
-    ["Stocks", stocksSum], ["Funds", fundsSum], ["Crypto", cryptoSum], ["401(k)", board.subtotals?.retirement ?? 0],
-    ["Home", board.subtotals?.home_estimate ?? 0, true], [privateLabel, board.subtotals?.private_funds ?? 0],
+    ["Stocks", stocksSum], ["Funds", fundsSum], ["Crypto", cryptoSum], ["401(k)", (board.subtotals?.retirement ?? 0) + localRetirement],
+    ["Home", (board.subtotals?.home_estimate ?? 0) + localHome, true], [privateLabel, privateSum],
   ] as [string, number, boolean?][]).filter(([, v]) => v > 0);
 
   return (
@@ -119,10 +124,10 @@ export default function HoldingsBoard() {
       <div className="pf-head">
         <div className="stack" style={{ gap: 4 }}>
           <span className="kicker">Everything you own</span>
-          <div className="pf-total">{money((board.subtotals?.total ?? board.total) + cryptoSum)}</div>
-          {(board.subtotals?.includes_home_estimate || cryptoSum > 0) && (
-            <p className="note">{[board.subtotals?.includes_home_estimate && "Includes a home estimate", cryptoSum > 0 && "crypto at the Sep 25 close (Alpaca)"]
-              .filter(Boolean).join(" · ").replace(/^c/, (c) => (board.subtotals?.includes_home_estimate ? c : "C"))}</p>
+          <div className="pf-total">{money((board.subtotals?.total ?? board.total) + cryptoSum + localRetirement + localHome + localPrivate)}</div>
+          {(board.subtotals?.includes_home_estimate || localHome > 0 || cryptoSum > 0) && (
+            <p className="note">{[(board.subtotals?.includes_home_estimate || localHome > 0) && "Includes a home estimate", cryptoSum > 0 && "crypto at the Sep 25 close (Alpaca)"]
+              .filter(Boolean).join(" · ").replace(/^c/, (c) => (board.subtotals?.includes_home_estimate || localHome > 0 ? c : "C"))}</p>
           )}
           {todayMove != null && (
             <p className="sc-change">
@@ -147,8 +152,8 @@ export default function HoldingsBoard() {
           <div className="rows">{board.rows.filter((r) => r.kind !== "etf").map(ownRow)}</div>
         </Section>
       )}
-      {(fundsSum > 0 || privateRows.length > 0) && (
-        <Section label="Funds" sum={money(fundsSum + privateSum)} className={privateRows.length ? undefined : "lite-only"}>
+      {(fundsSum > 0 || privateRows.length > 0 || localPrivate > 0) && (
+        <Section label="Funds" sum={money(fundsSum + privateSum)} className={privateRows.length || localPrivate ? undefined : "lite-only"}>
           <div className="rows lite-only">{board.rows.filter((r) => r.kind === "etf").map(ownRow)}</div>
           <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="private" title={null} />
         </Section>
@@ -183,12 +188,12 @@ export default function HoldingsBoard() {
         </Section>
       )}
       {other.properties.length > 0 && (
-        <Section label="Real estate" sum={board.subtotals?.home_estimate ? approxMoney(board.subtotals.home_estimate) : "—"}>
+        <Section label="Real estate" sum={(board.subtotals?.home_estimate ?? 0) + localHome ? approxMoney((board.subtotals?.home_estimate ?? 0) + localHome) : "—"}>
           <OtherAssetsRows show="home" title={null} />
         </Section>
       )}
       {other.retirement.length > 0 && (
-        <Section label="401(k)" sum={money(board.subtotals?.retirement ?? 0)}>
+        <Section label="401(k)" sum={money((board.subtotals?.retirement ?? 0) + localRetirement)}>
           <OtherAssetsRows rows={board.retirement ?? []} show="retirement" title={null} />
         </Section>
       )}
