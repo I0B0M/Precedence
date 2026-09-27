@@ -9,7 +9,6 @@ import { HeroLoop } from "@/components/landing/Loops";
 import { api, SAVED, SAVED_EXAMPLE, type CompanyDetail, type PortfolioOut } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { useHoldings } from "@/lib/holdings";
-import { PROMISE_WORDS } from "@/lib/words";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 
 // The example the home page shows, and the one /import?example=1 fills in.
@@ -55,7 +54,7 @@ export default function Home() {
             <p className="home-lockup"><Mark /><b>Precedence</b> <span>for everyday investors</span></p>
             <h1>Your wealth, governed with clarity.</h1>
             <p className="lede">
-              {PROMISE_WORDS.hero} It doesn&rsquo;t predict.{" "}
+              See whether news like today&rsquo;s has come before a drop for the stocks you own. It doesn&rsquo;t predict.{" "}
               <Link className="home-link" href="/signals">How we check</Link>
             </p>
             <div className="home-ctas">
