@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import type { PortfolioOut } from "@/lib/api";
 import { money, whole } from "@/lib/format";
 
-type Tile = { key: string; symbol: string; name: string; value: number; state: "CALM" | "WATCH" | null; inside?: string; more?: number; href: string | null };
+type Tile = { key: string; symbol: string; name: string; value: number; state: "CALM" | "WATCH" | null; inside?: string; more?: number; href: string | null;
+  held?: number }; // held: what you hold of it, when part of that is drawn in the stock boxes it holds
 type Node = { name: string; tile?: Tile; fund?: { symbol: string; value: number; state: "CALM" | "WATCH" | null }; children?: Node[] };
 
 const TOP = 6; // at most this many holdings shown per fund; the rest of the fund is one "+N more" tile
@@ -25,14 +26,14 @@ function tree(board: PortfolioOut): Node {
         // A 401(k)/IRA fund has no stock page: it opens the index it behaves like, as its row below does.
         const retire = board.retirement?.find((r) => (r.ticker ?? r.fund) === e.symbol);
         const href = retire ? (retire.behaves_like ? `/fund/${retire.behaves_like}` : null) : `/company/${e.symbol}`;
-        return { name: e.symbol, tile: { key: e.symbol, symbol: e.symbol, name: e.name, value: e.total, state: e.state, href } };
+        return { name: e.symbol, tile: { key: e.symbol, symbol: e.symbol, name: e.name, value: e.total, held: e.direct, state: e.state, href } };
       }
       const kids = [...e.children].sort((x, y) => y.total - x.total);
       const top = kids.slice(0, TOP).filter((k) => k.total >= OWN_TILE * e.total);
       const rest = e.total - top.reduce((a, k) => a + k.total, 0);
       // No holding big enough for its own tile: the fund is one tile, not a group around a copy of itself.
       if (!top.length) {
-        return { name: e.symbol, tile: { key: e.symbol, symbol: e.symbol, name: `${e.name}: ${kids.length} holdings`, value: e.total, state: e.state, href: `/fund/${e.symbol}` } };
+        return { name: e.symbol, tile: { key: e.symbol, symbol: e.symbol, name: `${e.name}: ${kids.length} holdings`, value: e.total, held: e.direct, state: e.state, href: `/fund/${e.symbol}` } };
       }
       return {
         name: e.symbol,
@@ -121,6 +122,9 @@ export function OwnMap({ board }: { board: PortfolioOut }) {
             const watch = t.state === "WATCH";
             const cx = l.x0 + tw / 2, cy = l.y0 + th / 2;
             const line2 = `${money$} · ${pct$}`;
+            // A fund you hold with part of it drawn in the stock boxes it holds: say so, so $8,937 isn't read as the whole $15,000.
+            const spread = t.held != null && t.held - t.value > 0.5 ? t.held - t.value : 0;
+            const heldLine = spread ? `of ${money(t.held)} held` : null;
             const body = (
               <g>
                 <rect x={l.x0 + 0.5} y={l.y0 + 0.5} width={tw - 1} height={th - 1} rx={6} fill="var(--fill)"
@@ -128,6 +132,7 @@ export function OwnMap({ board }: { board: PortfolioOut }) {
                 {label && big && <>
                   <text x={cx} y={cy - 2} textAnchor="middle" fontSize={18} fontWeight={700} fill={watch ? "var(--gold)" : "var(--text)"}>{t.symbol}</text>
                   <text x={cx} y={cy + 18} textAnchor="middle" fontSize={13} fill="var(--text-2)">{line2}</text>
+                  {heldLine && th >= 110 && <text x={cx} y={cy + 36} textAnchor="middle" fontSize={11} fill="var(--text-2)">{heldLine}</text>}
                 </>}
                 {label && !big && <>
                   <text x={l.x0 + 8} y={l.y0 + 18} fontSize={tw < 80 ? 11 : 13} fontWeight={700} fill={watch ? "var(--gold)" : "var(--text)"}>{t.symbol}</text>
@@ -136,7 +141,7 @@ export function OwnMap({ board }: { board: PortfolioOut }) {
                   ))}
                 </>}
                 {watch && tw >= 120 && th >= 48 && <Badge x={l.x1 - 6} y={l.y0 + 6} />}
-                <title>{`${t.symbol} · ${t.name}${t.inside ? ` (inside ${t.inside})` : ""}: ${line2} of your investments${watch ? " · WATCH" : ""}`}</title>
+                <title>{`${t.symbol} · ${t.name}${t.inside ? ` (inside ${t.inside})` : ""}: ${line2} of your investments${watch ? " · WATCH" : ""}${spread ? `. ${money(t.held)} held; ${money(spread)} of it is counted in the stock boxes it holds, ${money(t.value)} here` : ""}`}</title>
               </g>
             );
             return t.href ? <Link key={t.key} href={t.href} aria-label={`${t.symbol}, ${money(t.value)}`}>{body}</Link> : <g key={t.key}>{body}</g>;
