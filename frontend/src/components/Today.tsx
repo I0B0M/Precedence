@@ -6,7 +6,6 @@ import { api, type Scan, type Today } from "@/lib/api";
 import { Why } from "@/components/Why";
 import { useMode } from "@/lib/mode";
 import { shortDate } from "@/lib/format";
-import { SHOW_CRYPTO } from "@/lib/flags";
 import { FORM_WORDS, PROMISE_WORDS, SIGNAL_WORDS, strongCountWords } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
@@ -246,20 +245,19 @@ export function TodayFunnel({ symbols, alsoLite = false }: { symbols: string[]; 
   );
 }
 
-const OWN = [
-  { key: "stocks", label: "Stocks", sub: "Apple, Nvidia…" },
-  { key: "funds", label: "Funds", sub: "ETFs and index funds" },
-  ...(SHOW_CRYPTO ? [{ key: "crypto", label: "Crypto", sub: "Bitcoin, Ethereum…" }] : []),
-  { key: "other", label: "Something else", sub: "Bonds, cash…" },
+// Every way in, each straight to its place on /import. Step 2 is your board, once you press Save there.
+const WAYS: { label: string; sub: string; href: string; go: string; main?: boolean }[] = [
+  { label: "Try an example", sub: "Real prices, not saved", href: "/import?example=1", go: "Try an example", main: true },
+  { label: "Stocks and funds", sub: "Type the ticker and shares", href: "/import#check-rows", go: "Type them in" },
+  { label: "Robinhood", sub: "Upload your Robinhood statement", href: "/import#robinhood", go: "Upload" },
+  { label: "A screenshot", sub: "Any app, any account", href: "/import#screenshot-drop", go: "Add one" },
+  { label: "A home or 401(k)", sub: "Address or fund name", href: "/import#other", go: "Add one" },
+  { label: "Crypto wallet", sub: "Paste an address", href: "/import#wallet", go: "Add one" },
 ];
 
-/** Three taps: what you own → bring it in → your board. Every option leads somewhere real. */
+/** Two steps: bring in what you own, then your board. Every option leads somewhere real. */
 export function StartFlow() {
   const t = useToday([]);
-  const [own, setOwn] = useState<string[]>([]);
-  const [step, setStep] = useState<1 | 2>(1);
-  const toggle = (k: string) => setOwn(own.includes(k) ? own.filter((x) => x !== k) : [...own, k]);
-  const notCovered = own.filter((k) => k === "crypto" || k === "other");
 
   return (
     <section className="stack" style={{ gap: 28 }}>
@@ -272,56 +270,17 @@ export function StartFlow() {
       {t && <TodayMarket t={t} />}
 
       <div className="card">
-        <p className="list-head">Step {step} of 3</p>
-        {step === 1 ? (
-          <>
-            <h2>What do you own?</h2>
-            <div className="tiles">
-              {OWN.map((o) => (
-                <button key={o.key} type="button" className="tile" aria-pressed={own.includes(o.key)} onClick={() => toggle(o.key)}>
-                  <b>{o.label}</b><span>{o.sub}</span>
-                </button>
-              ))}
+        <p className="list-head">Step 1 of 2</p>
+        <h2>Bring in what you own</h2>
+        <div className="list">
+          {WAYS.map((w) => (
+            <div key={w.href} className="list-row" style={{ alignItems: "center" }}>
+              <span><b>{w.label}</b><span className="note" style={{ display: "block" }}>{w.sub}</span></span>
+              <Link className={`btn small${w.main ? "" : " light"}`} href={w.href}>{w.go}</Link>
             </div>
-            <div className="row-flex">
-              <button className="btn" type="button" disabled={!own.length} onClick={() => setStep(2)}>Next</button>
-              <Link className="btn light" href="/import?example=1">Try an example portfolio</Link>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2>Bring it in</h2>
-            {notCovered.length > 0 && (
-              <p className="watchline">
-                {notCovered.map((k) => OWN.find((o) => o.key === k)?.label).join(" and ")} {notCovered.length > 1 ? "aren't" : "isn't"} covered yet.
-              </p>
-            )}
-            {/* Only paths that work tonight; the ones waiting on keys are one quiet line under them. */}
-            <div className="list">
-              <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Try an example</b><span className="note" style={{ display: "block" }}>Real prices, not saved</span></span>
-                <Link className="btn small" href="/import?example=1">Try an example</Link>
-              </div>
-              <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Type them in</b><span className="note" style={{ display: "block" }}>Ticker and shares</span></span>
-                <Link className="btn light small" href="/import">Type them in</Link>
-              </div>
-              <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>A home or 401(k)</b><span className="note" style={{ display: "block" }}>Address or fund name</span></span>
-                <Link className="btn light small" href="/import#other">Add one</Link>
-              </div>
-              <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app</span></span>
-                <span className="note">Coming next</span>
-              </div>
-              <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Connect Robinhood</b><span className="note" style={{ display: "block" }}>Read-only</span></span>
-                <span className="note">Coming next</span>
-              </div>
-            </div>
-            <button className="linkb" type="button" onClick={() => setStep(1)}>‹ Back</button>
-          </>
-        )}
+          ))}
+        </div>
+        <p className="note">Step 2 is your board: everything you own, and what&apos;s happening to it.</p>
       </div>
     </section>
   );

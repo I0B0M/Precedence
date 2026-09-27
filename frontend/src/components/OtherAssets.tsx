@@ -6,6 +6,7 @@ import { StateBadge } from "@/components/bits";
 import { Why } from "@/components/Why";
 import { api, ApiError, type FundLookup, type HomeEstimate, type RetirementRow } from "@/lib/api";
 import { SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
+import { shortWallet } from "@/lib/wallets";
 import { navMoney, PRIVATE_FUNDS, PRIVATE_LITE, PRIVATE_WITHDRAW, type PrivateFundKey, type PrivateFundRow } from "@/lib/private-funds";
 import { approxMoney, money, pct } from "@/lib/format";
 import { addCrypto, addPrivateFund, addProperty, addRetirement, portfolioExtras, removeOther, useOtherAssets, type Property, type RetirementFund } from "@/lib/other-assets";
@@ -258,7 +259,7 @@ export function OtherAssetsRows({ rows, privateRows = [] }: { rows?: RetirementR
   }, [key, rows]);
   const backend = rows ?? (got?.key === key ? got.rows : []);
 
-  if (!v.properties.length && !v.retirement.length && !v.crypto.length && !v.privateFunds.length) return null;
+  if (!v.properties.length && !v.retirement.length && !v.crypto.length && !v.privateFunds.length && !v.wallets.length) return null;
   return (
     <div className="stack" style={{ gap: 10, marginTop: 24 }}>
       <span className="ticker">Also yours</span>
@@ -333,6 +334,20 @@ export function OtherAssetsRows({ rows, privateRows = [] }: { rows?: RetirementR
               </span>
               <span className="sp" aria-hidden />
               <span className="val">Price<small className="mute">coming soon</small></span>
+              <span className="hend"><StateBadge state={null} /></span>
+            </div>
+          </div>
+        ))}
+        {v.wallets.map((w) => (
+          <div key={w.id} className="hitem">
+            <div className="hrow other">
+              <span className="who">
+                <span className="tk">Wallet</span><span className="nm" title={w.address}>{shortWallet(w.address)}</span>
+                <span className="say">Balance not loaded yet</span>
+                <button className="linkb" type="button" onClick={() => removeOther(w.id)} aria-label={`Remove wallet ${w.address}`} style={{ alignSelf: "flex-start" }}>Remove</button>
+              </span>
+              <span className="sp" aria-hidden />
+              <span className="val">—<small className="mute">not loaded yet</small></span>
               <span className="hend"><StateBadge state={null} /></span>
             </div>
           </div>

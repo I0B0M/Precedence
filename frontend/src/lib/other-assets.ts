@@ -26,9 +26,10 @@ export interface RetirementFund {
 }
 export interface CryptoHolding { id: string; kind: "crypto"; symbol: string; amount: number } // amount may be fractional
 export interface PrivateFund { id: string; fund: PrivateFundKey; amount: number } // BREIT / BCRED, dollars as entered
-export interface OtherAssets { properties: Property[]; retirement: RetirementFund[]; crypto: CryptoHolding[]; privateFunds: PrivateFund[] }
+export interface Wallet { id: string; address: string } // as pasted; no balance is read yet, so none is kept
+export interface OtherAssets { properties: Property[]; retirement: RetirementFund[]; crypto: CryptoHolding[]; privateFunds: PrivateFund[]; wallets: Wallet[] }
 
-const EMPTY: OtherAssets = { properties: [], retirement: [], crypto: [], privateFunds: [] };
+const EMPTY: OtherAssets = { properties: [], retirement: [], crypto: [], privateFunds: [], wallets: [] };
 let memory: string | null = null;
 let cachedRaw: string | null | undefined;
 let cached: OtherAssets = EMPTY;
@@ -43,7 +44,7 @@ function raw(): string | null {
 }
 
 // Older saves used place / price for a home.
-type Stored = { properties?: (Partial<Property> & { id: string; bought: string; place?: string; price?: number })[]; retirement?: RetirementFund[]; crypto?: CryptoHolding[]; privateFunds?: PrivateFund[] };
+type Stored = { properties?: (Partial<Property> & { id: string; bought: string; place?: string; price?: number })[]; retirement?: RetirementFund[]; crypto?: CryptoHolding[]; privateFunds?: PrivateFund[]; wallets?: Wallet[] };
 
 function read(): OtherAssets {
   const r = raw();
@@ -56,6 +57,7 @@ function read(): OtherAssets {
         retirement: v.retirement ?? [],
         crypto: v.crypto ?? [],
         privateFunds: v.privateFunds ?? [],
+        wallets: v.wallets ?? [],
       };
     } catch {
       cached = EMPTY;
@@ -103,6 +105,14 @@ export function addPrivateFund(fund: PrivateFundKey, amount: number) {
   write({ ...v, privateFunds: [...v.privateFunds, { id: newId(), fund, amount }] });
 }
 
+/** A wallet address, pending: kept so it shows as yours, with no balance until one can be read. Once each. */
+export function addWallet(address: string) {
+  const v = read();
+  const a = address.trim();
+  if (v.wallets.some((w) => w.address === a)) return;
+  write({ ...v, wallets: [...v.wallets, { id: newId(), address: a }] });
+}
+
 export function removeOther(id: string) {
   const v = read();
   write({
@@ -110,6 +120,7 @@ export function removeOther(id: string) {
     retirement: v.retirement.filter((r) => r.id !== id),
     crypto: v.crypto.filter((c) => c.id !== id),
     privateFunds: v.privateFunds.filter((f) => f.id !== id),
+    wallets: v.wallets.filter((w) => w.id !== id),
   });
 }
 

@@ -9,8 +9,10 @@ import { api, ApiError, EXAMPLE_PORTFOLIO, SAMPLE_SCREENSHOT, SAVED, type ReadRo
 import { andList, money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 import { screenshotChoice, shotError } from "@/lib/importing";
+import { NotRobinhoodCsv, readRobinhoodCsv, type RobinhoodRead } from "@/lib/robinhood";
+import { walletLine, walletProblem } from "@/lib/wallets";
 import { PRACTICE_CASH } from "@/lib/practice";
-import { addPrivateFund, addProperty, addRetirement, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
+import { addPrivateFund, addProperty, addRetirement, addWallet, removeOther, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
 
 // The example's other assets, beside its stock rows: a 401(k) mapped to the S&P 500, a home (real FHFA estimate,
 // same ZIP as the form's own placeholder), a Blackstone fund. Live mode only — the saved-data demo is a static
@@ -104,6 +106,10 @@ export default function ImportScreen() {
   const [example, setExample] = useState<string | null>(null); // the close date, while example rows are in the table
   const [sample, setSample] = useState(false); // the sample screen's rows are in the table, untouched
   const [statusFailed, setStatusFailed] = useState(false);
+  const [rh, setRh] = useState<RobinhoodRead | null>(null); // the Robinhood file whose holdings are in the table
+  const [rhNote, setRhNote] = useState<string | null>(null);
+  const [wallet, setWallet] = useState("");
+  const [walletErr, setWalletErr] = useState<string | null>(null);
   const other = useOtherAssets();
 
   function applyExample(ex: Example | null) {
@@ -121,6 +127,7 @@ export default function ImportScreen() {
   };
   // Fill the table, then bring it into view (the button sits at the top of the page).
   const fillAndShow = () => loadExample().then((ex) => {
+    setRh(null);
     applyExample(ex);
     seedExampleExtras(other);
     showRows();
@@ -145,6 +152,7 @@ export default function ImportScreen() {
       setCheck(r);
       setExample(null);
       setSample(isSample);
+      setRh(null);
       showRows();
     } catch (e) {
       const err = e instanceof ApiError ? e : null;
@@ -152,6 +160,35 @@ export default function ImportScreen() {
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Robinhood's account activity CSV, read here in the browser: the shares it adds up to go into the table and
+   *  through the same check as typed rows (priced from the latest close). */
+  async function readRobinhood(file: File) {
+    setRhNote(null);
+    try {
+      const read = readRobinhoodCsv(await file.text());
+      setRh(read);
+      if (!read.holdings.length) return setRhNote("No shares found in this file.");
+      const next = read.holdings.map((h) => ({ symbol: h.symbol, shares: String(h.shares), price: "", value: "" }));
+      setExample(null);
+      setSample(false);
+      setTotal("");
+      setRows(next);
+      showRows();
+      await runCheck(next, "");
+    } catch (e) {
+      setRh(null);
+      setRhNote(e instanceof NotRobinhoodCsv ? e.message : "That file couldn't be read.");
+    }
+  }
+
+  function addWalletRow() {
+    const problem = walletProblem(wallet);
+    setWalletErr(problem);
+    if (problem) return;
+    addWallet(wallet);
+    setWallet("");
   }
 
   async function runCheck(next = rows, nextTotal = total) {
@@ -228,16 +265,17 @@ export default function ImportScreen() {
         <p className="lede">Read-only. Never trades or moves money.</p>
       </div>
 
-      {/* Every way in, real state each: what isn't built says "Coming next" (never a fake button); the screenshot
-       *  says whether it can read yours, only the sample, or neither; practice money is real and one tap away. */}
+      {/* Every way in goes somewhere real: Robinhood's statement file, a screenshot (which says whether it can read
+       *  yours, only the sample, or neither), a wallet address kept with no balance until one can be read, and
+       *  practice money, one tap away. */}
       <div className="card">
         <h3>Bring your money in</h3>
         <p className="note">No account needed to start.</p>
         <div className="list">
-          <div className="list-row" style={{ alignItems: "center" }}>
-            <span><b>Robinhood</b><span className="note" style={{ display: "block" }}>Connect · read-only</span></span>
-            <span className="note">Coming next</span>
-          </div>
+          <a href="#robinhood" className="list-row" style={{ alignItems: "center", textDecoration: "none", color: "inherit" }}>
+            <span><b>Robinhood</b><span className="note" style={{ display: "block" }}>Upload your Robinhood statement</span></span>
+            <span className="chev" aria-hidden>›</span>
+          </a>
           {shots ? (
             <a href="#screenshot-drop" className="list-row" style={{ alignItems: "center", textDecoration: "none", color: "inherit" }}>
               <span><b>Screenshot</b><span className="note" style={{ display: "block" }}>{choice.note}</span></span>
@@ -249,10 +287,10 @@ export default function ImportScreen() {
               <span className="note">{choice?.note ?? (statusFailed ? "Can't reach our server" : "Checking…")}</span>
             </div>
           )}
-          <div className="list-row" style={{ alignItems: "center" }}>
+          <a href="#wallet" className="list-row" style={{ alignItems: "center", textDecoration: "none", color: "inherit" }}>
             <span><b>Crypto wallet</b><span className="note" style={{ display: "block" }}>Paste an address</span></span>
-            <span className="note">Coming next</span>
-          </div>
+            <span className="chev" aria-hidden>›</span>
+          </a>
           <Link href="/paper" className="list-row" style={{ alignItems: "center", textDecoration: "none", color: "inherit" }}>
             <span><b>Practice money</b><span className="note" style={{ display: "block" }}>Start with {money(PRACTICE_CASH)}</span></span>
             <span className="chev" aria-hidden>›</span>
@@ -294,11 +332,34 @@ export default function ImportScreen() {
       </div>
       </>}
 
+      <div className="stack" id="robinhood" style={{ gap: 12, marginTop: 8, scrollMarginTop: 110 }}>
+        <h2>Or upload your Robinhood statement</h2>
+        <p className="mute">Robinhood&apos;s account activity report, as a CSV, from the day the account opened.
+          Shares are counted from its buys, sells and splits.</p>
+      </div>
+      <div className="drop">
+        <label className="btn">
+          <input className="sr-only" type="file" accept=".csv,text/csv"
+            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) readRobinhood(f); }} />
+          Choose the CSV
+        </label>
+        <span className="note">Read in your browser. Only the tickers and share counts go on, to be priced and checked.</span>
+        {rhNote && <span className="badline">{rhNote}</span>}
+      </div>
+
       <div className="card" id="check-rows" style={{ scrollMarginTop: 110 }}>
         <h3>{shots ? "Check the rows" : "Type what you own"}</h3>
         <p className="note">Ticker and shares.</p>
         {example && (
           <p className="example-note"><b>Example, not yours.</b> Prices at the {shortDate(example)} close. Not saved until you press Save.</p>
+        )}
+        {rh && rh.holdings.length > 0 && (
+          <div className="stack" style={{ gap: 6 }}>
+            <p className="example-note"><b>From your Robinhood file.</b> {rh.holdings.length} holding{rh.holdings.length === 1 ? "" : "s"},
+              counted from its activity{rh.from && rh.to ? ` from ${shortDate(rh.from)} to ${shortDate(rh.to)}` : ""}. Anything
+              bought before the file starts isn&apos;t in it. Not saved until you press Save.</p>
+            {rh.check.map((c) => <p key={`${c.symbol}-${c.why}`} className="note"><b>{c.symbol}:</b> {c.why}</p>)}
+          </div>
         )}
         {sample && (
           <div className="sample-shot">
@@ -370,6 +431,29 @@ export default function ImportScreen() {
             <span className="note">{check ? `Needs a price on every row${total.trim() ? " and a matching total" : ""}.` : "Press Check it adds up first."}</span>
           )}
         </div>
+      </div>
+
+      <div className="card" id="wallet" style={{ scrollMarginTop: 110 }}>
+        <h3>Add a crypto wallet</h3>
+        <p className="note">Its balance isn&apos;t loaded yet, so the wallet is kept with no value until it can be.</p>
+        <div className="row-flex">
+          <label htmlFor="wallet-address"><b>Wallet address</b></label>
+          <input id="wallet-address" className="field" value={wallet} placeholder="0x…" autoCapitalize="none" autoCorrect="off"
+            spellCheck={false} onChange={(e) => { setWallet(e.target.value); setWalletErr(null); }}
+            onKeyDown={(e) => e.key === "Enter" && addWalletRow()} style={{ flex: "1 1 16em", minWidth: 0 }} />
+          <button className="btn light" type="button" onClick={addWalletRow}>Add wallet</button>
+        </div>
+        {walletErr && <div className="badline">{walletErr}</div>}
+        {other.wallets.length > 0 && (
+          <div className="list">
+            {other.wallets.map((w) => (
+              <div key={w.id} className="list-row" style={{ alignItems: "center" }}>
+                <span title={w.address}>{walletLine(w.address)}</span>
+                <button className="linkb" type="button" onClick={() => removeOther(w.id)} aria-label={`Remove wallet ${w.address}`}>Remove</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="stack" id="other" style={{ gap: 12, marginTop: 8, scrollMarginTop: 110 }}>
