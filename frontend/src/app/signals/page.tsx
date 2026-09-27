@@ -177,7 +177,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
         <div className="stack lab-after pro-only" style={{ gap: 4 }}>
           <span className="note">
             <span className="lite-only">The dark bar is where the real rate likely is. The blue line is a normal {span}.
-              If the whole bar is right of the line, it&apos;s a real pattern.</span>
+              It has mattered before only when the whole bar is right of the line.</span>
             <span className="pro-only">90% Wilson interval for P({r.vs_market ? "worse than SPY" : "lower"} after {r.horizon}d) vs normal-day rate ({r.normal_hits}/{r.normal_n}).</span>
           </span>
           <div className="rangebar" role="img" aria-label={`Range ${whole(r.low)} to ${whole(r.high)}, normal ${whole(r.normal_rate)}`}>
