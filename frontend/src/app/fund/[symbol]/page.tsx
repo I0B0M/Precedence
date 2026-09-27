@@ -131,7 +131,7 @@ function FundScreen() {
             </div>
             <p className="note">
               {more > 0 ? `And ${more} more${f.built_from === "api" ? "" : " that we can see"}. ` : ""}
-              {nport && f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)} · SEC N-PORT (quarterly filing).` : borrowed
+              {nport && f.holdings_as_of ? <><span className="lite-only">As of {shortDate(f.holdings_as_of)}, from its quarterly filing.</span><span className="pro-only">As of {shortDate(f.holdings_as_of)} · SEC N-PORT (quarterly filing).</span></> : borrowed
                 ? `Same index as ${borrowed}. Holdings shown from ${borrowed}'s ${(source ?? "").replace(/ \(.*\)$/, "")} file${f.holdings_as_of ? ` (${monthDay(f.holdings_as_of)})` : ""}.`
                 : f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}.` : ""}
               {nport && <span className="pro-only"> N-PORT is published about two months after that date, so these are older than a daily issuer file.</span>}
