@@ -143,3 +143,13 @@
   .bf-cap { font-size: 1.2rem; }
   .bf-transcript { max-height: none; }
 }
+
+/* Compact: the landing hero's strip. A small orb on the left; the caption, Play and a link to the full briefing beside it. */
+.bf.bf-compact { display: block; }
+.bf.bf-compact .bf-stage { min-height: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "orb cap" "orb ctl" "orb more";
+  align-items: center; justify-items: start; column-gap: 16px; row-gap: 6px; padding: 14px 18px 14px 12px; }
+.bf.bf-compact .bf-orbwrap { grid-area: orb; width: auto; }
+.bf.bf-compact .bf-caption { grid-area: cap; min-height: 3.1em; max-width: none; justify-content: flex-start; text-align: left; }
+.bf.bf-compact .bf-cap { font-size: 1rem; line-height: 1.4; text-align: left; }
+.bf.bf-compact .bf-controls { grid-area: ctl; justify-content: flex-start; margin: 0; }
+.bf.bf-compact .bf-more { grid-area: more; margin: 0; text-align: left; }

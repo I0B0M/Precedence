@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
-import { Mark } from "@/components/landing/Art";
 import { HeroLoop } from "@/components/landing/Loops";
 import { Stage } from "@/components/briefing/Stage";
 import { api, EXAMPLE_PORTFOLIO, type CompanyDetail, type PortfolioOut } from "@/lib/api";
@@ -48,7 +47,6 @@ export default function Home() {
         <div className="home-hero-bg" aria-hidden><HeroLoop /></div>
         <div className="home-inner home-hero-grid">
           <div className="stack" style={{ gap: 20 }}>
-            <p className="home-lockup"><Mark /><b>Precedence</b> <span>for everyday investors</span></p>
             <h1>Your wealth, governed with clarity.</h1>
             <p className="lede">
               See whether news like today&rsquo;s has come before a drop for the stocks you own. It doesn&rsquo;t predict.{" "}
@@ -63,6 +61,8 @@ export default function Home() {
                 <Link className="btn light" href="/import">Add your account</Link>
               </>}
             </div>
+            {/* The briefing, in the hero: yours when you've added holdings, the example until then. */}
+            <Stage fallback={EXAMPLE_PORTFOLIO} compact />
           </div>
           {returning ? (
             // Coming back: your own total first, never the example.
@@ -109,17 +109,6 @@ export default function Home() {
             <span className="note pro-only">Prices from Alpaca (IEX); badges from our tests on SEC and FRED data.</span>
           </Link>
           )}
-        </div>
-      </section>
-
-      {/* ---- the briefing: yours when you've added holdings, the example until then ---- */}
-      <section id="briefing" className="home-band" aria-label="Briefing">
-        <div className="home-inner">
-          <div className="home-head">
-            <span className="kicker">Briefing</span>
-            <h2>{returning ? "Hear what's happening to what you own" : "Hear the example, read out loud"}</h2>
-          </div>
-          <Stage fallback={EXAMPLE_PORTFOLIO} />
         </div>
       </section>
 

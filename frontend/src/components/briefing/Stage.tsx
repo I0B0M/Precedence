@@ -57,8 +57,9 @@ function subscribeVoices(cb: () => void) {
 const readVoiceName = () => (hasVoice() ? pickVoice(window.speechSynthesis.getVoices())?.name ?? null : null);
 
 /** Brief: "summarize complex information" · "more accessible … engaging" · "understanding what they own". */
-/** fallback: what to brief on when nothing is saved (the landing passes the example). Saved holdings always win. */
-export function Stage({ fallback }: { fallback?: Holding[] } = {}) {
+/** fallback: what to brief on when nothing is saved (the landing passes the example). Saved holdings always win.
+ *  compact: the landing hero's strip, a small orb beside the caption and Play, with the full briefing one link away. */
+export function Stage({ fallback, compact = false }: { fallback?: Holding[]; compact?: boolean } = {}) {
   const { mode } = useMode();
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -156,11 +157,11 @@ export function Stage({ fallback }: { fallback?: Holding[] } = {}) {
     : null;
 
   return (
-    <section className="bf" data-phase={phase} data-play={play}>
+    <section className={`bf${compact ? " bf-compact" : ""}`} data-phase={phase} data-play={play}>
       <div className="bf-stage">
         <div className="bf-glow" aria-hidden />
         <div className="bf-orbwrap">
-          <Orb state={orbState} size={340} />
+          <Orb state={orbState} size={compact ? 132 : 340} />
         </div>
 
         <div className="bf-caption" aria-live="polite" aria-atomic="true">
@@ -188,18 +189,22 @@ export function Stage({ fallback }: { fallback?: Holding[] } = {}) {
             <button type="button" className="bf-btn primary" onClick={() => narrator.current?.toggle()} aria-label={play === "playing" ? "Pause" : "Play the briefing"}>
               {play === "playing" ? "Pause" : play === "paused" ? "Resume" : play === "done" ? "Play again" : "Play the briefing"}
             </button>
-            <button type="button" className="bf-btn" onClick={() => narrator.current?.next()} disabled={play === "idle" || lineIndex >= lines.length - 1}>Next</button>
-            <button type="button" className="bf-btn" onClick={() => narrator.current?.restart()} disabled={play === "idle"}>Restart</button>
+            {!compact && <>
+              <button type="button" className="bf-btn" onClick={() => narrator.current?.next()} disabled={play === "idle" || lineIndex >= lines.length - 1}>Next</button>
+              <button type="button" className="bf-btn" onClick={() => narrator.current?.restart()} disabled={play === "idle"}>Restart</button>
+            </>}
             <button type="button" className="bf-btn" onClick={() => setVoiceOn((v) => !v)} aria-pressed={voiceOn} disabled={!canSpeak}
               title={!canSpeak ? "This browser has no voice; captions only" : voiceName ? `Voice: ${voiceName}` : "Voice"}>
               {!canSpeak ? "No voice here" : voiceOn ? "Voice on" : "Voice off"}
             </button>
           </div>
         )}
-        <p className="bf-note">Precedence talks. It never listens: no microphone, no typing, nothing leaves this page. Not advice.</p>
+        {compact
+          ? <p className="bf-note bf-more">Not advice. <Link className="bf-link" href="/briefing">See every line and its numbers ›</Link></p>
+          : <p className="bf-note">Precedence talks. It never listens: no microphone, no typing, nothing leaves this page. Not advice.</p>}
       </div>
 
-      <aside className="bf-side">
+      {!compact && <aside className="bf-side">
         <div className="bf-card bf-focus" aria-live="polite">
           {line ? (
             <>
@@ -267,7 +272,7 @@ export function Stage({ fallback }: { fallback?: Holding[] } = {}) {
             )}
           </details>
         )}
-      </aside>
+      </aside>}
     </section>
   );
 }
