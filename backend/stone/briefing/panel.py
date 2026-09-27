@@ -162,8 +162,9 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
                                 "Brokerage", "/"))
     elif rows:
         opening.append(Line("portfolio:total", "note",
-                            ex.cap(f"{hello}your {len(rows)} {'holding is' if len(rows) == 1 else 'holdings are'} "
-                                   f"worth {money(investments)}{moved}."),
+                            # Not the total: only what has a daily price (a home, 401(k) or crypto may sit on the board too).
+                            ex.cap(f"{hello}your {len(rows)} {'investment' if len(rows) == 1 else 'investments'} with a daily price "
+                                   f"{'is' if len(rows) == 1 else 'are'} worth {money(investments)}{moved}."),
                             (len(rows), investments, *change), cite, None, "Precedence briefing", "/"))
     if rows or funds:
         watch = [names.get(r["symbol"], r["symbol"]) for r in rows if states.get(r["symbol"]) == "WATCH"]

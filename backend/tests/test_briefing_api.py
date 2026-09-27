@@ -87,5 +87,6 @@ def test_portfolio_briefing_counts_the_home_and_the_401k_like_the_board(client):
     assert t[2] == "Halcyon Semiconductor and Fidelity 500 Index Fund need a look."  # the 401(k) counted, as on /portfolio
     # without them, the greeting is the old one: the holdings alone
     plain = [line["text"] for line in client.post("/api/briefing/portfolio", json={"holdings": holdings}).json()["lines"]]
-    assert plain[0] == "Here is your Precedence briefing for Friday, September 25: your 1 holding is worth $280.60, up 1.1% on the day."
+    assert plain[0] == ("Here is your Precedence briefing for Friday, September 25: your 1 investment with a daily price is worth "
+                        "$280.60, up 1.1% on the day.")
     assert plain[1] == "Halcyon Semiconductor needs a look today." or "Fidelity" not in plain[1]

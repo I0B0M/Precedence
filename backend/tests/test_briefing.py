@@ -161,7 +161,7 @@ def test_a_calm_portfolio_says_so_and_nothing_else_is_invented():
              "exposure": [{"symbol": "AMZN", "state": "CALM", "total": 2496.3, "share_of_total": 1.0}], "funds": []}
     b = portfolio_briefing(board, {"AMZN": co}, None, None)
     assert texts(b) == [
-        "Here is your Precedence briefing for Friday, September 25: your 1 holding is worth $2,496, up 0.1% on the day.",
+        "Here is your Precedence briefing for Friday, September 25: your 1 investment with a daily price is worth $2,496, up 0.1% on the day.",
         "It is calm: nothing happening now has mattered for it before.",
         "That's everything: Precedence ran 1 test on your holdings, and nothing happening now has mattered before.",
     ]
