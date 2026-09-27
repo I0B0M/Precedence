@@ -16,13 +16,12 @@ type Draft = { side: Side; symbol: string; shares: number; price: number; day: s
 
 const sharesText = (n: number) => (Number.isInteger(n) ? n.toLocaleString("en-US") : n.toLocaleString("en-US", { maximumFractionDigits: 4 }));
 
-/** "Markets are closed, so practice trades use Friday's closing price." Only said when the close is from an earlier day. */
+/** "Priced at Friday's close." Names the day only when the close is from an earlier day. */
 function priceNote(day: string): string {
   const close = new Date(day + "T12:00:00");
   const today = new Date();
   const earlier = close.toDateString() !== today.toDateString() && close < today;
-  const weekday = close.toLocaleDateString("en-US", { weekday: "long" });
-  return earlier ? `Markets are closed, so practice trades use ${weekday}'s closing price.` : "Practice trades use the latest closing price.";
+  return earlier ? `Priced at ${close.toLocaleDateString("en-US", { weekday: "long" })}'s close.` : "Priced at the latest close.";
 }
 
 // Brief: "make decisions" · "actionable". Practice only: nothing here reaches a broker.
@@ -47,11 +46,14 @@ export default function PracticeScreen() {
     }).catch(setError);
   }, []);
 
-  // First visit: start from what the board holds, plus practice cash.
-  const s: PracticeState | null = stored ?? (cos ? freshPractice(readHoldings() ?? []) : null);
+  // First visit: start from what the board holds, plus practice cash. Until the first practice trade, keep in step
+  // with the board, so importing after a first look here still shows up.
+  const fresh = cos ? freshPractice(readHoldings() ?? []) : null;
+  const stale = !!stored && !!fresh && !stored.trades.length && JSON.stringify(stored.seeded ?? {}) !== JSON.stringify(fresh.seeded);
+  const s: PracticeState | null = stored && !stale ? stored : fresh;
   useEffect(() => {
-    if (!stored && cos) resetPractice(readHoldings() ?? []);
-  }, [stored, cos]);
+    if ((!stored || stale) && cos) resetPractice(readHoldings() ?? []);
+  }, [stored, stale, cos]);
 
   const price = useMemo(() => new Map((cos ?? []).map((c) => [c.ticker, c])), [cos]);
   const posKey = s ? JSON.stringify(s.positions) : "";
@@ -91,7 +93,7 @@ export default function PracticeScreen() {
 
   return (
     <section className="stack" style={{ gap: 24 }}>
-      <div className="practice-banner" role="note">Practice money. Not real. No order is ever sent.</div>
+      <div className="practice-banner" role="note">Pretend money. No real orders.</div>
       <h1>Trade with {money(PRACTICE_CASH)} of pretend money</h1>
 
       <div className="pf-head" style={{ margin: 0 }}>
@@ -100,9 +102,7 @@ export default function PracticeScreen() {
           <div className="pf-total">{money(s.cash + invested)}</div>
           <p className="sc-change" style={{ fontWeight: 400 }}>{money(s.cash)} practice cash · {money(invested)} in {held.length} holding{held.length === 1 ? "" : "s"}</p>
         </div>
-        <p className="note" style={{ maxWidth: "36ch" }}>
-          Started from what you own plus {money(PRACTICE_CASH)} practice cash{asOf ? `. Prices: close ${shortDate(asOf)}, from our price data.` : "."}
-        </p>
+        {asOf && <p className="note" style={{ maxWidth: "36ch" }}>Prices: {shortDate(asOf)} close.</p>}
       </div>
 
       <div className="grid2">
@@ -149,7 +149,7 @@ export default function PracticeScreen() {
                 <dt>{draft.side === "buy" ? "Cost" : "You get"}</dt><dd>{draft.shares} × {money(draft.price, true)} = {money(draft.shares * draft.price)}</dd>
                 <dt>Practice cash left</dt><dd>{money(s.cash + (draft.side === "buy" ? -1 : 1) * draft.shares * draft.price)}</dd>
               </dl>
-              <p className="note">No real money moves. {priceNote(draft.day)}</p>
+              <p className="note">{priceNote(draft.day)}</p>
               <button className="btn t-go" type="button" onClick={place}>Place practice trade</button>
               <button className="btn light t-go" type="button" onClick={() => setDraft(null)}>Back</button>
             </div>
@@ -168,7 +168,7 @@ export default function PracticeScreen() {
                   <Link key={sym} href={c?.kind === "etf" ? `/fund/${sym}` : `/company/${sym}`} className="list-row" style={{ alignItems: "center" }}>
                     <span>
                       <b>{sym}</b> <span className="mute">{sharesText(sh)} share{sh === 1 ? "" : "s"}</span>
-                      {s.seeded && sym in s.seeded && <span className="copied">copied from your portfolio</span>}
+                      {s.seeded && sym in s.seeded && <span className="copied">from your portfolio</span>}
                       {e && <span className="note" style={{ display: "block" }}>{c?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>}
                     </span>
                     <span className="row-flex" style={{ gap: 8, flexWrap: "nowrap" }}>
@@ -179,7 +179,7 @@ export default function PracticeScreen() {
                 );
               })}
             </div>
-          ) : <p className="mute">Nothing yet. Buy a stock with practice cash, or add an account to start from what you own.</p>}
+          ) : <p className="mute">Nothing yet. Buy something with practice cash.</p>}
         </div>
       </div>
 
@@ -210,7 +210,6 @@ export default function PracticeScreen() {
       </div>
 
       <div className="next-step">
-        <p>Back to everything you own.</p>
         <Link className="btn t-go" href="/portfolio">Open your portfolio</Link>
       </div>
     </section>
