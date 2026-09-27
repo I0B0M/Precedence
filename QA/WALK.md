@@ -1,63 +1,56 @@
-# Precedence: QA walk #2
+# Precedence: QA walk #3
 
-**When:** Sep 27, 2026, 01:15–01:35 ET
-**Walked:** http://localhost:3000, frontend and API both at `d513f9c` (`precedence-build` head, "Learn in Lite: sources in plain words"). :3008 serves the same commit.
-**How:** as in walk #1. Headless Chromium, fresh contexts, 390×844 and 1280×800, Lite and Pro. **15 pages** (walk #1's 14 plus the new `/funds`). Every button, tab and "Why?" in `<main>` clicked; every portfolio row opened; signals 6 stocks × 3 signals in both modes; paper buy/sell/oversell/overbuy/Reset; phone menu; home (33133, $400,000, 2012-06) + 401(k) (FXAIX, $12,000); all internal links.
+**When:** Sep 27, 2026, 02:06–02:25 ET
+**Walked:** http://localhost:3000, frontend and API both at `975071c` (`precedence-build` head, "Stock page Pro: says prices are one exchange's feed (IEX)…").
+**How:** as in walks #1–2. Headless Chromium, fresh contexts, 390×844 and 1280×800, Lite and Pro. **17 pages** (walk #2's 15 plus `/fund/BREIT` and `/fund/BCRED`). Every button, tab and "Why?" in `<main>` clicked; every portfolio row opened; signals 6 × 3 in both modes; paper; phone menu; home (33133, $400,000, 2012-06) + 401(k) (FXAIX, $12,000) + **BREIT $50,000**; the Everything / Investments switch; all internal links.
 **Not checked:** external sec.gov links, contrast ratios, keyboard-only navigation.
 
 ## Automated results: clean
-Across 15 pages × 4 configs: **0 console errors** (the 404 page's own 404 aside), **0 failed requests**, **0 horizontal overflow**, **0 clipped text**, **0 tap targets under 44px** at 390, **0 Lite jargon hits** (checked for STRONG, WATCH, 8-K, Form 4, FRED, DGS10, EDGAR, IEX, Wilson, hold-out and more), **0 "Stone" or developer text**. All internal links return 200. The API stayed up for the whole walk.
+Across 17 pages × 4 configs: **0 console errors**, **0 overflow**, **0 clipped text**, **0 tap targets under 44px**, **0 Lite jargon**, **0 "Stone" or developer text**. All internal links return 200.
+**One failed request:** `500 /api/companies/BX` once, during the 390-Lite portfolio load. 15 immediate retries all returned 200, and no other page load of ~90 failed. It's transient, but it's the second API hiccup in three walks.
 
 ---
 
 ## BLOCKERS
-
-**None.** Walk #1's QQQ blocker is fixed: "102 holdings, SEC N-PORT (Invesco QQQ Trust), Jun 30, 2026", and the filing's age is disclosed.
-
-Walk #1's B1 (the badge fires on results that fail the correction) is now **your decision** ("the rule stays"). I've moved it to the scoring risk below. It no longer counts as a blocker, but it still costs points and will be asked about.
-
-## SCORING RISK (owner decision, still costs points)
-
-**R1. The Pro copy now contradicts itself in two adjacent lines.**
-- Pro portfolio header: "**WATCH only when a signal that has proven itself on this stock is firing.**"
-- Same page, on the AMZN / SPY / FXAIX rows: "STRONG**Doesn't survive the correction · too few cases in each half**" and "STRONG**Too few cases in each half**".
-- Lite AMZN: a large gold "50%" above "6 of the last 12 times, AMZN was lower a month later. … **This has mattered for AMZN before.**"
-
-The rule can stay and the words can still be honest. "Proven itself" and "has mattered" are claims the page then withdraws. A copy-only fix removes the contradiction without touching the rule (see JUDGE.md fix #1).
+**None.**
 
 ---
 
 ## MINOR (exact on-screen text)
 
-1. **The Lite count doesn't match the rows.** With the example portfolio, Lite says "**3 things worth a look today.**" but shows two Heads-up rows (AMZN, SPY) and one Calm (BX). With home + 401(k) it says "**4 things worth a look today.**" with three Heads-up rows (AMZN, SPY, 401(k)). The missing one is META, which gets WATCH through SPY and appears only in Pro ("3 on WATCH").
-2. **QQQ contradicts itself.** "What's going on · **Nothing important today.**" then, on the same page, "**Heads up inside: AMZN, META, CSCO.**" QQQ is "Not tested" while SPY, VOO and IVV get Heads up from the same rate-jump test. /funds explains the rest ("A fund: many stocks in one.") but not this.
-3. **Colours carry two meanings.** In the allocation bar, gold is "Stocks" and blue is "Funds". Everywhere else gold is **Heads up** and blue is **Calm**. On the 390 portfolio the gold "Stocks" swatch sits directly above a gold "Heads up" pill.
-4. **With a home the bar is 99% one colour**: "Stocks $2,432 0.2% · Funds $2,314 0.2% · 401(k) and IRA $12,000 0.9% · Home (estimate) About $1.33M 99%". That's correct, but it hides the investments. Pro already has "Share of your investments 72%", and the bar could offer the same.
-5. **VOO and IVV borrow SPY's holdings file**: "504 holdings (SPY's file), State Street (SSGA)". It's disclosed, but QQQ now uses its own N-PORT, so VOO and IVV could too.
-6. Paper: "PRETEND TOTAL $9,747" still includes your real holdings next to "$5,000 practice cash". This is clear enough now that the rows say "10 from your portfolio + 2 practice".
+**Data honesty**
+1. **BCRED Pro shows a loss for Blackstone's flagship credit fund:** "Change in value per share (distributions not included) · −0.2% 1 month · −1.4% 3 months · **−5.9% 12 months**". BCRED pays out most of its return as distributions, so price-only makes an income fund look like it lost money. It is disclosed, but a Blackstone judge will read "−5.9%" first. Show the distribution rate or total return from the same filings, or don't lead with price-only change.
+2. **Lite still says "has mattered" on results that fail the correction:** "Insiders sold shares. This has mattered for AMZN before." and "Interest rates jumped: the whole market. This has mattered for SPY before." Pro now handles this well ("WATCH = a STRONG pattern is happening now (see Why? for how it holds up)" and "Doesn't survive the correction"). Lite asserts what Pro qualifies. The landing page already has the honest phrasing: "Has come before drops. Not a prediction."
 
-## Fixed since walk #1 (verified today)
-- The "WATCH (Lite: Heads up) = …" legend is gone. It's replaced by "WATCH: a result that came out STRONG on this stock's past is happening again. It describes the past, not a prediction."
-- The VOO footnote now reads "Stocks Precedence doesn't track show "Not tested"", which matches the table.
-- With a home: "Share of everything you own 0.9%" plus "**Share of your investments 72%**" (no more column of 0%).
-- Company names: "AT&T", "U.S. Bancorp", "McDonald's", "Eli Lilly", "Procter & Gamble", "Charles Schwab", "Costco Wholesale". Pro adds the legal name: "Micron Technology (Micron Technology, Inc.)".
-- Paper: "BX 12 shares **10 from your portfolio + 2 practice**". An oversell shows "Estimated proceeds —". Reset clears the draft (quantity back to 1).
-- Lite now says "Company news" (no "8-K") and "The SEC / The St. Louis Fed / Daily prices" on /learn.
-- 390px: "SPDR S&P 500 ETF" wraps instead of clipping. Logo, menu links and sec.gov are all 44px.
-- The landing page is one palette (three near-blacks: `#000`, `rgb(11,11,12)`, `rgb(20,20,22)`). The white and electric-blue bands are gone.
-- The THIS WEEK sentence reads cleanly: "69 new this week … 5 about what you own: 1 SEC filing and 4 signals firing. 2 have mattered before for your holdings."
-- AMZN opens on the insider chip (`aria-checked=true`), so walk #1's note #18 was wrong (my script misread the default state).
+**Numbers**
+3. **"5 things you own" doesn't count BREIT.** Before BREIT (BX, AMZN, SPY, FXAIX, home) it read "5 things you own · 193 companies in all · 4 on WATCH". After adding BREIT $50,000 it still reads "5 things you own".
+4. **The day-move note leaves out BREIT:** "Out of the $16,747 with a daily price. FXAIX moves with SPY. **A home has no daily price, so it's left out.**" BREIT has no daily price either, and it isn't mentioned.
+5. **BREIT is folded into "Funds $52,314"** next to SPY in the allocation bar. A private real estate fund bucketed with an S&P ETF hides the one diversification fact a Blackstone investor cares about. Consider a "Private funds" slice.
 
-## New features walked
-- **/funds**: "Your funds · Many stocks in one. Tap one to see what's inside." It lists what you own first (SPY), then VOO, IVV and QQQ. Pro adds the holdings source and date line.
-- **Allocation bar**: Stocks / Funds / 401(k) and IRA / Home, with dollars and %. The totals are right.
-- **Stock page**: "Up 0.1% on Friday. The market was up 0.5%. Around it: Interest rates jumped." Good, plain context.
-- **One Lite/Pro pill** in the header, 44px, and it works.
+**Classic (Lite) on the Blackstone funds**
+6. **Lite /fund/BREIT leaves out the thing a BREIT holder most needs to understand.** It shows "$14.685 · Value per share, Aug 2026 · Blackstone real estate fund. Priced monthly. · Pays income out; value per share alone isn't your return." and a chart. Pro has "**Getting money out: Repurchases are capped at 2% of the fund's value a month and 5% a quarter.**" Lite has nothing on liquidity. BCRED is the same ("may buy back up to 5% of its shares each quarter").
+7. **Lite BREIT has no "What it means for you".** Stock pages show "You own directly / Share of everything you own / A bad day could cost you". BREIT shows none of it, though the data exists (Pro portfolio row: "about 3,404.8 shares").
+8. Lite shows BREIT's price as "$14.685" (three decimals, in the gold accent colour). The precision is right for Pro. In Lite, "$14.69", set in white, would match the rest of Lite.
+
+**Actionable**
+9. **"What to check: every past time ›"** goes to /signals (the history), not to what to check *now*. The Form 4 link is "once the API sends its link" (backend request). Until then, "What to check" is a second "See the cases".
+
+**Carried over (no change)**
+10. VOO / IVV: "504 holdings (SPY's file), State Street (SSGA)". QQQ now uses its own N-PORT; VOO and IVV don't.
+
+## Fixed since walk #2 (verified today)
+- The Lite count matches the rows: "**2 things worth a look today.**" (AMZN, SPY) with the example portfolio, and "3 things…" with the 401(k) added (AMZN, SPY, FXAIX).
+- No "proven" anywhere. Pro: "WATCH = a STRONG pattern is happening now (see Why? for how it holds up)."
+- QQQ: "What's going on · **3 of its holdings have a Heads up.**" (no more "Nothing important today").
+- The allocation bar uses its own colours (teal, violet, orange, magenta), not Heads-up gold or Calm blue. The **Everything / Investments** switch works: "Stocks $2,432 4% · Funds $52,314 78% · 401(k) and IRA $12,000 18%".
+- **BREIT and BCRED** are live. They're priced from their own SEC filings ("SEC EDGAR: BREIT monthly 424B3 NAV supplements", "BCRED monthly 8-K (Item 8.01)"), with a month-by-month table each linked to sec.gov, "What it invests in", "Getting money out", and "No signals are tested on a monthly-priced fund, so it shows "Not tested"". /funds has a "Blackstone funds" section: "Not traded on an exchange. Priced once a month from their own SEC filings."
+- Stock page Pro: "Prices are from the IEX exchange's feed, one venue among many, so a close can differ a little from the consolidated close on a brokerage statement. Precedence hasn't measured by how much." That answers walk #1's question #6 honestly.
+- "What to check: every past time ›" is on Lite company pages under a firing signal.
 
 ---
 
 ## MISSING vs the brief
-- **Nothing for Blackstone's own investors.** No non-traded funds (BREIT, BCRED, BXPE). The home flow already handles "no daily price", so the pattern exists.
-- **Actionable:** after "Heads up" the actions are "See the history" and "Paper trade". There's no "what to check next", for example "Read the Form 4: who sold, and what share of their stake".
-- **Engaging:** no weekly digest or "tell me when this fires".
-- **Accounts:** "Robinhood connect and screenshot reading: coming next."
+- **Actionable, still thin.** After Heads up: "See the history", "What to check: every past time", "Paper trade". None of them tells the user what to look at today (who sold, how much of their stake).
+- **Engaging.** No digest, no "tell me when this fires".
+- **Accounts.** "Robinhood connect and screenshot reading: coming next."
+- **BREIT/BCRED returns an investor would recognise:** total return including distributions.

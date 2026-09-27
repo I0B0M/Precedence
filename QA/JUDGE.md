@@ -1,21 +1,22 @@
-# Precedence: judge scorecard #2
+# Precedence: judge scorecard #3
 
-**Judge:** strict Blackstone VP · **Build:** :3000 @ `d513f9c` (API same commit) · **Time:** Sep 27, 01:35 ET · **Evidence:** QA/WALK.md · **Previous:** walk #1 = 3/5, 2 blockers
+**Judge:** strict Blackstone VP · **Build:** :3000 @ `975071c` (API same commit) · **Time:** Sep 27, 02:25 ET · **Evidence:** QA/WALK.md
+**Trend:** walk #1 3/5 (2 blockers) → walk #2 4/5 (0) → **walk #3 4/5 (0)**
 
 ## Scores (1–5)
 
-| Category | #1 | **#2** | Why, in one line |
-|---|---|---|---|
-| Brief fit | 4 | **4** | Understands what you own across SEC, Fed, prices, fund files and a home. Still nothing for a Blackstone investor's alternatives, and still thin on "actionable". |
-| Portfolio + funds | 3 | **4** | QQQ has real N-PORT holdings, /funds exists, the allocation bar and "Share of your investments" work. VOO and IVV borrow SPY's file, and QQQ's "Nothing important today" contradicts "Heads up inside". |
-| Classic (Lite) clarity | 4 | **4** | Zero jargon now. "3 things worth a look today" doesn't match the two rows shown, and "This has mattered for AMZN before" sits on a 50% hit rate. |
-| Pro depth | 4 | **4** | Answer → evidence → sources → raw is excellent (legal names + CIK, why ordinary-day counts differ). The top line "a signal that has proven itself" is withdrawn by the layer under it. |
-| Professional design | 3 | **4** | One palette, 44px everywhere, clean names, nothing clipped. Gold and blue mean both asset class and badge. |
-| Data honesty | 3 | **3** | The disclosure is better than any competitor's. But the words "proven itself" and "has mattered" still sit beside "Doesn't survive the correction". That's owner-decided, and it's scored anyway, because a judge will read both lines. |
-| Demo-readiness | 3 | **4** | 15 pages × 4 configs with zero console errors, zero failed requests, API stable. Not frozen yet (production build, no restarts). |
-| Originality | 4 | **4** | "Has this happened before for this stock, against its own usual rate, and we'll tell you when it's nothing" is unlike Robinhood, Perplexity Finance or Fiscal.ai. |
+| Category | #1 | #2 | **#3** | Why, in one line |
+|---|---|---|---|---|
+| Brief fit | 4 | 4 | **4** | BREIT/BCRED from their own filings is exactly the right move for this track. "Actionable" still means "look at the history", and nothing brings the user back. |
+| Portfolio + funds | 3 | 4 | **4** | Stocks, ETFs, a 401(k), a home and Blackstone funds in one total, plus look-through and an Investments view. "5 things you own" misses BREIT, BREIT sits inside "Funds", and VOO/IVV still borrow SPY's file. |
+| Classic (Lite) clarity | 4 | 4 | **4** | Zero jargon, and the counts match the rows. Lite BREIT/BCRED leave out the redemption limit and "What it means for you", and Lite still says "has mattered" where Pro says it doesn't survive the correction. |
+| Pro depth | 4 | 4 | **5** | Answer → evidence → sources → raw is complete on every page type now: case tables, split-half, BH correction, legal names + CIK, the IEX caveat, a month-by-month NAV table with each filing linked, repurchase terms. |
+| Professional design | 3 | 4 | **4** | One palette, 44px everywhere, colours that each mean one thing. The Lite BREIT page is thin next to the stock pages (no "What it means for you" card), and the price uses the gold accent. |
+| Data honesty | 3 | 3 | **4** | The contradiction inside Pro is gone, and the IEX feed and N-PORT age are disclosed. Two gaps are left: Lite's "has mattered", and BCRED leading with "−5.9% 12 months" price-only for an income fund. |
+| Demo-readiness | 3 | 4 | **4** | Clean sweep across 17 pages. One transient `500 /api/companies/BX`. Still not frozen on a production build. |
+| Originality | 4 | 4 | **4** | "Has this happened before for this stock, against its own usual rate, and we'll say when it's nothing", now across public and private Blackstone funds. Nothing like it at Robinhood, Perplexity Finance or Fiscal.ai. The landing's product-mockup style is the only generic-looking part. |
 
-**Overall: 4 / 5** (up from 3). Blockers: **0** (down from 2). Not 5: no category is at 5 yet.
+**Overall: 4 / 5.** Blockers: **0**. One category (Pro) is now at 5. The fixes below close the rest.
 
 ---
 
@@ -23,16 +24,16 @@
 
 | # | Fix | Where | Points |
 |---|---|---|---|
-| 1 | **Copy-only honesty fix that keeps your rule.** Replace "WATCH only when a signal that has proven itself on this stock is firing" with, e.g., "WATCH when something that came before drops here is happening again. None of these has passed every check yet". Replace Lite's "This has mattered for AMZN before." with "This has come before drops here. Not proven." (the landing already uses "Has come before drops. Not a prediction."). | Pro portfolio header; Lite portfolio, company and fund rows | Honesty +1, Pro +0.5 |
-| 2 | **Lite count = rows shown.** Either show META ("inside SPY") in Lite, or count only what Lite lists. "3 things worth a look today" above 2 flagged rows is the first number a judge checks. | /portfolio Lite | Classic +0.5, honesty +0.25 |
-| 3 | **A Blackstone-shaped asset.** Under "Something else", add a non-traded fund (BREIT / BCRED / BXPE) by amount, with "monthly value, no daily price", handled like the home. It's the single biggest brief-fit gain available at this track. | /import, /start, /portfolio | Brief +1 |
-| 4 | **Make Heads up actionable.** One line under each Heads up: "What to check: who sold and how much (Form 4) ›", "What rose: the 10-year rate ›". It links to the evidence you already have. | Portfolio rows, company "What's going on" | Brief +0.5, Classic +0.25 |
-| 5 | **QQQ "What's going on"** should say "3 companies inside have a Heads up: AMZN, META, CSCO", plus one line on why the fund itself isn't tested. | /fund/QQQ, /funds | Funds +0.5 |
-| 6 | **Freeze the demo:** `next build && next start`, API pinned, `/api/status` checked before the table. | All | Demo +1 |
-| 7 | **Separate colour meanings:** don't reuse Heads-up gold and Calm blue in the allocation bar. | /portfolio bar | Design +0.5 |
-| 8 | **VOO / IVV holdings from their own N-PORT**, like QQQ, instead of "(SPY's file)". | /fund/VOO, /fund/IVV, /funds | Funds +0.25 |
-| 9 | **The allocation bar with a home:** add an "investments only" toggle, or a second bar, so $16,747 isn't a 1% sliver. | /portfolio | Portfolio +0.25 |
-| 10 | **Home estimate range in Pro**: "FHFA ZIP 33133 index, typical error ±X%". | Also yours → Home → Why? | Honesty +0.25 |
+| 1 | **BREIT/BCRED returns an investor recognises:** show the distribution rate, or total return with distributions reinvested, from the same filings, next to or instead of "Change in value per share". BCRED "−5.9% 12 months" is the first thing a Blackstone judge will object to. | /fund/BCRED, /fund/BREIT Pro; /funds line | Honesty +0.5, brief +0.5 |
+| 2 | **Lite BREIT/BCRED: "Getting money out" in plain words**, e.g. "You can usually take out up to 2% of the fund a month. In a rush, you may have to wait." Plus a "What it means for you" card: your $50,000, about 3,405 shares. | /fund/BREIT, /fund/BCRED Lite | Classic +0.5, brief +0.5 |
+| 3 | **Lite wording on Heads up** to match Pro's honesty: "This has come before drops here. Not proven." instead of "This has mattered for AMZN before." | Lite portfolio, company, funds rows | Honesty +0.5, Classic +0.25 |
+| 4 | **Count and note include BREIT:** "6 things you own", and "A home and BREIT have no daily price, so they're left out." | /portfolio header | Portfolio +0.25, honesty +0.25 |
+| 5 | **Demo freeze:** `next build && next start`, API pinned, `/api/status` checked at the table. The one-off 500 this walk is exactly the surprise to rule out. | All | Demo +1 |
+| 6 | **"What to check" means now:** link the firing Form 4(s) on sec.gov ("Andrew Jassy sold 20,000 shares on Aug 25") once the API sends the link. Until then, label it "See every past time". | Lite company "What's going on" | Brief +0.5 |
+| 7 | **A "Private funds" slice** in the allocation bar instead of folding BREIT into "Funds". | /portfolio bar | Portfolio +0.25 |
+| 8 | **VOO / IVV holdings from their own N-PORT**, like QQQ. | /fund/VOO, /fund/IVV | Funds +0.25 |
+| 9 | Lite BREIT price as "$14.69" in white. Keep "$14.685" for Pro. | /fund/BREIT Lite | Design +0.25 |
+| 10 | **An engagement hook that isn't a stub:** a THIS WEEK card on the landing/portfolio for "your" holdings. It exists on /portfolio, so surface it first on return. | / and /portfolio | Brief +0.25 |
 
 Fixes 1–3 are worth more than 4–10 combined.
 
@@ -40,12 +41,11 @@ Fixes 1–3 are worth more than 4–10 combined.
 
 ## Questions a judge will ask that we can't answer yet
 
-1. "The header says 'proven itself', and the line below says 'doesn't survive the correction'. Which is it?"
-2. "How does this work for BREIT or BCRED, the products our investors hold? No daily price, monthly NAV."
-3. "I see Heads up on AMZN. What do you want me to *do*?"
-4. "Your Lite page says 3 things are worth a look. I can see 2. Where's the third?"
-5. "QQQ holdings are from June 30. How stale is too stale for a look-through?"
-6. "Prices are IEX. Does your close match the consolidated close on a brokerage statement?"
+1. "BCRED is down 5.9% on your page. What's its total return with distributions?"
+2. "If I hold BREIT and need my money, what happens? Why isn't that on the page a normal investor sees?"
+3. "Lite says insider selling 'has mattered for AMZN before'. Pro says it doesn't survive the correction. Which should my mother believe?"
+4. "What does 'What to check' want me to check? It shows me the past."
+5. "How often does your API fall over? I saw a 500."
+6. "How stale is QQQ's June 30 look-through, and why do VOO and IVV use SPY's holdings?"
 7. "Home value: +232% since 2012 from a ZIP index. What's the error band?"
-8. "Look-through covers 68% of SPY and 60% of QQQ. What about the rest?"
-9. "Who pays for this, and why wouldn't a broker just add it?"
+8. "Who pays for this, and why wouldn't a broker just add it?"
