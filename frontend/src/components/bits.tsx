@@ -12,8 +12,9 @@ const BADGE_TIPS = {
 } as const;
 
 /** CALM / WATCH, with a tiny tooltip on hover, tap or focus. A fund or stock the engine hasn't tested gets a quiet
- *  "Not tested", never "Calm". Inside a row that is already a link or button, the badge isn't focusable itself
- *  (no nested controls); the title still carries the tip there. */
+ *  "Not tested", never "Calm" — Pro only; Lite shows no badge at all for an untested row. Inside a row that is
+ *  already a link or button, the badge isn't focusable itself (no nested controls); the title still carries the
+ *  tip there. */
 export function StateBadge({ state }: { state: State | null }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -26,7 +27,7 @@ export function StateBadge({ state }: { state: State | null }) {
   }, []);
 
   return (
-    <span ref={ref} className={`badge ${state == null ? "untested" : state === "WATCH" ? "watch" : "calm"}`}
+    <span ref={ref} className={`badge ${state == null ? "untested pro-only" : state === "WATCH" ? "watch" : "calm"}`}
       title={tip} aria-describedby={open ? id : undefined} style={{ position: "relative" }}
       onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}
       onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}

@@ -206,7 +206,7 @@ export function Stage() {
                 <div className="bf-holding">
                   <div className="bf-hrow">
                     <span className="bf-tk">{focus.row.symbol}</span>
-                    <span className={`bf-badge s-${focus.exp.state ?? "none"}`}>{stateWords(focus.exp.state)}</span>
+                    <span className={`bf-badge s-${focus.exp.state ?? "none"}${focus.exp.state == null ? " pro-only" : ""}`}>{stateWords(focus.exp.state)}</span>
                   </div>
                   <div className="bf-hname">{focus.row.name}</div>
                   <div className="bf-hnum">
