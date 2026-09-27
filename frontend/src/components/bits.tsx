@@ -69,11 +69,12 @@ export function LabelTag({ label }: { label: Label }) {
 /** The verdict tag, and in Pro beside a STRONG one, what the stricter checks say ("Doesn't survive the correction"). */
 export function Verdict({ s }: { s: { label: Label; fdr10_survives?: boolean | null; holdout?: SignalResult["holdout"] } }) {
   const c = proCaveat(s);
+  // A small column, tag on top and the caveat under it, so the two never run into each other on a narrow screen.
   return (
-    <>
+    <span className="verdict">
       <LabelTag label={s.label} />
-      {c && <span className="note caveat pro-only" style={{ display: "block", marginTop: 4 }}>{c}</span>}
-    </>
+      {c && <span className="note caveat pro-only">{c}</span>}
+    </span>
   );
 }
 

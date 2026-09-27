@@ -243,7 +243,9 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
 .badge.calm { background: rgba(37, 99, 235, 0.18); color: var(--accent-text); border-color: rgba(37, 99, 235, 0.7); }
 .badge.watch { background: var(--accent-fill); color: var(--on-accent); border-color: var(--accent-fill); }
 .badge.untested { background: transparent; color: var(--text-2); font-weight: 500; border-color: var(--sep); }
-.label { font-weight: 700; font-size: 12px; letter-spacing: 0.02em; border-radius: 6px; padding: 2px 8px; white-space: nowrap; background: transparent; color: var(--text); border: 1.5px solid var(--edge-c); }
+.verdict { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 100%; }
+.verdict .caveat { white-space: normal; }
+.label { display: inline-block; line-height: 1.4; font-weight: 700; font-size: 12px; letter-spacing: 0.02em; border-radius: 6px; padding: 2px 8px; white-space: nowrap; background: transparent; color: var(--text); border: 1.5px solid var(--edge-c); }
 .label.strong { background: var(--text); color: var(--bg); border-color: var(--text); }
 
 /* ---------- cards, grouped lists, tables ---------- */
