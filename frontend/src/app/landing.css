@@ -180,3 +180,9 @@
 @media (max-width: 767px) {
   .lp-lockup { flex-wrap: wrap; justify-content: center; align-items: center; font-size: 18px; gap: 4px 6px; }
 }
+
+/* example rows: who · 30-day spark · value and move · badge (same four parts as the app's landing card) */
+.lp .lp-hx-row { grid-template-columns: minmax(0, 1fr) 72px 96px auto; gap: 12px; }
+.lp-hx-num { text-align: right; font-weight: 600; }
+.lp-hx-num small { display: block; margin: 0; font-weight: 400; font-size: 13px; }
+.lp-hx-row .spark { width: 72px; height: 24px; }

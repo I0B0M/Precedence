@@ -6,7 +6,8 @@ import "./landing.css";
 import { StateBadge } from "@/components/bits";
 import { ChartPanel, DotsArt, FundsPanel, IconChecked, IconHonest, IconSources, IconTested, Mark, PaperPanel, RangeArt } from "@/components/landing/Art";
 import { HeroLoop, JoinLoop } from "@/components/landing/Loops";
-import { api, type PortfolioOut } from "@/lib/api";
+import { Spark } from "@/components/HoldingsRail";
+import { api, type CompanyDetail, type PortfolioOut } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { PRACTICE_CASH } from "@/lib/practice";
 
@@ -20,7 +21,13 @@ const Lockup = ({ word }: { word: string }) => (
 // Brief: "more accessible … engaging" · "understanding what they own"
 export default function Landing() {
   const [board, setBoard] = useState<PortfolioOut | null>(null);
-  useEffect(() => { api.portfolio(EXAMPLE).then(setBoard).catch(() => {}); }, []);
+  const [sparks, setSparks] = useState<Record<string, CompanyDetail["prices"]>>({});
+
+  useEffect(() => {
+    api.portfolio(EXAMPLE).then(setBoard).catch(() => {});
+    Promise.all(EXAMPLE.map((h) => api.company(h.symbol).then((d) => [h.symbol, d.prices.slice(-30)] as const).catch(() => null)))
+      .then((p) => setSparks(Object.fromEntries(p.filter((x) => x !== null))));
+  }, []);
 
   return (
     <div className="lp">
@@ -45,10 +52,14 @@ export default function Landing() {
           {EXAMPLE.map((h) => {
             const row = board?.rows.find((r) => r.symbol === h.symbol);
             const e = board?.exposure.find((x) => x.symbol === h.symbol);
+            const spk = sparks[h.symbol];
+            const down = spk && spk.length > 1 && spk[spk.length - 1].close < spk[0].close;
             return (
               <div className="lp-hx-row" key={h.symbol}>
-                <span><b>{h.symbol}</b><small>{h.shares} shares</small>
-                  {row?.change != null && <small className={row.change < 0 ? "down" : "up"}>{pct(row.change)}</small>}</span>
+                <span><b>{h.symbol}</b><small>{h.shares} shares</small></span>
+                <span className={down ? "down" : "up"}>{spk ? <Spark closes={spk.map((p) => p.close)} /> : <span className="spark" />}</span>
+                <span className="lp-hx-num">{row ? money(row.value) : "—"}
+                  <small className={row?.change != null && row.change < 0 ? "down" : "up"}>{row?.change != null ? pct(row.change) : ""}</small></span>
                 {e ? <StateBadge state={e.state} /> : <span />}
               </div>
             );
