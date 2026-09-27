@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { BadgeKey, LabelTag, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
+import { OwnMap } from "@/components/OwnMap";
+import { RiskCard } from "@/components/RiskCard";
 import { ApiProblem, isNotFound, Loading } from "@/components/Problem";
 import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, SAVED, SAVED_EXAMPLE, SAVED_TICKERS, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
@@ -91,6 +93,11 @@ export default function HoldingsBoard() {
       </div>
 
       <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
+
+      <div className="grid2 board-extras">
+        <OwnMap board={board} />
+        {holdings && <RiskCard holdings={holdings} />}
+      </div>
 
       {watching > 0 && <BadgeKey />}
       <div className="rows">
