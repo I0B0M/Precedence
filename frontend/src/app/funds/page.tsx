@@ -131,7 +131,8 @@ function PrivateRow({ symbol, p }: { symbol: PrivateFundKey; p: PrivateFundPage 
         {p?.nav && (
           <span className="note pro-only pro-add" style={{ display: "block" }}>
             {navMoney(p.nav.value)} a share, Class {p.nav.share_class}, {shortDate(p.nav.as_of)}
-            {p.returns.m1 != null ? ` · value per share ${pct(p.returns.m1)} in the last month (distributions not included)` : ""} · {p.source}
+            {p.total_return?.m1 != null ? ` · total return ${pct(p.total_return.m1)} in the last month (distributions paid, not reinvested)`
+              : p.returns.m1 != null ? ` · value per share ${pct(p.returns.m1)} in the last month (distributions not included)` : ""} · {p.source}
           </span>
         )}
       </span>

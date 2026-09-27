@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { Why } from "@/components/Why";
-import { dateTimeET, money, pct } from "@/lib/format";
+import { dateTimeET, money, pct, shortDate } from "@/lib/format";
 import { isPrivateFund, navMoney, PRIVATE_LIQUIDITY, PRIVATE_LITE, PRIVATE_RETURN_NOTE, PRIVATE_WITHDRAW, privateFund, shortQuote, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
 import { useOtherAssets } from "@/lib/other-assets";
 
@@ -42,6 +42,10 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
   const p = f.page;
   const lite = isPrivateFund(symbol) ? PRIVATE_LITE[symbol.toUpperCase() as keyof typeof PRIVATE_LITE] : "Priced monthly.";
   const rets = [["1 month", p.returns.m1], ["3 months", p.returns.m3], ["12 months", p.returns.m12]] as const;
+  // Total return (value change plus distributions paid) from the same filings. Null for a window with any missing filing.
+  const tr = p.total_return ?? null;
+  const trs = tr ? ([["1 month", tr.m1], ["3 months", tr.m3], ["12 months", tr.m12]] as const) : null;
+  const sign = (v: number | null) => (v != null && v < 0 ? "down" : "up");
 
   return (
     <section className="stack" style={{ gap: 28 }}>
@@ -72,11 +76,27 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
       <div className="box">
         <h3>What&apos;s going on</h3>
         <p className="say-big">{lite}</p>
-        <p className="lite-only">{PRIVATE_RETURN_NOTE}</p>
+        {tr?.m12 != null ? (
+          <p className="lite-only">Total return over 12 months: <b className={sign(tr.m12)}>{pct(tr.m12, true, 1)}</b>. Includes the income it paid out.</p>
+        ) : <p className="lite-only">{PRIVATE_RETURN_NOTE}</p>}
         {isPrivateFund(symbol) && <p className="lite-only">{PRIVATE_WITHDRAW[symbol.toUpperCase() as PrivateFundKey]}</p>}
-        {/* Pro only: the change in value per share. Distributions are left out, so it is never called a return. */}
-        <p className="pro-only pro-add list-head" style={{ marginBottom: 0 }}>Change in value per share (distributions not included)</p>
-        <div className="versus perf pro-only pro-add" style={{ gap: 10 }}>
+        {/* Pro: total return is the main figure when filed; the value-only change sits under it, never called a return. */}
+        {trs && tr && <>
+          <p className="pro-only pro-add list-head" style={{ marginBottom: 0 }}>Total return (distributions paid, not reinvested)</p>
+          <div className="versus perf pro-only pro-add" style={{ gap: 10 }}>
+            {trs.map(([label, v]) => (
+              <div key={label}>
+                <div className={`bignum ${sign(v)}`} style={{ fontSize: "clamp(24px, 2.6vw, 34px)" }}>{v == null ? "—" : pct(v, true, 1)}</div>
+                <p className="note">{label}</p>
+                <Why what={`${p.symbol} ${label} total return`} rows={[["Total return", v == null ? "A month in this window has no filing, so it isn't worked out" : `${pct(v, true, 2)} over ${label}`], ["Basis", tr.basis], ["Worked out", "(end value per share + distributions with a record date in the window) ÷ start value − 1"]]}
+                  source={p.source} asOf={p.nav?.as_of ?? null} />
+              </div>
+            ))}
+          </div>
+        </>}
+        <p className={`pro-only pro-add ${trs ? "note" : "list-head"}`} style={{ marginBottom: 0 }}>Change in value per share (distributions not included){trs
+          ? `: ${rets.map(([l, v]) => `${v == null ? "—" : pct(v, true, 1)} ${l}`).join(" · ")}` : ""}</p>
+        {!trs && <div className="versus perf pro-only pro-add" style={{ gap: 10 }}>
           {rets.map(([label, v]) => (
             <div key={label}>
               <div className={`bignum ${v != null && v < 0 ? "down" : "up"}`} style={{ fontSize: "clamp(24px, 2.6vw, 34px)" }}>{v == null ? "—" : pct(v, true, 1)}</div>
@@ -85,7 +105,7 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
                 source={p.source} asOf={p.nav?.as_of ?? null} />
             </div>
           ))}
-        </div>
+        </div>}
         <NavLine points={p.history} />
         <p className="note">Monthly value{p.history.length ? `, ${monthYear(p.history[0].as_of)} to ${monthYear(p.history[p.history.length - 1].as_of)}` : ""}.</p>
       </div>
@@ -127,6 +147,24 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
                 <span className="mute">{dateTimeET(x.accepted_at)}{x.url && <> · <a href={x.url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {(p.distributions?.length ?? 0) > 0 && (
+          <div className="tscroll">
+            <table className="rtable">
+              <thead><tr><th>Month</th><th className="num">Paid per share</th><th>Record date</th><th>Filing</th></tr></thead>
+              <tbody>
+                {[...(p.distributions ?? [])].reverse().map((x) => (
+                  <tr key={x.record_date}>
+                    <td data-label="Month"><span>{monthYear(x.month)}</span></td>
+                    <td data-label="Paid per share" className="num"><b>{navMoney(x.amount)}</b></td>
+                    <td data-label="Record date"><span>{shortDate(x.record_date)}</span></td>
+                    <td data-label="Filing"><a href={x.url} target="_blank" rel="noopener noreferrer">sec.gov</a></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
