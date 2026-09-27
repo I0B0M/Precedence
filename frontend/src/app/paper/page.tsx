@@ -38,7 +38,12 @@ export default function PracticeScreen() {
   const [done, setDone] = useState<string | null>(null);
 
   useEffect(() => {
-    api.companies().then(setCos).catch(setError);
+    api.companies().then((c) => {
+      setCos(c);
+      // Arriving from Signals (?t=BX): start the ticket on that stock, if Stone has a price for it.
+      const t = new URLSearchParams(window.location.search).get("t");
+      if (t && c.some((x) => x.ticker === t && x.last_close != null)) setSymbol(t);
+    }).catch(setError);
   }, []);
 
   // First visit: start from what the board holds, plus practice cash.
@@ -198,6 +203,11 @@ export default function PracticeScreen() {
         ) : (
           <button className="btn light small" type="button" onClick={() => setConfirmReset(true)}>Reset practice</button>
         )}
+      </div>
+
+      <div className="next-step">
+        <p>Back to everything you own.</p>
+        <Link className="btn t-go" href="/portfolio">Open your portfolio</Link>
       </div>
     </section>
   );

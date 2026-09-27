@@ -46,6 +46,8 @@ export default function HoldingsBoard() {
   if (!board) return <Loading what="what you own" />;
 
   const watching = board.exposure.filter((e) => e.state === "WATCH").length;
+  const stockRows = board.exposure.filter((e) => board.rows.find((r) => r.symbol === e.symbol)?.kind !== "etf");
+  const nextStock = stockRows.find((e) => e.state === "WATCH") ?? stockRows[0] ?? null;
   const splitFunds = board.funds.filter((f) => f.looked_through > 0);
   // Companies you hold, directly or inside funds, in all: stock rows plus the small slices folded inside each fund.
   const companies = board.exposure.filter((e) => board.rows.find((r) => r.symbol === e.symbol)?.kind !== "etf").length
@@ -153,6 +155,13 @@ export default function HoldingsBoard() {
           <button className="linkb" type="button" onClick={() => setHoldings(SAMPLE_PORTFOLIO)}>Reset to the sample portfolio</button>
         )}
       </div>
+
+      {nextStock && (
+        <div className="next-step">
+          <p>{nextStock.state === "WATCH" ? `See why ${nextStock.symbol} needs a look.` : `See what's going on with ${nextStock.symbol}.`}</p>
+          <Link className="btn t-go" href={`/company/${nextStock.symbol}`}>Open {nextStock.symbol}</Link>
+        </div>
+      )}
     </section>
   );
 }

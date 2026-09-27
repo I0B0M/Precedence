@@ -53,6 +53,7 @@ export default function CompanyScreen() {
   const myBadDay = mine ? (isFund ? (mine.bad_day_return != null ? mine.bad_day_return * mine.direct : null) : mine.bad_day_loss) : null;
   // The Lab tests single stocks; the market's own rate-jump result has no case page there.
   const inLab = (signal: string) => signal !== "market_rate_jump";
+  const nextSignal = co.kind === "stock" ? ((main && inLab(main.signal) ? main : null) ?? d.signals.find((s) => inLab(s.signal) && s.label !== "NO DATA") ?? null) : null;
   const filingUrl = (accession: string) => d.filings.find((f) => f.accession === accession)?.url ?? null;
 
   return (
@@ -290,6 +291,19 @@ export default function CompanyScreen() {
           </div>
         </div>
       </div>
+
+      {nextSignal && (
+        <div className="next-step">
+          <p>Has this mattered for {co.ticker} before?</p>
+          <Link className="btn t-go" href={`/signals?t=${co.ticker}&s=${nextSignal.signal}`}>See the history</Link>
+        </div>
+      )}
+      {!nextSignal && isFund && (
+        <div className="next-step">
+          <p>See what&apos;s inside {co.ticker}.</p>
+          <Link className="btn t-go" href={`/fund/${co.ticker}`}>Open the fund</Link>
+        </div>
+      )}
     </section>
   );
 }
