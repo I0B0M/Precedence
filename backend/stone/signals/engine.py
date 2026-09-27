@@ -313,7 +313,9 @@ def normal_starts(inside: list[bool], h: int) -> list[int]:
 
 def periods_spanned(starts: list[int], h: int) -> float:
     """Overlapping windows share most of their days: a run of L consecutive normal days spans
-    L + h - 1 days, which is (L + h - 1) / h separate periods. The stricter test counts those."""
+    L + h - 1 days, which is (L + h - 1) / h separate periods. The stricter test counts those.
+    It equals the sum of average uniqueness (Lopez de Prado, AFML ch. 4) when no two runs share a
+    day, which normal_starts guarantees: the gap between two runs holds an event day."""
     runs = sum(1 for j, k in enumerate(starts) if j == 0 or starts[j - 1] != k - 1)
     return (len(starts) + runs * (h - 1)) / h
 
