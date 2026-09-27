@@ -6,7 +6,7 @@ import { StateBadge } from "@/components/bits";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { Why } from "@/components/Why";
 import { dateTimeET, money, pct } from "@/lib/format";
-import { isPrivateFund, PRIVATE_LIQUIDITY, PRIVATE_LITE, privateFund, shortQuote, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
+import { isPrivateFund, PRIVATE_LIQUIDITY, PRIVATE_LITE, PRIVATE_RETURN_NOTE, privateFund, shortQuote, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
 
 const monthYear = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
@@ -69,12 +69,15 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
       <div className="box">
         <h3>What&apos;s going on</h3>
         <p className="say-big">{lite}</p>
-        <div className="versus perf" style={{ gap: 10 }}>
+        <p className="lite-only">{PRIVATE_RETURN_NOTE}</p>
+        {/* Pro only: the change in value per share. Distributions are left out, so it is never called a return. */}
+        <p className="pro-only pro-add list-head" style={{ marginBottom: 0 }}>Change in value per share (distributions not included)</p>
+        <div className="versus perf pro-only pro-add" style={{ gap: 10 }}>
           {rets.map(([label, v]) => (
             <div key={label}>
               <div className={`bignum ${v != null && v < 0 ? "down" : "up"}`} style={{ fontSize: "clamp(24px, 2.6vw, 34px)" }}>{v == null ? "—" : pct(v, true, 1)}</div>
               <p className="note">{label}</p>
-              <Why what={`${p.symbol} ${label} change`} rows={[["Change", v == null ? "That month's value isn't filed" : `${pct(v, true, 2)} over ${label}`], ["Basis", p.returns.basis]]}
+              <Why what={`${p.symbol} ${label} change`} rows={[["Change in value per share", v == null ? "That month's value isn't filed" : `${pct(v, true, 2)} over ${label}`], ["Basis", p.returns.basis], ["Not included", "distributions paid out, so this isn't the investor's return"]]}
                 source={p.source} asOf={p.nav?.as_of ?? null} />
             </div>
           ))}

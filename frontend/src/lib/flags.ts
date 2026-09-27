@@ -5,4 +5,4 @@ export const SHOW_CRYPTO = false;
 export const SHOW_CONNECT = false;
 // BREIT / BCRED: on once the API accepts { kind: "private_fund" } in /api/portfolio and serves /api/funds/BREIT|BCRED.
 // Off, nothing about them shows and nothing is sent, so an older API is never asked for rows it would reject.
-export const SHOW_PRIVATE_FUNDS = false;
+export const SHOW_PRIVATE_FUNDS = true;

@@ -130,12 +130,13 @@ function PrivateRow({ symbol, p }: { symbol: PrivateFundKey; p: PrivateFundPage 
         <span className="note" style={{ display: "block" }}>{PRIVATE_LITE[symbol]}</span>
         {p?.nav && (
           <span className="note pro-only pro-add" style={{ display: "block" }}>
-            {money(p.nav.value, true)} a share, Class {p.nav.share_class}, {shortDate(p.nav.as_of)} · {p.source}
+            {money(p.nav.value, true)} a share, Class {p.nav.share_class}, {shortDate(p.nav.as_of)}
+            {p.returns.m1 != null ? ` · value per share ${pct(p.returns.m1)} in the last month (distributions not included)` : ""} · {p.source}
           </span>
         )}
       </span>
       <span className="row-flex" style={{ gap: 8, flexWrap: "nowrap" }}>
-        {p?.returns.m1 != null && <span className={p.returns.m1 < 0 ? "down" : "up"}>{pct(p.returns.m1)} <span className="note">1M</span></span>}
+
         <StateBadge state={null} />
         <span aria-hidden>›</span>
       </span>

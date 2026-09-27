@@ -3,7 +3,8 @@
 import { useSyncExternalStore } from "react";
 import type { FundLookup, HomeEstimate, PortfolioIn, PropertyIn, RetirementIn } from "./api";
 import { SHOW_PRIVATE_FUNDS } from "./flags";
-import type { PrivateFundIn, PrivateFundKey } from "./private-funds";
+import type { PrivateFundIn } from "./api";
+import type { PrivateFundKey } from "./private-funds";
 
 // Things you own beyond brokerage holdings: a home, 401(k) / IRA funds, crypto (hidden for now). Kept in this browser,
 // like holdings; the API is stateless, so portfolioExtras() sends them with every POST /api/portfolio.
