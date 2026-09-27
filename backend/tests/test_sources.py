@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from datetime import date, datetime
 from pathlib import Path
 
@@ -175,3 +176,111 @@ def test_gemini_filing_summary_response_parses_and_keeps_only_known_kinds():
     with pytest.raises(gemini.ScreenshotUnreadable, match="SAFETY"):
         gemini.parse_summary_response({"promptFeedback": {"blockReason": "SAFETY"}})
     assert gemini.first_sentences("One. Two! Three? Four.", 3) == "One. Two! Three?"
+
+
+# ---------- the Gemini request itself (no key needed: the HTTP call is faked) ----------
+
+class FakeGeminiHTTP:
+    """Stands in for httpx.post: answers each call with the next (status, body) and records the request."""
+    def __init__(self, *answers):
+        self.answers, self.calls = list(answers), []
+
+    def __call__(self, url, json=None, headers=None, timeout=None):
+        import httpx
+        self.calls.append({"url": url, "body": json, "timeout": timeout})
+        status, body = self.answers.pop(0)
+        return httpx.Response(status, json=body, request=httpx.Request("POST", url))
+
+
+def answer(obj, **candidate):
+    return {"candidates": [{"content": {"parts": [{"text": json.dumps(obj)}]}, "finishReason": "STOP", **candidate}]}
+
+
+def gemini_client(tmp_path, monkeypatch, fake):
+    import stone.fetch
+    monkeypatch.setattr(stone.fetch.httpx, "post", fake)
+    return gemini.GeminiClient(replace(load(), gemini_api_key="test-key", cache_dir=tmp_path))
+
+
+READ = {"rows": [{"symbol": "$bx", "shares": 10, "price": 150.0, "value": 1500.0},
+                 {"symbol": "CASH", "shares": None, "price": None, "value": 12.5}], "printed_total": 1512.5}
+
+
+def test_gemini_request_uses_the_current_format(tmp_path, monkeypatch):
+    fake = FakeGeminiHTTP((200, answer(READ)))
+    read = gemini_client(tmp_path, monkeypatch, fake).read_screenshot(b"\x89PNG", "image/png")
+    assert [r.symbol for r in read.rows] == ["BX", "CASH"] and read.printed_total == 1512.5
+    [call] = fake.calls
+    assert call["url"].endswith(f"/models/{gemini.MODEL}:generateContent")
+    config = call["body"]["generationConfig"]
+    assert config["responseFormat"]["text"]["mimeType"] == "application/json"
+    assert config["responseFormat"]["text"]["schema"]["properties"]["printed_total"]["type"] == ["number", "null"]
+    assert config["thinkingConfig"] == {"thinkingLevel": "low"}
+    assert "temperature" not in config and "responseSchema" not in config  # both deprecated for 3.x models
+
+
+def test_gemini_falls_back_to_the_older_format_on_400(tmp_path, monkeypatch):
+    fake = FakeGeminiHTTP((400, {"error": {"code": 400, "status": "INVALID_ARGUMENT"}}), (200, answer(READ)))
+    read = gemini_client(tmp_path, monkeypatch, fake).read_screenshot(b"\x89PNG", "image/png")
+    assert len(read.rows) == 2 and len(fake.calls) == 2
+    legacy = fake.calls[1]["body"]["generationConfig"]
+    assert legacy["responseMimeType"] == "application/json" and "thinkingConfig" not in legacy
+    shares = legacy["responseSchema"]["properties"]["rows"]["items"]["properties"]["shares"]
+    assert shares == {"type": "NUMBER", "nullable": True}
+
+
+def test_gemini_quota_and_key_errors_are_not_retried(tmp_path, monkeypatch):
+    import httpx
+    for status in (403, 429):
+        fake = FakeGeminiHTTP((status, {"error": {"code": status}}))
+        with pytest.raises(httpx.HTTPStatusError):
+            gemini_client(tmp_path, monkeypatch, fake).read_screenshot(b"\x89PNG" + bytes([status % 256]), "image/png")
+        assert len(fake.calls) == 1
+
+
+def test_gemini_answers_are_cached_but_unusable_ones_are_not(tmp_path, monkeypatch):
+    fake = FakeGeminiHTTP((200, answer(READ)))
+    client = gemini_client(tmp_path, monkeypatch, fake)
+    client.read_screenshot(b"same image", "image/png")
+    client.read_screenshot(b"same image", "image/png")
+    assert len(fake.calls) == 1  # the second read came from the cache
+
+    empty = {"candidates": [{"content": {"parts": []}, "finishReason": "MAX_TOKENS"}]}
+    fake = FakeGeminiHTTP((200, empty), (200, answer(READ)))
+    client = gemini_client(tmp_path, monkeypatch, fake)
+    with pytest.raises(gemini.ScreenshotUnreadable, match="MAX_TOKENS"):
+        client.read_screenshot(b"another image", "image/png")
+    assert len(client.read_screenshot(b"another image", "image/png").rows) == 2  # asked again, not served the failure
+    assert len(fake.calls) == 2
+
+
+def test_gemini_answer_can_come_in_several_parts_and_thoughts_are_skipped():
+    doc = {"candidates": [{"content": {"parts": [
+        {"text": "thinking about the table", "thought": True},
+        {"text": '{"rows": [{"symbol": "BX", "value": 5}], '},
+        {"text": '"printed_total": 5}', "thoughtSignature": "abc"}]}, "finishReason": "STOP"}]}
+    read = gemini.parse_response(doc)
+    assert read.rows == [gemini.ReadRow("BX", None, None, 5)] and read.printed_total == 5
+
+
+def test_gemini_summary_is_cached_per_filing(tmp_path, monkeypatch):
+    summary = {"summary": "Sales grew. Profit held.", "figures": [
+        {"label": "Revenue", "kind": "revenue", "text_value": "$5.0 billion", "value": 5.0e9, "period_end": None}]}
+    fake = FakeGeminiHTTP((200, answer(summary)))
+    client = gemini_client(tmp_path, monkeypatch, fake)
+    read, cached, _ = client.summarize_filing("text", "ORCA", "10-Q", "0000-1")
+    assert read.summary == "Sales grew. Profit held." and cached is False
+    assert fake.calls[0]["timeout"] == 120  # a whole filing takes longer to read than a screenshot
+    assert client.summarize_filing("text", "ORCA", "10-Q", "0000-1")[1] is True and len(fake.calls) == 1
+
+
+def test_symbols_are_cleaned_the_way_stone_writes_them():
+    assert [gemini.clean_symbol(s) for s in ("$aapl ", "BRK-B", "brk/b", "BRK B", "SPY")] == \
+        ["AAPL", "BRK.B", "BRK.B", "BRK.B", "SPY"]
+
+
+def test_an_empty_gemini_model_setting_means_the_default(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL", "")  # what `GEMINI_MODEL=` in backend/.env loads as
+    assert gemini.model_from_env() == gemini.DEFAULT_MODEL
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    assert gemini.model_from_env() == "gemini-3.5-flash-lite"

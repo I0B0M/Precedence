@@ -23,11 +23,13 @@ from stone.figures import check_figures, html_to_text
 from stone.ingest.tickers import HOLDINGS_FROM, RENAMED
 from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
+from stone.portfolio.risk import BASIS as RISK_BASIS
+from stone.portfolio.risk import portfolio_risk
 from stone.signals import engine, service
 from stone.signals.scan import fdr10_by_signal
 from stone.sources.private_funds import month_back
 from stone.sources.gemini import MODEL as GEMINI_MODEL
-from stone.sources.gemini import GeminiClient, ScreenshotUnreadable, first_sentences
+from stone.sources.gemini import IMAGE_TYPES, GeminiClient, ScreenshotUnreadable, first_sentences
 from stone.sources.gemini import connected as gemini_connected
 from stone.sources import census
 from stone.sources.fhfa import SOURCE as HPI_SOURCE
@@ -138,7 +140,8 @@ def companies(c: psycopg.Connection = Conn):
 def company(ticker: str, c: psycopg.Connection = Conn):
     co = company_or_404(c, ticker)
     t = co["ticker"]
-    prices = c.execute("select day, open, close from prices_daily where ticker = %s order by day", (t,)).fetchall()
+    prices = c.execute("select day, open, high, low, close from prices_daily where ticker = %s order by day",
+                       (t,)).fetchall()
     last, change = last_two_closes(c, t)
     filings = c.execute(
         """select accession, form, filed_date, accepted_at, report_date, primary_doc, source from filings
@@ -152,7 +155,8 @@ def company(ticker: str, c: psycopg.Connection = Conn):
     return {
         "company": {**co, **named(t, co["name"])},
         "last": {"close": float(last["close"]), "day": last["day"].isoformat(), "change": change} if last else None,
-        "prices": [{"day": p["day"].isoformat(), "open": float(p["open"]), "close": float(p["close"])} for p in prices],
+        "prices": [{"day": p["day"].isoformat(), "open": float(p["open"]), "high": float(p["high"]),
+                    "low": float(p["low"]), "close": float(p["close"])} for p in prices],
         "filings": [{**f, "filed_date": f["filed_date"].isoformat(), "accepted_at": f["accepted_at"].isoformat(),
                      "report_date": f["report_date"].isoformat() if f["report_date"] else None,
                      "url": filing_url(co["cik"], f["accession"], f["primary_doc"], f["source"])} for f in filings],
@@ -752,6 +756,45 @@ def estimate_home(body: HomeIn, c: psycopg.Connection = Conn):
     }
 
 
+def risk_json(r, total: float | None = None) -> dict:
+    out = {"volatility": r.volatility, "max_drawdown": r.max_drawdown,
+           "drawdown_start": r.drawdown_start.isoformat(), "drawdown_bottom": r.drawdown_bottom.isoformat(),
+           "beta": r.beta, "sharpe": r.sharpe, "worst_day": r.worst_day, "worst_day_on": r.worst_day_on.isoformat(),
+           "total_return": r.total_return}
+    if total is not None:
+        out["max_drawdown_dollars"] = r.max_drawdown * total
+        out["worst_day_dollars"] = r.worst_day * total
+    return out
+
+
+@app.post("/api/portfolio/risk")
+def portfolio_risk_card(body: PortfolioIn, c: psycopg.Connection = Conn):
+    """How bumpy this mix has been over Stone's price history, next to the market. Computed with QuantStats."""
+    known = {r["ticker"] for r in c.execute("select ticker from companies").fetchall()}
+    values: dict[str, float] = {}
+    unknown = []
+    for h in body.holdings:
+        sym = h.symbol.strip().upper()
+        last, _ = last_two_closes(c, sym) if sym in known else (None, None)
+        if not last:
+            unknown.append(sym)
+            continue
+        values[sym] = values.get(sym, 0.0) + h.shares * float(last["close"])
+    market_symbol, _ = service.load_market(c)
+    closes = {s: [(b.day, b.close) for b in service.load_bars(c, s)] for s in {*values, market_symbol}}
+    got = portfolio_risk(closes, values, market_symbol)
+    if got is None:
+        raise HTTPException(422, "Not enough shared price history for these holdings.")
+    mine, market, rets = got
+    total = sum(values.values())
+    return {
+        "total": total, "symbols": sorted(values), "unknown": unknown, "market_symbol": market_symbol,
+        "start": rets.index.min().date().isoformat(), "end": rets.index.max().date().isoformat(), "days": len(rets),
+        "portfolio": risk_json(mine, total), "market": risk_json(market),
+        "basis": RISK_BASIS, "source": "QuantStats on Stone's daily closes (Alpaca, IEX feed)",
+    }
+
+
 class ReadRowIn(BaseModel):
     symbol: str
     shares: float | None = None
@@ -795,6 +838,16 @@ def filing_text(cik: int | None, accession: str, primary_doc: str | None, source
         raise HTTPException(503, "Reading filings from the SEC needs SEC_USER_AGENT (a contact email) to be set.")
 
 
+def gemini_failed(e: httpx.HTTPError, instead: str = "") -> HTTPException:
+    """Gemini's HTTP failures in plain words. `instead`: what the person can do meanwhile."""
+    if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 429:
+        return HTTPException(503, f"Gemini is busy, or this key's free quota is used up for now (HTTP 429). "
+                                  f"Try again in a minute.{instead}")
+    if isinstance(e, httpx.HTTPStatusError):
+        return HTTPException(502, f"Gemini returned HTTP {e.response.status_code} (model {GEMINI_MODEL}).{instead}")
+    return HTTPException(504, f"Gemini didn't answer in time.{instead}")
+
+
 @app.get("/api/filings/{accession}/summary")
 def filing_summary(accession: str, c: psycopg.Connection = Conn):
     """Gemini's plain summary of a filing. Every figure it states is checked against the filing's own XBRL."""
@@ -814,8 +867,8 @@ def filing_summary(accession: str, c: psycopg.Connection = Conn):
         read, cached, generated = client.summarize_filing(text, f["ticker"], f["form"], accession)
     except ScreenshotUnreadable as e:
         raise HTTPException(422, str(e))
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(502, f"Gemini returned HTTP {e.response.status_code} (model {GEMINI_MODEL}).")
+    except httpx.HTTPError as e:
+        raise gemini_failed(e)
     facts = c.execute("select concept, value, period_end from xbrl_facts where accession = %s and taxonomy = 'us-gaap'",
                       (accession,)).fetchall()
     return {
@@ -832,8 +885,8 @@ MAX_SCREENSHOT_BYTES = 15 * 1024 * 1024  # Gemini takes inline images up to ~20 
 
 @app.post("/api/import/screenshot")
 async def import_screenshot(file: UploadFile = File(...)):
-    if not (file.content_type or "").startswith("image/"):
-        raise HTTPException(415, "That isn't an image. Add a screenshot (PNG or JPEG).")
+    if file.content_type not in IMAGE_TYPES:
+        raise HTTPException(415, "Add the screenshot as a PNG, JPEG, WebP or HEIC image.")
     image = await file.read()
     if len(image) > MAX_SCREENSHOT_BYTES:
         raise HTTPException(413, "That screenshot is too large (over 15 MB).")
@@ -845,8 +898,7 @@ async def import_screenshot(file: UploadFile = File(...)):
         read = client.read_screenshot(image, file.content_type)
     except ScreenshotUnreadable as e:
         raise HTTPException(422, f"{e} You can type the rows instead.")
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(502, f"Gemini returned HTTP {e.response.status_code} "
-                                 f"(model {GEMINI_MODEL}). You can type the rows instead.")
+    except httpx.HTTPError as e:
+        raise gemini_failed(e, " You can type the rows instead.")
     rows = [rc.Row(r.symbol, r.shares, r.price, r.value) for r in read.rows]
     return reconciled_json(rc.reconcile(rows, read.printed_total), rows)
