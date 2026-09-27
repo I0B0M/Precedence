@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import type { Scan, SignalResult } from "@/lib/api";
 import { shortDate, whole } from "@/lib/format";
+import { splitGap } from "@/lib/words";
 
 /** What <Why/> can explain. Pass whatever you have; each part shows only if present. */
 export interface WhyProps {
@@ -35,7 +36,13 @@ export function Why({ signal: s, scan, source, asOf, filings, rows, what }: WhyP
       lines.push(["Verdict", `${s.label}: STRONG only if the whole range beats the normal rate; under 10 cases is WEAK`]);
       if (s.holdout) {
         const h = s.holdout;
-        lines.push(["Hold-out", `${holdoutWords(h)} (1st half ${h.first.n} cases ${whole(h.first.hit_rate)} vs ${whole(h.first.normal_rate)}; 2nd half ${h.second.n} cases ${whole(h.second.hit_rate)} vs ${whole(h.second.normal_rate)})`]);
+        lines.push(["Hold-out", `${holdoutWords(h)} (1st half ${h.first.n} cases ${whole(h.first.hit_rate)} vs ${whole(h.first.normal_rate)}; 2nd half ${h.second.n} cases ${whole(h.second.hit_rate)} vs ${whole(h.second.normal_rate)})${splitGap(s)}`]);
+      }
+      // null means this result wasn't in the scan's correction (under 10 cases, a fund or the market card): say that, not "no".
+      if (s.fdr10_survives != null) {
+        lines.push(["Survives the correction", `${s.fdr10_survives ? "yes" : "no"}: Benjamini–Hochberg at a 10% false-discovery rate, across every stock-signal pair in the latest scan`]);
+      } else if (s.fdr10_survives === null && s.n >= 10) {
+        lines.push(["Survives the correction", "not part of the latest scan's correction"]);
       }
       if (s.firing) lines.push(["Firing now", `${s.firing.note} (known ${shortDate(s.firing.known_at)})`]);
     }
@@ -50,7 +57,7 @@ export function Why({ signal: s, scan, source, asOf, filings, rows, what }: WhyP
   return (
     <span className="pro-only why">
       <button type="button" className="linkb" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}
-        aria-label={`Why${what ? `: ${what}` : ""}`} style={{ fontSize: 13, padding: "2px 4px", textDecoration: "underline", textUnderlineOffset: 3 }}>
+        aria-label={`Why${what ? `: ${what}` : ""}`} style={{ fontSize: 13, padding: "2px 6px", minHeight: 44, minWidth: 44, textDecoration: "underline", textUnderlineOffset: 3 }}>
         Why?
       </button>
       {open && (

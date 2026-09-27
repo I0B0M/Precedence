@@ -44,6 +44,14 @@ export function liteHistory(s: SignalResult, ticker: string): string {
   return `${s.hits} of the last ${s.n} times, ${ticker} ${what}.`;
 }
 
+/** When the two hold-out halves hold fewer cases than the whole test, say by how many; the counts only, no reason given. */
+export const splitGap = (s: SignalResult) => {
+  const h = s.holdout;
+  if (!h) return "";
+  const n = h.first.n + h.second.n, hits = h.first.hits + h.second.hits;
+  return n === s.n ? "" : `; the halves hold ${n} of the ${s.n} cases and ${hits} of the ${s.hits} hits`;
+};
+
 /** Market card: "The market fell a week after 10 of 15 rate jumps." */
 export function liteMarket(m: MarketResult): string {
   return `The market fell ${horizonWords(m.horizon)} after ${m.hits} of ${m.n} rate jumps.`;

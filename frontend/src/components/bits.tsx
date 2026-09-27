@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { Label, Scan, SignalResult, State } from "@/lib/api";
 import { whole } from "@/lib/format";
+import { splitGap } from "@/lib/words";
 
 const BADGE_TIPS = {
   WATCH: "Has come before drops. Not a prediction.",
@@ -95,7 +96,7 @@ export function HoldoutNote({ s }: { s: SignalResult }) {
     <span>
       <b>{verdict}</b>
       <span className="note" style={{ display: "block" }}>1st half {first.n} cases {whole(first.hit_rate)} vs {whole(first.normal_rate)} ·
-        2nd half {second.n} cases {whole(second.hit_rate)} vs {whole(second.normal_rate)}</span>
+        2nd half {second.n} cases {whole(second.hit_rate)} vs {whole(second.normal_rate)}{splitGap(s)}</span>
     </span>
   );
 }
