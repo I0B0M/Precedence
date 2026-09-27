@@ -99,7 +99,7 @@ what was rejected and why, and the consequences. The existing two show the lengt
 
 ## Reporting bugs and wrong numbers
 
-Use the [issue templates](https://github.com/I0B0M/Stone/issues/new/choose). A number that looks wrong is a bug:
+Use the [issue templates](https://github.com/I0B0M/Precedence/issues/new/choose). A number that looks wrong is a bug:
 tell us the page, the number, and where you checked it. Report security problems privately, as described in
 [SECURITY.md](.github/SECURITY.md), not in a public issue.
 

@@ -1,6 +1,6 @@
-# Stone
+# Precedence
 
-Stone starts from what an investor owns and tests whether a kind of news has ever mattered for that holding before it asks for their attention.
+Precedence starts from what an investor owns and tests whether a kind of news has ever mattered for that holding before it asks for their attention.
 
 ## Language
 

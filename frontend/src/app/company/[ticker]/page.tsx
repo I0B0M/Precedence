@@ -221,14 +221,14 @@ export default function CompanyScreen() {
             {d.insider_sales.length > 0 && (
               <div className="card">
                 <h3>Form 4 sales</h3>
-                <table>
+                <table className="rtable">
                   <thead><tr><th>Accepted</th><th>Who</th><th className="num">Shares</th></tr></thead>
                   <tbody>
                     {d.insider_sales.slice(0, 8).map((s) => (
                       <tr key={`${s.accession}-${s.seq}`}>
-                        <td className="nowrap">{shortDate(s.accepted_at)}</td>
-                        <td><span className="clamp2" title={s.owner_name ?? undefined}>{s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.owner_name}</a> : s.owner_name}</span><div className="note">{s.owner_title}</div></td>
-                        <td className="num">{s.shares?.toLocaleString("en-US") ?? "—"}</td>
+                        <td data-label="Accepted" className="nowrap">{shortDate(s.accepted_at)}</td>
+                        <td data-label="Who"><span className="clamp2" title={s.owner_name ?? undefined}>{s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.owner_name}</a> : s.owner_name}</span><div className="note">{s.owner_title}</div></td>
+                        <td data-label="Shares" className="num">{s.shares?.toLocaleString("en-US") ?? "—"}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -1,4 +1,4 @@
-# Stone's API as one container (docs/v2-plan.md, milestone M1): FastAPI on uvicorn, reading Postgres
+# Precedence's API as one container (docs/v2-plan.md, milestone M1): FastAPI on uvicorn, reading Postgres
 # at DATABASE_URL. Build from the backend directory:
 #   docker build -t stone-api -f backend/Dockerfile backend
 #   docker run --rm -p 8000:8000 -e DATABASE_URL=postgresql://... stone-api

@@ -22,8 +22,8 @@ echo 'export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"' >> ~/.zshrc && so
 ## 2. Clone and configure
 
 ```bash
-git clone https://github.com/I0B0M/Stone.git
-cd Stone
+git clone https://github.com/I0B0M/Precedence.git
+cd Precedence
 cp .env.example backend/.env
 ```
 
@@ -32,7 +32,7 @@ Edit `backend/.env`. Every key is optional except the first two for real data:
 | Variable | Get it from | Needed for |
 |---|---|---|
 | `DATABASE_URL` | keep `postgresql://localhost:5432/stone` | everything |
-| `SEC_USER_AGENT` | your name and email, e.g. `Stone ShellHacks you@example.com` (the SEC requires a contact) | filings, XBRL, Form 4s, filing text |
+| `SEC_USER_AGENT` | your name and email, e.g. `Precedence ShellHacks you@example.com` (the SEC requires a contact) | filings, XBRL, Form 4s, filing text |
 | `FRED_API_KEY` | free at https://fred.stlouisfed.org/docs/api/api_key.html | the 10-year yield (rate-jump signal) |
 | `ALPACA_API_KEY`, `ALPACA_API_SECRET` | free paper account at https://alpaca.markets (Paper trading → API keys) | daily prices |
 | `GEMINI_API_KEY` | free at https://aistudio.google.com | screenshot import, filing summaries (unless you use Ollama, guide C) |

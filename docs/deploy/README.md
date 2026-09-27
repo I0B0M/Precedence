@@ -1,6 +1,6 @@
-# Deploying Stone: what runs where
+# Deploying Precedence: what runs where
 
-Stone is two programs and a database:
+Precedence is two programs and a database:
 
 | Part | What it is | Where it runs |
 |---|---|---|

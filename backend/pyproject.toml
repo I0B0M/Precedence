@@ -1,7 +1,7 @@
 [project]
 name = "stone"
 version = "0.1.0"
-description = "Stone: start from what you own, and test whether the news ever mattered."
+description = "Precedence: start from what you own, and test whether the news ever mattered."
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

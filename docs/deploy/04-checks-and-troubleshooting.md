@@ -32,7 +32,7 @@ walk `/`, `/briefing`, `/company/BX`, `/lab`, `/import`, `/practice` with the co
 
 | Symptom | Fix |
 |---|---|
-| `uv sync` says "No space left on device" | `df -h /`; free disk (`uv cache prune`, delete old `node_modules`/`.venv`, `docker system prune`). Stone needs ~6 GB. |
+| `uv sync` says "No space left on device" | `df -h /`; free disk (`uv cache prune`, delete old `node_modules`/`.venv`, `docker system prune`). Precedence needs ~6 GB. |
 | `uv run pytest` fails to connect | `createdb stone_test`; Postgres must be running (`brew services start postgresql@16`). |
 | `ingest_all.py` skips sources | The key is missing from `backend/.env`; the message names the variable. Sources without a key are skipped, not failed. |
 | `ingest_all.py` gets HTTP 403 from the SEC | `SEC_USER_AGENT` must contain a real contact email. |
@@ -42,7 +42,7 @@ walk `/`, `/briefing`, `/company/BX`, `/lab`, `/import`, `/practice` with the co
 | Summaries time out with Ollama | The model is loading (first call) or the filing is long. Try again; use a 3B model, not 7B, on a laptop. |
 | `read_filings.py` says transformers isn't installed | `cd backend && uv pip install transformers torch`. |
 | `news_tone` isn't in `/api/lab/signals` | `STONE_READERS=1` in `backend/.env`, then restart uvicorn. |
-| Frontend shows "Can't reach Stone's data" locally | The backend isn't on port 8000, or `STONE_API_URL` points elsewhere. |
+| Frontend shows "Can't reach Precedence's data" locally | The backend isn't on port 8000, or `STONE_API_URL` points elsewhere. |
 | Netlify build fails on `npm ci` | `frontend/package-lock.json` is out of step with `package.json`; run `npm install` locally and commit the lock file. |
 | Netlify `live` shows HTML instead of JSON for `/api/status` | The tunnel (ngrok free) is serving an interstitial page; use Cloudflare Tunnel. |
 | `/briefing` uses the browser's voice for some lines | Those lines have no recording yet; run `uv run backend/scripts/build_voice.py` and commit `frontend/public/saved/voice/`. |

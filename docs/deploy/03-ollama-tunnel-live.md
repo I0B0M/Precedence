@@ -130,6 +130,6 @@ In Netlify:
 
 Check `https://live--YOUR-SITE.netlify.app/api/status` returns JSON from your machine, then open
 `/` and add holdings; they come from your database now. When your machine is off, this deploy shows
-"Can't reach Stone's data"; production is unaffected.
+"Can't reach Precedence's data"; production is unaffected.
 
 Keep `live` up to date with `git checkout live && git merge main && git push`.

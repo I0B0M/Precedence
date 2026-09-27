@@ -113,12 +113,15 @@ export const LEARN_STRONG = NOT_PROVEN_WORDS
       calm: "Nothing that has mattered before is happening." };
 
 /** A Form 4 owner as people say it: the SEC files people as "Last First Middle" ("Herrington Douglas J" → "Douglas J
- *  Herrington"). Anything that looks like a company or trust is left exactly as filed. */
+ *  Herrington"), often in all caps ("FINK LAURENCE" → "Laurence Fink"). Anything that looks like a company or
+ *  trust is left exactly as filed. */
 export function personName(filed: string | null): string | null {
   if (!filed) return null;
   if (/\b(LLC|L\.?P\.?|INC|CORP|TRUST|FUND|HOLDINGS|PARTNERS|CAPITAL|FOUNDATION|LTD|CO)\b/i.test(filed)) return filed;
   const parts = filed.trim().split(/\s+/);
-  return parts.length > 1 ? [...parts.slice(1), parts[0]].join(" ") : filed;
+  const reordered = parts.length > 1 ? [...parts.slice(1), parts[0]].join(" ") : filed;
+  const allCaps = /[A-Z]/.test(reordered) && !/[a-z]/.test(reordered);
+  return allCaps ? reordered.replace(/[A-Za-z]+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : reordered;
 }
 
 /** Signal keys in plain words, for places that get only the key (e.g. fund holdings). */

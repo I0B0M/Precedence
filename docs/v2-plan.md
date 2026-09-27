@@ -1,4 +1,4 @@
-# Stone v2: ML/AI, accuracy and deployment
+# Precedence v2: ML/AI, accuracy and deployment
 
 Settled on 2026-09-27 (after the ShellHacks code freeze). The submission stays what is on main:
 the statistics engine, the rule-based briefing panel, Gemini for reading, and the saved-data demo
@@ -8,7 +8,7 @@ on Netlify. Everything below is for after the hackathon. Vocabulary follows `CON
 
 ## What "accurate" means
 
-Stone does not predict prices; it says whether a kind of news has mattered before. Three numbers
+Precedence does not predict prices; it says whether a kind of news has mattered before. Three numbers
 go on the README as the accuracy claim, measured and reported, never asserted:
 
 | Target | How it is measured | Number |

@@ -692,7 +692,7 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
   .field, .select, .readtable input { min-height: 44px; }
   .seg-choice button { min-height: 44px; }
   .list-row { min-height: 44px; }
-  .list-row span a, .today-move p a { display: inline-block; padding: 13px 0; margin: -13px 0; }   /* inline sec.gov links: a 44px tap area */
+  .list-row span a, .today-move p a, .say a { display: inline-block; padding: 13px 0; margin: -13px 0; }   /* inline sec.gov links: a 44px tap area */
   td a { display: inline-block; min-width: 44px; padding: 13px 14px 13px 0; margin: -13px -14px -13px 0; }
   .receipt .kv { font-size: 16px; }
   .receipt .kv dd { white-space: normal; }

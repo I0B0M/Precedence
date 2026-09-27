@@ -4,7 +4,7 @@
 
 **Start from what you own, and test whether the news ever mattered.**
 
-[![CI](https://github.com/I0B0M/Stone/actions/workflows/ci.yml/badge.svg)](https://github.com/I0B0M/Stone/actions/workflows/ci.yml)
+[![CI](https://github.com/I0B0M/Precedence/actions/workflows/ci.yml/badge.svg)](https://github.com/I0B0M/Precedence/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)

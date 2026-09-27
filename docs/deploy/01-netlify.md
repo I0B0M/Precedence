@@ -7,7 +7,7 @@ Ten minutes, no keys, no backend. The repo already contains everything Netlify n
 
 1. Sign in at https://app.netlify.com (GitHub login is simplest).
 2. **Add new site → Import an existing project → GitHub.**
-3. Authorize the Netlify GitHub app for the **I0B0M** organization and pick **I0B0M/Stone**.
+3. Authorize the Netlify GitHub app for the **I0B0M** organization and pick **I0B0M/Precedence**.
    If the repo isn't listed, click "Configure the Netlify app on GitHub" and grant it access to
    that repository.
 4. Netlify reads `netlify.toml` and pre-fills the settings. Check they match; don't change them:
@@ -61,5 +61,5 @@ Open the browser console on `/briefing`: it must be empty of errors.
 |---|---|
 | Build fails with a Node error | `NODE_VERSION=22` comes from `netlify.toml`; check the build log's first lines say Node 22. If you edited the file, restore it. |
 | Every route but `/` is 404 | The Next.js runtime didn't run. The build log should mention `@netlify/plugin-nextjs`; if not, the base directory is wrong (must be `frontend`). |
-| Pages load but show "Can't reach Stone's data" | `NEXT_PUBLIC_STONE_SAVED` isn't `1` for this deploy. Check the environment variables for the production context. |
+| Pages load but show "Can't reach Precedence's data" | `NEXT_PUBLIC_STONE_SAVED` isn't `1` for this deploy. Check the environment variables for the production context. |
 | `/briefing` speaks with the browser's voice, not the recorded one | `frontend/public/saved/voice/` is missing from the deploy; make sure it's committed (guide B, step 8). |

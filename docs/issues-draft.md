@@ -1,4 +1,4 @@
-# Stone — issue drafts (not yet posted)
+# Precedence — issue drafts (not yet posted)
 
 Every issue names the Blackstone brief line it answers. Order = build order.
 MUST = never cut. SHOULD / COULD = cut from the bottom if behind (13 → 12 → 11 → 10 → 9).

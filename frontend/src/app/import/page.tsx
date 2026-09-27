@@ -410,7 +410,7 @@ export default function ImportScreen() {
           <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
 
-        {empty && <div className="badline">Add a ticker and shares first.</div>}
+        {empty && <div className="badline">Add at least one ticker and share count first.</div>}
         {checkErr && <div className="badline">Can&apos;t reach our server. Try again.</div>}
         {priced.length > 0 && (
           <p className="note">Price from the latest close: {priced.map((p) => `${p.symbol}${p.day ? ` (${shortDate(p.day)})` : ""}`).join(", ")}.</p>

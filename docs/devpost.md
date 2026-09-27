@@ -5,7 +5,7 @@ link and a Discord tag. Field names follow Devpost's submission form. Submission
 
 ## Before 11:00, in this order (from the Hacker Guide)
 
-1. **Make the repo public.** https://github.com/I0B0M/Stone is private; the guide requires the GitHub link, and
+1. **Make the repo public.** https://github.com/I0B0M/Precedence is private; the guide requires the GitHub link, and
    a private link shows judges nothing. Only Ibrahim (admin) can do it: Settings → General → Danger Zone →
    Change visibility → Public.
 2. **One person creates the Devpost project** (m-ibrahimchapra or blondres04) with the **same email used to
@@ -42,7 +42,7 @@ Start from what you own, and test whether the news ever mattered. Every holding 
 ## Try it out (links)
 
 - Live demo (saved real data, no sign-in): ⟨https://YOUR-SITE.netlify.app⟩
-- Code: https://github.com/I0B0M/Stone
+- Code: https://github.com/I0B0M/Precedence
 - Best pages to open on the demo: `/briefing` (press Play), `/company/BX` (tap the O for Pro), `/signals`
 
 ## Video demo
