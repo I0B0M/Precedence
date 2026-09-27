@@ -42,15 +42,30 @@ python, fastapi, postgresql, next.js, react, typescript, three.js, gemini, quant
 
 ---
 
+## How it answers the brief (for the judges' table)
+
+| Blackstone asked for | Precedence |
+|---|---|
+| Understand what they own | One total across stocks, ETFs, a 401(k), a home and Blackstone funds; funds opened up into the companies inside them |
+| Information spread across sources | SEC filings, XBRL financials, Form 4 insider sales, prices, the 10-year yield and fund holdings on one screen per holding, each with its source and as-of date |
+| Turn information into meaningful insight | Every kind of news is tested against that stock's own history before it may ask for attention; Calm or Heads up, with the working shown |
+| Analyze their existing portfolio | Risk card (drawdown, beta, worst day), the "What you really own" treemap, a bad-day loss per holding |
+| Discover trends and risks | Signals: every past case of insider selling, rate jumps and gap downs, what followed, and whether it beat normal days |
+| Summarize complex information | Filing summaries with every figure checked against the filing's XBRL; a spoken briefing where every number is checked |
+| Visualize performance | Price and candle charts, dot-plot comparisons, the treemap, the home's map |
+| Evaluate what to invest in next | Paper trading with pretend money at Friday's close, and the same signal test on any S&P 100 stock before you buy |
+| Ask questions in natural language | The Briefing answers the questions an investor would ask, in plain sentences, before they are typed; Lite says it in words, Pro shows the proof |
+| Accessible, actionable, engaging | Lite and Pro on one switch; a Heads up only when it has mattered before; an orb that reads your portfolio to you |
+
 ## About the project
 
 ### Inspiration
 
-Blackstone's brief said investors have more information than ever, spread across sources, and that
-understanding what they own is still hard. We noticed the opposite problem is worse: every app sends
-alerts, and almost none of them can say whether the thing they're alerting about has ever mattered for
-that stock. So we built the app that starts from what you own and refuses to worry you without
-precedent. That's the name.
+Blackstone's brief says investors have more information than ever, spread across sources, and that
+understanding what they own is still hard. We noticed that the flood has a second cost: every app
+sends alerts, and almost none can say whether the thing it's alerting about has ever mattered for that
+stock. So we built the app that starts from what you own, brings the sources to one screen per holding,
+and refuses to worry you without precedent. That's the name.
 
 ### What it does
 
