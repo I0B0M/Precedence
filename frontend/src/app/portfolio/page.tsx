@@ -9,6 +9,7 @@ import { maybeAutoTour, startTour } from "@/lib/tour";
 import { BadgeKey, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
+import { PracticeRows } from "@/components/PracticeRows";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { StartFlow } from "@/components/Today";
 import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
@@ -153,6 +154,7 @@ export default function HoldingsBoard() {
       </div>
 
       <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} />
+      <PracticeRows />
 
       {status?.data === "sample" && (
         <div className="row-flex" style={{ marginTop: 20 }}>

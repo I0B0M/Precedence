@@ -609,6 +609,7 @@ html[data-mode="pro"] .rail.pro-only { display: flex !important; }
   background: #ffd60a; color: #0f0f0e; border: 1.5px solid #0f0f0e; border-radius: var(--r-ctl);
   padding: 9px 14px; font-size: 15px; font-weight: 600;
 }
+.practice-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #ffd60a; color: #0b0b0c; }
 .practice-banner b { font-family: var(--font); font-weight: 700; letter-spacing: 0.04em; margin-right: 4px; }
 .seg-choice { display: inline-grid; grid-template-columns: 1fr 1fr; border: var(--edge); border-radius: var(--r-ctl); overflow: hidden; align-self: flex-start; }
 .seg-choice button { border: 0; background: var(--bg); padding: 8px 22px; font-weight: 600; cursor: pointer; }
