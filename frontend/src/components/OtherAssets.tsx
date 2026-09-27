@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { Why } from "@/components/Why";
-import { api, ApiError, type FundLookup, type HomeEstimate, type RetirementRow } from "@/lib/api";
+import { api, ApiError, SAVED, type FundLookup, type HomeEstimate, type RetirementRow } from "@/lib/api";
 import { SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
 import { shortWallet } from "@/lib/wallets";
 import { navMoney, PRIVATE_FUNDS, PRIVATE_LITE, PRIVATE_WITHDRAW, type PrivateFundKey, type PrivateFundRow } from "@/lib/private-funds";
@@ -111,10 +111,12 @@ export function OtherAssetsForms() {
         <label className="list-head" htmlFor="h-when">Year you bought it</label>
         <input id="h-when" className="field" inputMode="numeric" maxLength={4} placeholder="2018" value={bought}
           onChange={(e) => { setBought(e.target.value.replace(/[^0-9]/g, "")); setHomeMsg(null); }} />
-        <button className="btn" type="button" disabled={!homeOk} style={{ alignSelf: "flex-start" }} onClick={addHome}>
+        {/* The saved-data demo has no server to estimate, look up or price with, so these say so rather than "Saved". */}
+        {SAVED && <p className="note">Needs the full app: the estimate comes from our server.</p>}
+        <button className="btn" type="button" disabled={!homeOk || SAVED} style={{ alignSelf: "flex-start" }} onClick={addHome}>
           {homeBusy ? "Estimating…" : "Add this home"}
         </button>
-        {!homeOk && !homeBusy && homeStarted && homeMissing.length > 0 && (
+        {!SAVED && !homeOk && !homeBusy && homeStarted && homeMissing.length > 0 && (
           <p className="note">Add {homeMissing.length > 1 ? `${homeMissing.slice(0, -1).join(", ")} and ${homeMissing[homeMissing.length - 1]}` : homeMissing[0]}.</p>
         )}
         {homeMsg && <p className={homeMsg.ok ? "okline" : "badline"}>{homeMsg.text}</p>}
@@ -137,10 +139,11 @@ export function OtherAssetsForms() {
           </div>
         ))}
         <button className="linkb" type="button" onClick={() => setFunds([...funds, { name: "", amount: "" }])}>Add a fund</button>
-        <button className="btn" type="button" disabled={!fundRows.length || fundBusy} style={{ alignSelf: "flex-start" }} onClick={addFunds}>
+        {SAVED && <p className="note">Needs the full app: the fund is matched on our server.</p>}
+        <button className="btn" type="button" disabled={!fundRows.length || fundBusy || SAVED} style={{ alignSelf: "flex-start" }} onClick={addFunds}>
           {fundBusy ? "Looking up…" : `Add ${fundRows.length > 1 ? `${fundRows.length} funds` : "this fund"}`}
         </button>
-        {fundWaiting && !fundBusy && <p className="note">Add the fund and the amount in it.</p>}
+        {!SAVED && fundWaiting && !fundBusy && <p className="note">Add the fund and the amount in it.</p>}
         {fundMsg && <p className="okline">Saved. {fundMsg}</p>}
         <p className="note">A ticker like FXAIX works best.</p>
       </div>
@@ -155,7 +158,8 @@ export function OtherAssetsForms() {
         <label className="list-head" htmlFor="pf-amount">What it&apos;s worth</label>
         <input id="pf-amount" className="field" inputMode="decimal" placeholder="$" value={pfAmount}
           onChange={(e) => { setPfAmount(e.target.value); setPfSaved(null); }} />
-        <button className="btn" type="button" disabled={num(pfAmount) == null} style={{ alignSelf: "flex-start" }}
+        {SAVED && <p className="note">Needs the full app: it&apos;s priced from its filings on our server.</p>}
+        <button className="btn" type="button" disabled={num(pfAmount) == null || SAVED} style={{ alignSelf: "flex-start" }}
           onClick={() => { addPrivateFund(pfFund, num(pfAmount)!); setPfAmount(""); setPfSaved(pfFund); }}>Add {pfFund}</button>
         {pfSaved && <p className="okline">Saved. {pfSaved} is priced monthly from its SEC filings.</p>}
         <p className="note">{PRIVATE_LITE[pfFund]}</p>

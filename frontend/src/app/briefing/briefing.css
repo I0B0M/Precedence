@@ -197,3 +197,6 @@
   .hero-orb-lines { display: none; } /* the card sits below the fold on a phone; nothing to point a line at yet */
   .orb-chip { display: none; } /* no room to float them without clipping; the big orb carries the hero alone here */
 }
+
+/* The compact strip's link to the full briefing: a 44px tap target. */
+.bf.bf-compact .bf-more .bf-link { display: inline-flex; align-items: center; min-height: 44px; }
