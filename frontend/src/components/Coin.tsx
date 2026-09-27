@@ -2,12 +2,12 @@
 
 import { useId } from "react";
 
-/** Precedence's mark: a struck gold coin, on a 24-unit grid so it stays crisp at 14–28px. A slab-serif "P",
- *  same geometry as the original mono mark, so both variants line up pixel for pixel. Original, not traced. */
+/** Precedence's mark: a struck gold coin, on a 24-unit grid so it stays crisp at 14–28px. A "P" with a round
+ *  bowl (the owner-approved fix), the same path in the gold and mono variants, so they line up pixel for pixel.
+ *  Original, not traced. */
 export const COIN_P_PATH =
-  "M8.6,7 L12,7 L12,8 L11,8 L11,16 L12,16 L12,17 L8.6,17 L8.6,16 L9.6,16 L9.6,8 L8.6,8 Z " +
-  "M11,8 L15.5,8 L15.5,12.5 L11,12.5 Z " +
-  "M12.3,9 L14.3,9 L14.3,11.5 L12.3,11.5 Z";
+  "M8.6,7 H12.4 A3,3 0 0 1 12.4,13 H10.6 V17 H8.6 Z " +  // stem and round bowl
+  "M10.6,8.8 H12.3 A1.2,1.2 0 0 1 12.3,11.2 H10.6 Z";  // the counter, cut out by evenodd
 
 const GOLD_LIGHT = "#F3D27A";
 const GOLD_MID = "#C8952E";
