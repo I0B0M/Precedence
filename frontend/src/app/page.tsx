@@ -91,7 +91,7 @@ function ExampleCard({ board, sparks }: { board: PortfolioOut | null; sparks: Re
           );
         })}
       </div>
-      <p className="note">Prices from Alpaca (IEX); badges from Stone&apos;s tests on SEC and FRED data.</p>
+      <p className="note">Prices from Alpaca (IEX); badges from our tests on SEC and FRED data.</p>
     </div>
   );
 }

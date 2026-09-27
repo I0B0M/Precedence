@@ -41,7 +41,7 @@ export default function PracticeScreen() {
   useEffect(() => {
     api.companies().then((c) => {
       setCos(c);
-      // Arriving from Signals (?t=BX): start the ticket on that stock, if Stone has a price for it.
+      // Arriving from Signals (?t=BX): start the ticket on that stock, if we have a price for it.
       const t = new URLSearchParams(window.location.search).get("t");
       if (t && c.some((x) => x.ticker === t && x.last_close != null)) setSymbol(t);
     }).catch(setError);
@@ -101,7 +101,7 @@ export default function PracticeScreen() {
           <p className="sc-change" style={{ fontWeight: 400 }}>{money(s.cash)} practice cash · {money(invested)} in {held.length} holding{held.length === 1 ? "" : "s"}</p>
         </div>
         <p className="note" style={{ maxWidth: "36ch" }}>
-          Started from what you own plus {money(PRACTICE_CASH)} practice cash{asOf ? `. Prices: close ${shortDate(asOf)}, from Stone's price data.` : "."}
+          Started from what you own plus {money(PRACTICE_CASH)} practice cash{asOf ? `. Prices: close ${shortDate(asOf)}, from our price data.` : "."}
         </p>
       </div>
 

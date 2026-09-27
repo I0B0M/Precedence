@@ -58,7 +58,7 @@ export function HoldingsRail({ rows }: { rows: ExposureRow[] }) {
           })}
         </div>
       )}
-      {asOf && <p className="note">Daily closes to {shortDate(asOf)}, from Stone&apos;s price data.</p>}
+      {asOf && <p className="note">Daily closes to {shortDate(asOf)}, from our price data.</p>}
     </div>
   );
 }

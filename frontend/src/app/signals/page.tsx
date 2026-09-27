@@ -250,7 +250,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
           </p>
         )}
       </div>
-      <p className="note">Prices from the daily bars in Stone&apos;s database; events timed from SEC acceptance and FRED release.</p>
+      <p className="note">Prices from the daily bars in our database; events timed from SEC acceptance and FRED release.</p>
       <div className="next-step">
         <p>Try a trade in {ticker} with pretend money.</p>
         <Link className="btn t-go" href={`/paper?t=${ticker}`}>Paper trade {ticker}</Link>

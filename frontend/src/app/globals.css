@@ -117,6 +117,18 @@ html[data-mode="pro"] .grid2.pro-only { display: grid !important; }
 }
 .top.scrolled { border-bottom-color: var(--sep); }
 .logo-link { text-decoration: none; color: inherit; }
+.brand .logo { letter-spacing: -0.035em; }
+/* The castle is the Lite/Pro switch: 44px hit area, the mark in the accent colour. */
+.csw {
+  flex: none; width: 44px; min-width: 44px; height: 44px; margin: -10px -6px -10px -10px; padding: 0; border: 0; background: none; cursor: pointer;
+  display: grid; place-items: center; color: var(--accent); border-radius: 10px;
+  transition: transform 0.2s var(--ease-out), background-color 0.2s var(--ease-out);
+}
+.csw:hover { background: var(--accent-tint); }
+.csw:active { transform: scale(0.92); }
+.castle { display: block; }
+.brand { align-items: center; }
+@media (max-width: 900px) { .modetag { display: none; } }
 .top-end { display: flex; align-items: center; gap: 12px; }
 .menu-btn { display: none; width: 44px; height: 44px; border: 0; background: none; cursor: pointer; place-items: center; padding: 0; }
 .burger, .burger::before, .burger::after { display: block; width: 20px; height: 2px; background: var(--text); border-radius: 1px; transition: transform 0.3s var(--ease-out), opacity 0.2s var(--ease-out); }

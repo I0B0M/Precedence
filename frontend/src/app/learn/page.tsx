@@ -29,7 +29,7 @@ export default function Learn() {
     <section className="stack" style={{ gap: 56 }}>
       <div className="stack" style={{ gap: 12 }}>
         <span className="kicker">Learn</span>
-        <h1>How Stone works</h1>
+        <h1>How Precedence works</h1>
         <p className="lede">Public data in, one plain answer out.</p>
       </div>
 
@@ -51,7 +51,7 @@ export default function Learn() {
         <div className="learn-grid three">
           <div className="learn-tile"><StateBadge state="CALM" /><p>Nothing that has mattered before is happening.</p></div>
           <div className="learn-tile"><StateBadge state="WATCH" /><p>Something that has mattered for this stock before is happening now.</p></div>
-          <div className="learn-tile"><StateBadge state={null} /><p>Stone hasn&apos;t tested this one, so it says nothing.</p></div>
+          <div className="learn-tile"><StateBadge state={null} /><p>We haven&apos;t tested this one, so it says nothing.</p></div>
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export default function Learn() {
           <Figure label="STRONG" words="The whole bar is right of the line: it has mattered." left={58} width={26} normal={40} />
           <Figure label="NOT PROVEN" words="The bar crosses the line: could be chance." left={30} width={44} normal={48} />
         </div>
-        <p className="note">Illustrations, not data. Every real bar in Stone comes from that stock&apos;s own history.</p>
+        <p className="note">Illustrations, not data. Every real bar here comes from that stock&apos;s own history.</p>
         <div className="pro-only card">
           <h3>The rules</h3>
           <ul className="learn-rules">

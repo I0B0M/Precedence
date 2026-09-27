@@ -13,7 +13,7 @@ export function Footer() {
     <footer className="foot">
       <div className="foot-grid">
         <div className="foot-col">
-          <span className="kicker">Stone</span>
+          <span className="kicker">Precedence</span>
           <nav aria-label="Footer">
             {NAV.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
           </nav>

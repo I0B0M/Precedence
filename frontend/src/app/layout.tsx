@@ -11,7 +11,7 @@ const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["700", "800
 const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-figtree" });
 
 export const metadata: Metadata = {
-  title: "Stone",
+  title: "Precedence",
   description: "Start from what you own, and test whether the news ever mattered.",
 };
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Castle } from "@/components/Castle";
 import { useMode, type Mode } from "@/lib/mode";
 import { NAV } from "@/lib/nav";
 
@@ -46,13 +47,13 @@ export function Header() {
   return (
     <header className={`top${scrolled ? " scrolled" : ""}`}>
       <div className="brand">
-        {/* ST◯NE: the O is the switch. Ring = Lite, filled = Pro. */}
-        <span className="logo">
-          <Link href="/" aria-label="Stone home" className="logo-link"><span aria-hidden>ST</span></Link>
-          <button className="osw" type="button" role="switch" onClick={toggle} aria-checked={mode === "pro"}
-            aria-label="Pro mode" title={mode === "pro" ? "Tap the O for Lite" : "Tap the O for Pro"} />
-          <Link href="/" tabIndex={-1} aria-hidden className="logo-link"><span>NE</span></Link>
-        </span>
+        {/* The castle is the switch: tap it to flip between Lite and Pro. The wordmark goes home. */}
+        <button className="csw" type="button" role="switch" onClick={toggle} aria-checked={mode === "pro"}
+          aria-label="Switch between Lite and Pro" title={mode === "pro" ? "Tap the castle for Lite" : "Tap the castle for Pro"}>
+          <Castle size={26} />
+        </button>
+        <Link href="/" className="logo logo-link">Precedence</Link>
+        <span className="modetag">{mode === "pro" ? "Pro · tap the castle for Lite" : "Lite · tap the castle for Pro"}</span>
       </div>
       <nav className="nav" aria-label="Main">
         {NAV.map((l) => (

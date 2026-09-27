@@ -81,7 +81,7 @@ export default function HoldingsBoard() {
         <p className="note" style={{ maxWidth: "34ch" }}>
           <span className="lite-only">Tap a holding to see more.</span>
           <span className="pro-only">WATCH only when a signal that has proven itself on this stock is firing.</span>
-          {" "}{board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in Stone's price data."}
+          {" "}{board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in our price data."}
         </p>
       </div>
 
@@ -101,7 +101,7 @@ export default function HoldingsBoard() {
                   <span className="tk">{e.symbol}</span>
                   <span className="nm">{e.name}</span>
                   <span className="say">
-                    <span className="lite-only">{row?.kind === "crypto" ? "Crypto: Stone has no signals for it yet." : row?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
+                    <span className="lite-only">{row?.kind === "crypto" ? "Crypto: no signals for it yet." : row?.kind === "etf" && !e.firing.length ? "A fund: many stocks in one." : liteSummary(e.firing)}</span>
                     <span className="pro-only">{proSummary(e.firing)}</span>
                   </span>
                 </span>
@@ -195,7 +195,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
         {isFund && (
           <p>{fund?.as_of ? `A fund. Its holdings are from ${shortDate(fund.as_of)}.` : "A fund. Its holdings aren't loaded yet, so it's shown as one line."}</p>
         )}
-        {isCrypto && <p>Crypto isn&apos;t covered by Stone&apos;s signals yet, so there&apos;s nothing tested to report.</p>}
+        {isCrypto && <p>Crypto isn&apos;t covered by our signals yet, so there&apos;s nothing tested to report.</p>}
         {!isCrypto && (!isFund || e.firing.length > 0) && (
           <>
             {e.firing.length > 0 ? (
