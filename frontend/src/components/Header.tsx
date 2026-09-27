@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { startTour } from "@/lib/tour";
 import { useMode, type Mode } from "@/lib/mode";
 
 // Bringing holdings in lives on the Portfolio page ("Add an account") and in the start flow, not in the nav.
@@ -20,6 +21,9 @@ const MODES: { value: Mode; label: string }[] = [
 export function Header() {
   const { mode, toggle, set } = useMode();
   const path = usePathname();
+  const router = useRouter();
+  // The tour walks the board; from any other page, go there first.
+  const tour = () => (path === "/" && document.querySelector(".pf-head") ? startTour() : router.push("/?tour=1"));
   return (
     <header className="top">
       <div className="brand">
@@ -40,6 +44,7 @@ export function Header() {
             {l.label}
           </Link>
         ))}
+        <button type="button" className="tourb" onClick={tour}>Tour</button>
       </nav>
       <div className="seg" role="group" aria-label="Mode" data-value={mode}>
         {MODES.map((m) => (

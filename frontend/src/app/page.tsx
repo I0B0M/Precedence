@@ -12,6 +12,7 @@ import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, SAVED, SAVED_EXAMPLE, SAVED_TICKERS, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
+import { maybeAutoTour, startTour } from "@/lib/tour";
 import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
@@ -34,6 +35,17 @@ export default function HoldingsBoard() {
     if (!holdings?.length) return;
     api.portfolio(holdings).then(setBoard).catch(setError);
   }, [holdings]);
+
+  // The guided tour: once by itself on a first visit, or when the header's Tour button sent us here (?tour=1).
+  const ready = !!board;
+  useEffect(() => {
+    if (!ready) return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("tour") === "1") {
+      window.history.replaceState(null, "", "/");
+      setTimeout(startTour, 400);
+    } else maybeAutoTour();
+  }, [ready]);
 
   // 30 trading days of closes per row, from the company endpoint (the same prices the company page charts).
   const symbols = board?.exposure.map((e) => e.symbol).join(",") ?? "";
