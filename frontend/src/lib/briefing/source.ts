@@ -28,7 +28,9 @@ export function normalizeScript(raw: unknown, names: Record<string, string>): Sc
       pro: typeof l.pro === "string" && l.pro.trim() ? l.pro.trim() : undefined,
       tone, cites, ticker,
       title: typeof l.title === "string" ? l.title : undefined,
-      link: typeof l.link === "string" && l.link.startsWith("/") ? l.link : ticker ? `/company/${ticker}` : undefined,
+      // A bare "/" is never a real destination for one line's evidence (it is the whole landing page), so
+      // treat it the same as no link at all rather than sending a judge to a dead end.
+      link: typeof l.link === "string" && l.link.startsWith("/") && l.link !== "/" ? l.link : ticker ? `/company/${ticker}` : undefined,
     });
   });
   if (!lines.length) return null;

@@ -48,7 +48,7 @@ function citeChip(cite: string, line: Line): { label: string; href: string } | n
     case "fact": return { label: `Filing figure · ${rest.replace(/_/g, " ")}`, href: t ? `/company/${t}` : "/" };
     case "fund": return { label: `Inside ${rest}`, href: `/fund/${rest}` };
     case "rate": return { label: `10-year yield · ${shortDate(rest)}`, href: "/company/SPY" };
-    case "portfolio": return { label: rest === "exposure" ? "What you really own" : "The board", href: "/" };
+    case "portfolio": return { label: rest === "exposure" ? "What you really own" : "The board", href: "/portfolio" };
     default: return null;
   }
 }
