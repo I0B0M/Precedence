@@ -97,6 +97,7 @@ export function StockChart({ ticker, name, prices, signals, initialSignal, badge
           <h1>{name}</h1>
           {badge}
         </div>
+        <p className="note sc-price-label">{hover != null ? `Close on ${shortDate(shown.day)}` : `Price at ${new Date(last.day + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })}'s close`}</p>
         <div className="sc-price" aria-live="polite">{money(shown.close, true)}</div>
         <p className="sc-change">
           <span className={dir}>{diff < 0 ? "−" : "+"}{money(Math.abs(diff), true)} ({pct(rel)})</span>
@@ -171,6 +172,7 @@ export function StockChart({ ticker, name, prices, signals, initialSignal, badge
           )}
         </div>
       )}
+      <p className="note pro-only pro-add">Where this comes from: daily prices from {sources?.close ?? "Alpaca (IEX feed)"}, split-adjusted; marks from Precedence&apos;s signal tests on SEC filings, FRED rates and those prices.</p>
       <p className="note">Daily closes to {shortDate(last.day)}.{candles && ` Candles: open and close from ${sources?.close ?? "Alpaca (IEX feed)"}, high and low from ${sources?.high_low ?? "Alpaca (IEX feed)"}; marks under them are past cases (filled = came true).`}</p>
     </section>
   );
