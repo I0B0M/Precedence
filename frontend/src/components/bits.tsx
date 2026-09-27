@@ -1,28 +1,57 @@
+"use client";
+
+import { useEffect, useId, useRef, useState } from "react";
 import type { Label, Scan, SignalResult, State } from "@/lib/api";
 import { whole } from "@/lib/format";
 
-/** CALM / WATCH. A fund or stock the engine hasn't tested gets a quiet "Not tested", never "Calm". */
+const BADGE_TIPS = {
+  WATCH: "Has come before drops. Not a prediction.",
+  CALM: "Nothing with a track record is happening.",
+  UNTESTED: "Not tested yet.",
+} as const;
+
+/** CALM / WATCH, with a tiny tooltip on hover, tap or focus. A fund or stock the engine hasn't tested gets a quiet
+ *  "Not tested", never "Calm". Inside a row that is already a link or button, the badge isn't focusable itself
+ *  (no nested controls); the title still carries the tip there. */
 export function StateBadge({ state }: { state: State | null }) {
-  if (state == null) return <span className="badge untested">Not tested</span>;
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const ref = useRef<HTMLSpanElement>(null);
+  const tip = BADGE_TIPS[state ?? "UNTESTED"];
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el && !el.parentElement?.closest("a, button")) el.tabIndex = 0;
+  }, []);
+
   return (
-    <span className={`badge ${state === "WATCH" ? "watch" : "calm"}`}>
-      <span className="lite-only">{state === "WATCH" ? "Heads up" : "Calm"}</span>
-      <span className="pro-only">{state}</span>
+    <span ref={ref} className={`badge ${state == null ? "untested" : state === "WATCH" ? "watch" : "calm"}`}
+      title={tip} aria-describedby={open ? id : undefined} style={{ position: "relative" }}
+      onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
+      onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}>
+      {state == null ? "Not tested" : (
+        <>
+          <span className="lite-only">{state === "WATCH" ? "Heads up" : "Calm"}</span>
+          <span className="pro-only">{state}</span>
+        </>
+      )}
+      {open && (
+        <span role="tooltip" id={id}
+          style={{ position: "absolute", bottom: "calc(100% + 6px)", right: 0, zIndex: 20, whiteSpace: "nowrap", pointerEvents: "none",
+            background: "var(--text)", color: "var(--bg)", fontSize: 12, fontWeight: 500, padding: "4px 8px", borderRadius: 6 }}>
+          {tip}
+        </span>
+      )}
     </span>
   );
 }
 
-/** What the badge means, in both modes, so Heads up and WATCH (Calm and CALM) are clearly the same thing. */
+/** Pro only: one line mapping WATCH / CALM to Lite's words. Lite shows no key; the badge's own tooltip explains it. */
 export function BadgeKey() {
   return (
-    <p className="note badge-key">
-      <span className="lite-only">
-        <b>Heads up</b> = this has happened more often than usual after news like this, not that it&apos;s likely.{" "}
-        <b>Calm</b> = nothing that has mattered before is happening.
-      </span>
-      <span className="pro-only">
-        <b>WATCH</b> (Lite: Heads up) = a STRONG signal for this stock is firing now. <b>CALM</b> (Lite: Calm) = none is.
-      </span>
+    <p className="note badge-key pro-only">
+      <b>WATCH</b> (Lite: Heads up) = a STRONG signal for this stock is firing now. <b>CALM</b> (Lite: Calm) = none is.
     </p>
   );
 }

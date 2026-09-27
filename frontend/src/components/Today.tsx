@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api, type Scan, type Today } from "@/lib/api";
 import { Why } from "@/components/Why";
+import { useMode } from "@/lib/mode";
 import { shortDate } from "@/lib/format";
 import { SHOW_CRYPTO } from "@/lib/flags";
 import { FORM_WORDS, SIGNAL_WORDS } from "@/lib/words";
@@ -131,7 +132,8 @@ function Countdown({ stages }: { stages: Stage[] }) {
 
 /** On the board: from everything that landed this week, down to what has mattered before for what you own. */
 export function TodayFunnel({ symbols }: { symbols: string[] }) {
-  const t = useToday(symbols);
+  const { mode } = useMode();
+  const t = useToday(mode === "pro" ? symbols : []);
   const [scan, setScan] = useState<Scan | null>(null);
   useEffect(() => {
     api.scan().then(setScan).catch(() => {});
@@ -148,7 +150,8 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
     ];
     return out.filter((x): x is Stage => x !== null && Number.isFinite(x.n));
   }, [t]);
-  if (!t?.day || !t.holdings || !stages.length) return null;
+  // Lite shows nothing here: the board header already says how many things are worth a look.
+  if (mode !== "pro" || !t?.day || !t.holdings || !stages.length) return null;
   const h = t.holdings, w = t.week;
   const mine = w && h.week_filings ? h.week_filings : h.filings;
   const about = mine.count + h.signals.firing;
