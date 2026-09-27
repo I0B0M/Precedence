@@ -10,7 +10,7 @@ import { readHoldings } from "@/lib/holdings";
 import { useOtherAssets } from "@/lib/other-assets";
 import { fundLine } from "@/lib/words";
 import { SHOW_PRIVATE_FUNDS } from "@/lib/flags";
-import { PRIVATE_FUNDS, PRIVATE_LITE, privateFund, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
+import { navMoney, PRIVATE_FUNDS, PRIVATE_LITE, privateFund, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
 
 // The S&P 500 funds and QQQ that Precedence has fund pages for, shown after the funds you hold.
 const SHOWN = ["SPY", "VOO", "IVV", "QQQ"];
@@ -130,7 +130,7 @@ function PrivateRow({ symbol, p }: { symbol: PrivateFundKey; p: PrivateFundPage 
         <span className="note" style={{ display: "block" }}>{PRIVATE_LITE[symbol]}</span>
         {p?.nav && (
           <span className="note pro-only pro-add" style={{ display: "block" }}>
-            {money(p.nav.value, true)} a share, Class {p.nav.share_class}, {shortDate(p.nav.as_of)}
+            {navMoney(p.nav.value)} a share, Class {p.nav.share_class}, {shortDate(p.nav.as_of)}
             {p.returns.m1 != null ? ` · value per share ${pct(p.returns.m1)} in the last month (distributions not included)` : ""} · {p.source}
           </span>
         )}

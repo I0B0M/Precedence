@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { Why } from "@/components/Why";
-import { dateTimeET, money, pct } from "@/lib/format";
-import { isPrivateFund, PRIVATE_LIQUIDITY, PRIVATE_LITE, PRIVATE_RETURN_NOTE, privateFund, shortQuote, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
+import { dateTimeET, pct } from "@/lib/format";
+import { isPrivateFund, navMoney, PRIVATE_LIQUIDITY, PRIVATE_LITE, PRIVATE_RETURN_NOTE, privateFund, shortQuote, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
 
 const monthYear = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
@@ -19,9 +19,9 @@ function NavLine({ points }: { points: { as_of: string; nav: number }[] }) {
   const up = vs[vs.length - 1] >= vs[0];
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" className={up ? "up" : "down"}
-      aria-label={`Monthly value from ${monthYear(points[0].as_of)} to ${monthYear(points[points.length - 1].as_of)}: ${money(vs[0], true)} to ${money(vs[vs.length - 1], true)}`}>
+      aria-label={`Monthly value from ${monthYear(points[0].as_of)} to ${monthYear(points[points.length - 1].as_of)}: ${navMoney(vs[0])} to ${navMoney(vs[vs.length - 1])}`}>
       <polyline points={xy.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-      {xy.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3" fill="currentColor"><title>{monthYear(points[i].as_of)}: {money(points[i].nav, true)}</title></circle>)}
+      {xy.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3" fill="currentColor"><title>{monthYear(points[i].as_of)}: {navMoney(points[i].nav)}</title></circle>)}
     </svg>
   );
 }
@@ -56,7 +56,7 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
         </div>
         {p.nav && (
           <div className="co-price">
-            <div className="bignum">{money(p.nav.value, true)}</div>
+            <div className="bignum">{navMoney(p.nav.value)}</div>
             <p className="mute">
               Value per share, {monthYear(p.nav.as_of)}
               <Why what={`${p.symbol} monthly value`} source={p.source} asOf={p.nav.as_of}
@@ -118,7 +118,7 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
                 {[...p.history].reverse().map((h) => (
                   <tr key={h.as_of}>
                     <td data-label="Month"><span>{monthYear(h.as_of)}</span></td>
-                    <td data-label="Value per share" className="num"><b>{money(h.nav, true)}</b></td>
+                    <td data-label="Value per share" className="num"><b>{navMoney(h.nav)}</b></td>
                     <td data-label="Filing"><a href={h.url} target="_blank" rel="noopener noreferrer">sec.gov</a></td>
                   </tr>
                 ))}

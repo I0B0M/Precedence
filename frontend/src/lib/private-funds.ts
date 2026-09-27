@@ -23,6 +23,10 @@ export const PRIVATE_LIQUIDITY: Record<PrivateFundKey, string> = {
 /** A filing quote is shown only when it's one short sentence (25 words or fewer). */
 export const shortQuote = (t: string | null | undefined) => !!t && t.trim().split(/\s+/).length <= 25;
 
+/** Value per share as the filing states it, 2 to 4 decimals ($14.685, $23.60): never rounded to cents. */
+export const navMoney = (v: number | null | undefined) =>
+  v == null ? "—" : "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
 export const isPrivateFund = (s: string): s is PrivateFundKey => (PRIVATE_FUNDS as readonly string[]).includes(s.toUpperCase());
 
 
