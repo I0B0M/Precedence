@@ -149,7 +149,7 @@ export default function FundScreen() {
                     <div key={`${x.ticker}-${x.accepted_at}-${x.form}`} className="list-row">
                       <span><b>{x.ticker}</b> {FORM_WORDS[x.form] ?? x.form}{x.count > 1 ? ` ×${x.count}` : ""}</span>
                       <span className="mute">
-                        {shortDate(x.accepted_at)}{x.url && <> · <a href={x.url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}
+                        {shortDate(x.accepted_at)}{x.url && <> · <a href={x.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "13px 6px", margin: "-13px -6px" }}>sec.gov</a></>}
                       </span>
                     </div>
                   ))}
