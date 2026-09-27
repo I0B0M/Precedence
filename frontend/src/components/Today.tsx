@@ -62,7 +62,7 @@ export function TodayMarket({ t }: { t: Today }) {
         </p>
         <p>On {shortDate(t.day)} alone: {marketWords(t, false)}.</p>
         <p className="note">
-          Filings from {SOURCES[w.filings.source] ?? w.filings.source}, {w.filings.companies} companies
+          Filings from {SOURCES[w.filings.source] ?? w.filings.source}, {plural(w.filings.companies, "company", "companies")}
           {w.rate ? `; 10-year Treasury rate ${w.rate.first_value.toFixed(2)}% → ${w.rate.last_value.toFixed(2)}% (${w.rate.change >= 0 ? "+" : ""}${w.rate.change.toFixed(2)} pt), from ${SOURCES[w.rate.source] ?? w.rate.source}` : ""}.
         </p>
       </div>

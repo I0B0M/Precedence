@@ -94,6 +94,9 @@ export function OtherAssetsForms() {
   );
 }
 
+// The badge and Remove stack in the row's end column, which is sized for a badge alone.
+const END = { flexDirection: "column", alignItems: "flex-end", gap: 4 } as const;
+
 /** Board: what you added that Stone can't value or test yet. Not counted in the total. */
 export function OtherAssetsRows() {
   const all = useOtherAssets();
@@ -106,30 +109,39 @@ export function OtherAssetsRows() {
         {v.properties.map((p) => (
           <div key={p.id} className="hitem">
             <div className="hrow other">
-              <span><span className="tk">Home</span><span className="nm">{p.place}</span></span>
-              <span className="say">Bought for {money(p.price)} in {monthWords(p.bought)}. Estimate coming soon.</span>
+              <span className="who">
+                <span className="tk">Home</span><span className="nm">{p.place}</span>
+                <span className="say">Bought for {money(p.price)} in {monthWords(p.bought)}. Estimate coming soon.</span>
+              </span>
+              <span className="sp" aria-hidden />
               <span className="val">Estimate<small className="mute">coming soon</small></span>
-              <span className="hend"><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home in ${p.place}`}>Remove</button></span>
+              <span className="hend" style={END}><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home in ${p.place}`}>Remove</button></span>
             </div>
           </div>
         ))}
         {v.retirement.map((r) => (
           <div key={r.id} className="hitem">
             <div className="hrow other">
-              <span><span className="tk">{r.account}</span><span className="nm">{r.name}</span></span>
-              <span className="say">{money(r.amount)}, as you entered it. Matching this fund to an index comes next.</span>
+              <span className="who">
+                <span className="tk">{r.account}</span><span className="nm">{r.name}</span>
+                <span className="say">{money(r.amount)}, as you entered it. Matching this fund to an index comes next.</span>
+              </span>
+              <span className="sp" aria-hidden />
               <span className="val">{money(r.amount)}<small className="mute">you entered</small></span>
-              <span className="hend"><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`}>Remove</button></span>
+              <span className="hend" style={END}><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`}>Remove</button></span>
             </div>
           </div>
         ))}
         {v.crypto.map((c) => (
           <div key={c.id} className="hitem">
             <div className="hrow other">
-              <span><span className="tk">{c.symbol}</span><span className="nm">Crypto</span></span>
-              <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol}, as you entered it. Price coming soon.</span>
+              <span className="who">
+                <span className="tk">{c.symbol}</span><span className="nm">Crypto</span>
+                <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol}, as you entered it. Price coming soon.</span>
+              </span>
+              <span className="sp" aria-hidden />
               <span className="val">Price<small className="mute">coming soon</small></span>
-              <span className="hend"><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`}>Remove</button></span>
+              <span className="hend" style={END}><StateBadge state={null} /><button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`}>Remove</button></span>
             </div>
           </div>
         ))}

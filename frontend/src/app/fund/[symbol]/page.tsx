@@ -33,7 +33,15 @@ export default function FundScreen() {
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    loadFund(symbol).then(setF).catch(setError);
+    let live = true; // moving to another fund drops the answer still on its way for this one
+    loadFund(symbol).then((v) => {
+      if (live) setF(v);
+    }).catch((e) => {
+      if (live) setError(e);
+    });
+    return () => {
+      live = false;
+    };
   }, [symbol]);
 
   if (error) return isNotFound(error) ? <NotFollowed ticker={symbol} /> : <ApiProblem />;
@@ -44,6 +52,8 @@ export default function FundScreen() {
   const more = f.total_holdings_count - top.length;
   const unseen = Math.max(0, 1 - f.looked_through_share);
   const source = f.holdings_source ? SOURCES[f.holdings_source] ?? f.holdings_source : null;
+  // Whose filings "What happened inside" covers: the API reads all listed holdings (top 25), the fallback its top 10.
+  const filedFor = f.built_from === "api" ? f.holdings.length : Math.min(10, f.holdings.length);
 
   return (
     <section className="stack" style={{ gap: 28 }}>
@@ -138,8 +148,8 @@ export default function FundScreen() {
                     </div>
                   ))}
                 </div>
-              ) : <p className="mute">No SEC filings from its top 10 holdings in Stone&apos;s data {spanWords(f.filings_span, "this week")}.</p>}
-              <p className="note">Filings from SEC EDGAR, for the fund&apos;s top 10 holdings.</p>
+              ) : <p className="mute">No SEC filings from its top {filedFor} holdings in Stone&apos;s data {spanWords(f.filings_span, "this week")}.</p>}
+              <p className="note">Filings from SEC EDGAR, for the fund&apos;s top {filedFor} holdings.</p>
             </div>
           </div>
         </div>
@@ -166,7 +176,9 @@ export default function FundScreen() {
           </div>
           <p className="note">
             Weights from {source ?? "the fund's holdings file"}{f.holdings_as_of ? `, as of ${shortDate(f.holdings_as_of)}` : ""}; {w(f.looked_through_share)} of the fund
-            is in companies Stone tracks. Holdings under 1% of the fund aren&apos;t tested, so they show &quot;Not tested&quot;.
+            is in companies Stone tracks. {f.built_from === "api"
+              ? <>Companies Stone doesn&apos;t track show &quot;Not tested&quot;.</>
+              : <>Holdings under 1% of the fund aren&apos;t tested, so they show &quot;Not tested&quot;.</>}
             {f.built_from === "existing endpoints" && " Built from Stone's portfolio look-through until the fund endpoint ships."}
           </p>
         </div>

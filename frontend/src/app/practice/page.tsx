@@ -56,7 +56,13 @@ export default function PracticeScreen() {
     const holdings = Object.entries(s.positions).map(([sym, sh]) => ({ symbol: sym, shares: sh }));
     if (!holdings.length) return;
     const key = posKey;
-    api.portfolio(holdings).then((data) => setBoardFor({ key, data })).catch(() => {});
+    let live = true; // two quick trades: the older answer must not land last and blank the badges
+    api.portfolio(holdings).then((data) => {
+      if (live) setBoardFor({ key, data });
+    }).catch(() => {});
+    return () => {
+      live = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posKey]);
   const board = boardFor?.key === posKey ? boardFor.data : null;
