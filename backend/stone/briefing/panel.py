@@ -115,7 +115,7 @@ def company_briefing(detail: dict) -> Briefing:
         said = f"Precedence hasn't tested any signals for {name} yet, so it can't say whether news matters here."
     else:
         said = f"Precedence ran {ran} test{'' if ran == 1 else 's'} on {name}, and " + (
-            f"{proven} of what is happening now has mattered before." if proven
+            f"{proven} of what is happening now {'is' if proven == 1 else 'are'} worth a look." if proven
             else "nothing happening now has mattered before.")
     closing = Line(f"{ticker}:closing", "note" if proven or not ran else "calm", said, (ran, proven), cites,
                    ticker, "That's all", f"/company/{ticker}")
@@ -199,7 +199,7 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
         said = "That's everything: Precedence hasn't tested any signals for these holdings yet."
     else:
         said = f"That's everything: Precedence ran {ran} test{'' if ran == 1 else 's'} on your holdings, and " + (
-            f"only {proven} of the signals happening now {'has' if proven == 1 else 'have'} mattered before."
+            f"only {proven} of the signals happening now {'is' if proven == 1 else 'are'} worth a look."
             if proven else "nothing happening now has mattered before.")
     closing = Line("portfolio:closing", "calm", said, (ran, proven), ("portfolio:states",), None, "That's all", "/")
     spoken_names = tuple(n for t, name in [*names.items(), *fund_names.items()] for n in (name, ex.cap(name), t))

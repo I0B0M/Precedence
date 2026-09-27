@@ -203,7 +203,7 @@ def test_saved_portfolio_script_leads_with_what_needs_a_look(saved):
                     "yet to check it on each half of the history.")
     assert "The S&P 500 fund was lower 5 trading days later 10 of the last 15 times, against 38% of normal days." in t
     assert not any("held up" in x for x in t)  # no saved result has 10+ cases in each half
-    assert t[-1] == "That's everything: Precedence ran 16 tests on your holdings, and only 2 of the signals happening now have mattered before."
+    assert t[-1] == "That's everything: Precedence ran 16 tests on your holdings, and only 2 of the signals happening now are worth a look."
     assert len(t) <= 16
     pro = {line.id: line.pro for line in saved["portfolio"].lines}
     assert pro["AMZN:insider_cluster:record"] == (

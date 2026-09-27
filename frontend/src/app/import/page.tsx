@@ -473,13 +473,14 @@ export default function ImportScreen() {
 
       <div className="card" id="wallet" style={{ scrollMarginTop: 110 }}>
         <h3>Add a crypto wallet</h3>
-        <p className="note">Its balance isn&apos;t loaded yet, so the wallet is kept with no value until it can be.</p>
+        <p className="note">{SAVED ? "Needs the full app to read a wallet's balance."
+          : "Its balance isn't loaded yet, so the wallet is kept with no value (and out of your total) until it can be."}</p>
         <div className="row-flex">
           <label htmlFor="wallet-address"><b>Wallet address</b></label>
           <input id="wallet-address" className="field" value={wallet} placeholder="0x…" autoCapitalize="none" autoCorrect="off"
             spellCheck={false} onChange={(e) => { setWallet(e.target.value); setWalletErr(null); }}
             onKeyDown={(e) => e.key === "Enter" && addWalletRow()} style={{ flex: "1 1 16em", minWidth: 0 }} />
-          <button className="btn light" type="button" onClick={addWalletRow}>Add wallet</button>
+          <button className="btn light" type="button" onClick={addWalletRow} disabled={SAVED}>Add wallet</button>
         </div>
         {walletErr && <div className="badline">{walletErr}</div>}
         {other.wallets.length > 0 && (

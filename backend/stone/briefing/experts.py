@@ -372,7 +372,7 @@ def look_through_expert(board: dict | None, names: dict[str, str]) -> list[Point
     top = max(stocks, key=lambda e: e["total"])
     fund_names = and_list([name_of({"ticker": f["symbol"], "name": names.get(f["symbol"])}) for f in funds])
     text = (f"Counting what's inside {fund_names}, your biggest real position is "
-            f"{names.get(top['symbol'], top['name'])}, at {pct(top['share_of_total'])} of everything you own.")
+            f"{names.get(top['symbol'], top['name'])}, at {pct(top['share_of_total'])} of your investments.")
     line = Line("portfolio:look_through", "note", text, (top["share_of_total"],), ("portfolio:exposure",),
                 top["symbol"], "What you really own", "/")
     via = {f: v for f, v in (top.get("via_etf") or {}).items() if v}
