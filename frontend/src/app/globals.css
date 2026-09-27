@@ -654,3 +654,7 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* Phone: Epilogue is wider than the old face, so the wordmark steps down to clear the Add account pill (to 360px). */
+@media (max-width: 480px) { .logo { font-size: 21px; } }
+@media (max-width: 380px) { .logo { font-size: 19px; } }

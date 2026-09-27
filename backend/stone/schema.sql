@@ -114,6 +114,17 @@ create table if not exists signal_scans (
 -- across every tested pair in that scan (null for scans run before this was added).
 alter table signal_scans add column if not exists strong_fdr10 integer;
 
+-- FHFA annual house price index (developmental, all-transactions, NSA), for home estimates.
+-- area: 5-digit ZIP, county FIPS, or two-letter state. hpi: 100 in the first recorded year.
+create table if not exists house_price_index (
+    level  text not null check (level in ('zip5', 'county', 'state')),
+    area   text not null,
+    year   integer not null,
+    hpi    numeric not null,
+    source text not null,
+    primary key (level, area, year)
+);
+
 -- Tiger Data runs TimescaleDB: make prices a hypertable there. Plain Postgres
 -- (local fallback) has no extension, so this block does nothing.
 do $$

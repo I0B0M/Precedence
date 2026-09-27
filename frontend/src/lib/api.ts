@@ -233,7 +233,8 @@ export interface PropertyRow {
 
 export interface PortfolioOut {
   total: number; // what the exposure rows add up to: investments + mapped retirement funds
-  rows: { symbol: string; name: string; kind: string; shares: number; price: number; value: number; change: number | null }[];
+  rows: { symbol: string; name: string; kind: string; shares: number; price: number; value: number; change: number | null;
+    renamed_from?: string | null }[]; // e.g. "SPLG" when valued as SPYM (renamed 2025-10-31)
   exposure: ExposureRow[];
   unknown: string[];
   funds: FundInfo[];
