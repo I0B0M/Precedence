@@ -30,7 +30,7 @@ async function seedExampleExtras(current: OtherAssets) {
   } catch {
     return; // no localStorage: don't risk seeding twice with nothing to guard it
   }
-  addCrypto(EXAMPLE_CRYPTO); // example prices, no API: on the saved site too
+  addCrypto(EXAMPLE_CRYPTO); // priced from fixed closes, no API: on the saved site too
   if (SAVED) return;
   addRetirement([{ account: "401(k)", name: "FXAIX", amount: 15000, lookup: null }]);
   if (SHOW_PRIVATE_FUNDS) addPrivateFund("BREIT", 10000);

@@ -104,7 +104,7 @@ export default function HoldingsBoard() {
   const fundsSum = board.rows.filter((r) => r.kind === "etf").reduce((a, r) => a + r.value, 0);
   const privateSum = board.subtotals?.private_funds ?? 0;
   const privateLabel = privateRows.length ? privateRows.map((r) => r.fund).join(" & ") : "Private funds";
-  const cryptoSum = cryptoTotal(other.crypto); // at example prices (lib/crypto.ts), labelled so on every row
+  const cryptoSum = cryptoTotal(other.crypto); // at the Sep 25 closes (lib/crypto.ts), labelled so on every row
   const ownRow = (r: PortfolioOut["rows"][number]) => {
     const e = board.exposure.find((x) => x.symbol === r.symbol);
     return e ? <HoldingRow key={`own-${r.symbol}`} e={e} kind={r.kind} value={r.value} change={r.change} spark={sparks[r.symbol]} /> : null;
@@ -121,7 +121,7 @@ export default function HoldingsBoard() {
           <span className="kicker">Everything you own</span>
           <div className="pf-total">{money((board.subtotals?.total ?? board.total) + cryptoSum)}</div>
           {(board.subtotals?.includes_home_estimate || cryptoSum > 0) && (
-            <p className="note">{[board.subtotals?.includes_home_estimate && "Includes a home estimate", cryptoSum > 0 && "crypto at example prices"]
+            <p className="note">{[board.subtotals?.includes_home_estimate && "Includes a home estimate", cryptoSum > 0 && "crypto at the Sep 25 close (Alpaca)"]
               .filter(Boolean).join(" · ").replace(/^c/, (c) => (board.subtotals?.includes_home_estimate ? c : "C"))}</p>
           )}
           {todayMove != null && (
