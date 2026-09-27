@@ -83,8 +83,23 @@ describe("every call the demo makes for the example has a saved answer", () => {
     }
   });
 
+  it("Paper trading can trade every followed ticker, and each one's page opens", async () => {
+    const cos = await api.companies();
+    expect(cos.length).toBeGreaterThanOrEqual(100); // the S&P 100 and the funds, not just the example's
+    expect(new Set(cos.map((c) => c.ticker)).size).toBe(cos.length);
+    for (const c of cos) {
+      expect(c.last_close).toBeGreaterThan(0);
+      expect(c.as_of).toBe(index.as_of); // one close for the whole saved site
+      const page = await api.company(c.ticker);
+      expect(page.company.ticker).toBe(c.ticker);
+      // Each page's biggest days, except SPY's: its saved chart is Yahoo's closes, its days the IEX feed's.
+      if (c.ticker !== "SPY") expect(page.days?.worst.length).toBeGreaterThan(0);
+      else expect(page.days).toBeUndefined();
+    }
+  });
+
   it("says 404 for what isn't saved and 503 for what needs the backend", async () => {
-    await expect(api.company("TSLA")).rejects.toMatchObject({ status: 404 });
+    await expect(api.company("ZZZZ")).rejects.toMatchObject({ status: 404 });
     await expect(api.portfolio([{ symbol: "BX", shares: 1 }])).rejects.toMatchObject({ status: 404 });
     await expect(api.portfolio([], { other: [{ kind: "private_fund", fund: "BREIT", amount: 1 }] })).rejects.toMatchObject({ status: 404 });
     await expect(api.privateFund("BREIT")).rejects.toMatchObject({ status: 404 });

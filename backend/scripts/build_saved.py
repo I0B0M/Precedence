@@ -62,8 +62,9 @@ API = os.getenv("STONE_API", "http://localhost:8000")
 def live_extras() -> None:
     """Responses the saved demo also needs that the fixtures don't carry, copied from the running API (GETs, and
     the sample screenshot's reading below):
-    /api/today with and without the example's symbols, each saved ticker's /today, and MSFT (a look-through
-    sparkline on the board). Refused unless the API's last trading day is the saved data's."""
+    /api/today with and without the example's symbols, each saved ticker's /today, and every other followed
+    ticker's page and row in /api/companies (so Paper trading can trade any of them and its page opens; MSFT is
+    also a look-through sparkline on the board). Refused unless the API's last trading day is the saved data's."""
     import httpx
     get = lambda path: httpx.get(f"{API}{path}", timeout=120).raise_for_status().json()
     market_day = get("/api/today")
@@ -71,26 +72,36 @@ def live_extras() -> None:
         raise SystemExit(f"The API at {API} is on {market_day['day']}, the saved data on {as_of}; not mixing them.")
     asked = ",".join(h["symbol"] for h in request["holdings"])  # the example's order, as the start screen asks
     saved_as = ",".join(sorted(set(asked.split(","))))  # the file name savedFile() in api.ts looks up, any order
+    # The example's own rows and pages come from the fixtures; every other followed ticker's from the API.
+    example = {*stocks, MARKET}
+    listed = get("/api/companies")
+    kept = [r for r in json.loads((OUT / "companies.json").read_text()) if r["ticker"] in example]
+    live = {r["ticker"]: get(f"/api/companies/{r['ticker']}") for r in listed}
     files = {"today": market_day, f"today/{saved_as}": get(f"/api/today?symbols={asked}"),
-             "companies/MSFT": get("/api/companies/MSFT"),
+             "companies": sorted([*kept, *(r for r in listed if r["ticker"] not in example)], key=lambda r: r["ticker"]),
+             **{f"companies/{t}": c for t, c in live.items() if t not in example},
              **{f"companies/{t}/today": get(f"/api/companies/{t}/today") for t in [*stocks, MARKET]}}
     for path, data in files.items():
         if "Stone" in json.dumps(data):
             raise SystemExit(f"{path}: says 'Stone'; the product is Precedence on screen.")
         write(path, data)
 
-    # fdr10_survives (the correction for testing many stocks at once) on every saved signal: the fixtures were
-    # exported before the field existed. It's the only field added; no other saved number changes.
-    fdr = {(t, s["signal"]): s.get("fdr10_survives") for t in stocks for s in get(f"/api/companies/{t}")["signals"]}
+    # fdr10_survives (the correction for testing many stocks at once) on every saved signal, and each example page's
+    # `days` (its biggest daily moves, with what was public that week): the fixtures were exported before either
+    # existed. They're the only fields added; no other saved number changes.
+    fdr = {(t, s["signal"]): s.get("fdr10_survives") for t in stocks for s in live[t]["signals"]}
 
     def mark(ticker: str, signal: dict) -> None:
         if "signal" in signal:
             signal["fdr10_survives"] = fdr.get((ticker, signal["signal"]))  # None: not in that run (the market card)
 
+    # Not SPY's: its saved chart is Yahoo's closes, and `days` is measured on the IEX feed's (up to 1% apart on its
+    # biggest days), so its page shows no biggest-days card here rather than numbers that disagree with its chart.
     for t in stocks:
         c = json.loads((OUT / "companies" / f"{t}.json").read_text())
         for s in c["signals"]:
             mark(t, s)
+        c["days"] = live[t]["days"]
         write(f"companies/{t}", c)
         for lab in sorted((OUT / "lab" / t).glob("*.json")):
             doc = json.loads(lab.read_text())
