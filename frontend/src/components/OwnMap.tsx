@@ -22,7 +22,10 @@ function tree(board: PortfolioOut): Node {
     children: board.exposure.map((e): Node => {
       const fund = kinds.get(e.symbol) === "etf";
       if (!fund) {
-        return { name: e.symbol, tile: { key: e.symbol, symbol: e.symbol, name: e.name, value: e.total, state: e.state, href: `/company/${e.symbol}` } };
+        // A 401(k)/IRA fund has no stock page: it opens the index it behaves like, as its row below does.
+        const retire = board.retirement?.find((r) => (r.ticker ?? r.fund) === e.symbol);
+        const href = retire ? (retire.behaves_like ? `/fund/${retire.behaves_like}` : null) : `/company/${e.symbol}`;
+        return { name: e.symbol, tile: { key: e.symbol, symbol: e.symbol, name: e.name, value: e.total, state: e.state, href } };
       }
       const kids = [...e.children].sort((x, y) => y.total - x.total);
       const top = kids.slice(0, TOP).filter((k) => k.total >= OWN_TILE * e.total);

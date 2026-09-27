@@ -298,7 +298,8 @@ export default function ImportScreen() {
               <span className="chev" aria-hidden>›</span>
             </a>
           ) : (
-            <div className="list-row" style={{ alignItems: "center" }}>
+            // No upload box to jump to: a link to #screenshot-drop (the onboarding's) lands here, on why not.
+            <div className="list-row" id="screenshot-drop" style={{ alignItems: "center", scrollMarginTop: 110 }}>
               <span><b>Screenshot</b><span className="note" style={{ display: "block" }}>Any app, any account</span></span>
               <span className="note">{choice?.note ?? (statusFailed ? "Can't reach our server" : "Checking…")}</span>
             </div>
