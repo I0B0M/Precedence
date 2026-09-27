@@ -375,7 +375,7 @@ def today(symbols: str | None = None, c: psycopg.Connection = Conn):
                                     "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])}
                                    for f in mine_week]},
         "signals": {"firing": len(firing), "strong_firing": sum(1 for x in firing if x["label"] == engine.STRONG),
-                    "items": firing, "as_of": out["day"], "source": "Stone signal engine (prices, SEC, FRED)"},
+                    "items": firing, "as_of": out["day"], "source": "Precedence signal engine (prices, SEC, FRED)"},
     }
     return out
 
@@ -794,7 +794,7 @@ def portfolio_risk_card(body: PortfolioIn, c: psycopg.Connection = Conn):
         "total": total, "symbols": sorted(values), "unknown": unknown, "market_symbol": market_symbol,
         "start": rets.index.min().date().isoformat(), "end": rets.index.max().date().isoformat(), "days": len(rets),
         "portfolio": risk_json(mine, total), "market": risk_json(market),
-        "basis": RISK_BASIS, "source": "QuantStats on Stone's daily closes (Alpaca, IEX feed)",
+        "basis": RISK_BASIS, "source": "QuantStats on Precedence's daily closes (Alpaca, IEX feed)",
     }
 
 
