@@ -11,6 +11,7 @@ import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
+import { portfolioExtras } from "@/lib/other-assets";
 import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
@@ -31,7 +32,7 @@ export default function HoldingsBoard() {
 
   useEffect(() => {
     if (!holdings?.length) return;
-    api.portfolio(holdings).then(setBoard).catch(setError);
+    api.portfolio(holdings, portfolioExtras()).then(setBoard).catch(setError);
   }, [holdings]);
 
   // 30 trading days of closes per row, from the company endpoint (the same prices the company page charts).
