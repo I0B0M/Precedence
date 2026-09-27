@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { LabelTag, StateBadge } from "@/components/bits";
 import { api, type Today } from "@/lib/api";
 import { shortDate } from "@/lib/format";
+import { LEARN_STRONG } from "@/lib/words";
 
 const SOURCES = [
   { name: "SEC EDGAR", liteName: "The SEC", lite: "What companies file: reports, news, insider sales.", pro: "10-K, 10-Q, 8-K, Form 4 and XBRL facts, timed by SEC acceptance." },
@@ -50,8 +51,8 @@ export default function Learn() {
       <div className="stack" style={{ gap: 16 }}>
         <h2>What the badges mean</h2>
         <div className="learn-grid three">
-          <div className="learn-tile"><StateBadge state="CALM" /><p>Nothing that has mattered before is happening.</p></div>
-          <div className="learn-tile"><StateBadge state="WATCH" /><p>Something that has mattered for this stock before is happening now.</p></div>
+          <div className="learn-tile"><StateBadge state="CALM" /><p>{LEARN_STRONG.calm}</p></div>
+          <div className="learn-tile"><StateBadge state="WATCH" /><p>{LEARN_STRONG.watch}</p></div>
           <div className="learn-tile"><StateBadge state={null} /><p>Not tested yet, so no call either way.</p></div>
         </div>
       </div>
@@ -60,7 +61,7 @@ export default function Learn() {
         <h2><span className="lite-only">Has it mattered before?</span><span className="pro-only">STRONG, or NOT PROVEN?</span></h2>
         <p className="lede">The bar is where the real rate likely is. The gold line is a usual day.</p>
         <div className="learn-grid">
-          <Figure label="STRONG" lite="This has mattered before." words="The whole bar is right of the line." left={58} width={26} normal={40} />
+          <Figure label="STRONG" lite={LEARN_STRONG.figure} words="The whole bar is right of the line." left={58} width={26} normal={40} />
           <Figure label="NOT PROVEN" lite="No clear pattern." words="The bar crosses the line: could be chance." left={30} width={44} normal={48} />
         </div>
         <p className="note">Illustrations, not data.</p>

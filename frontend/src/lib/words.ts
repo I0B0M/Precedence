@@ -1,5 +1,8 @@
 import type { Label, MarketResult, SignalResult } from "./api";
 import { horizonWords } from "./format";
+import { LITE_STRONG_WORDING } from "./flags";
+
+const NOT_PROVEN_WORDS = LITE_STRONG_WORDING === "not-proven";
 
 /** The signal to talk about first: a STRONG one that is firing, else any firing one. */
 export function headline(signals: SignalResult[]): SignalResult | null {
@@ -11,7 +14,7 @@ export function headline(signals: SignalResult[]): SignalResult | null {
 
 /** Classic's four verdicts, word for word. Classic never shows the label itself (STRONG, NOT PROVEN, WEAK). */
 export function liteVerdict(s: { label: Label }, ticker: string): string {
-  if (s.label === "STRONG") return `This has mattered for ${ticker} before.`;
+  if (s.label === "STRONG") return NOT_PROVEN_WORDS ? "This has come before drops here. Not proven." : `This has mattered for ${ticker} before.`;
   if (s.label === "NOT PROVEN") return `No clear pattern for ${ticker}.`;
   if (s.label === "WEAK") return "Too few times to tell.";
   return "Not tested yet.";
@@ -83,6 +86,25 @@ export function fundLine(f: { symbol: string; fund_firing: SignalResult[]; heads
   if (n) return `${n} of its holdings ${n > 1 ? "have" : "has"} a Heads up.`;
   return f.holdings.length ? "A fund: many stocks in one." : "What's inside isn't loaded yet.";
 }
+
+/** "2 have mattered before" / "2 have come before drops": how many STRONG results are firing (LITE_STRONG_WORDING). */
+export function strongCountWords(n: number, forYourHoldings = false): string {
+  const verb = n === 1 ? "has" : "have";
+  if (NOT_PROVEN_WORDS) return `${n} ${verb} come before drops${forYourHoldings ? " for your holdings" : ""}`;
+  return `${n} ${verb} mattered before${forYourHoldings ? " for your holdings" : ""}`;
+}
+
+/** The home and start-screen promise, in the same wording as the verdicts. */
+export const PROMISE_WORDS = NOT_PROVEN_WORDS
+  ? { hero: "And whether that kind of news has come before a drop for that stock.", start: "and whether it has come before a drop." }
+  : { hero: "And whether that kind of news has ever mattered for that stock.", start: "and whether it has ever mattered." };
+
+/** Learn, the STRONG illustration and the WATCH badge, in the same wording. */
+export const LEARN_STRONG = NOT_PROVEN_WORDS
+  ? { figure: "This has come before drops. Not proven.", watch: "Something that has come before drops for this stock is happening now.",
+      calm: "Nothing that has come before drops is happening." }
+  : { figure: "This has mattered before.", watch: "Something that has mattered for this stock before is happening now.",
+      calm: "Nothing that has mattered before is happening." };
 
 /** Signal keys in plain words, for places that get only the key (e.g. fund holdings). */
 export const SIGNAL_WORDS: Record<string, string> = {

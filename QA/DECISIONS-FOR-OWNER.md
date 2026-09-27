@@ -23,6 +23,12 @@ Written 2026-09-27 03:40 ET. Everything else from the judge's four walks is done
   stocks (latest scan: 0 of 11 STRONG survive Benjamini–Hochberg at 10%). The judge scores data honesty 4, not 5, on this
   alone and says it's the change that takes the build to 5/5.
 - **The rule itself isn't in question.** STRONG + firing = Heads up stays (the owner decided). This is wording only.
+- **One switch, ready (04:30 ET).** `frontend/src/lib/flags.ts`: `LITE_STRONG_WORDING = "mattered"` (shipped) or
+  `"not-proven"`. Every Lite STRONG sentence reads from it: the verdict, row lines, fund lines, the THIS WEEK / Your week
+  count ("3 have come before drops"), the home and start-screen promise, and the Learn badge tiles. The badge and the rule
+  don't change. Judge walk #5: **4/5 as shipped ("mattered"), 5/5 with "not-proven"** (data honesty 4 → 5; the other seven
+  categories are already 5). Verified: "mattered" is word-for-word the shipped `c5c2cc3` on 9 Lite pages; "not-proven"
+  switches every STRONG line. The command center flips it and rebuilds :3000 (~1 min) once you choose.
 
 ## 3. The old landing page (already handled; for the record)
 

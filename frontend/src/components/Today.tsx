@@ -8,7 +8,7 @@ import { useMode } from "@/lib/mode";
 import { shortDate } from "@/lib/format";
 import { SHOW_CONNECT, SHOW_CRYPTO } from "@/lib/flags";
 import { comingNext, useFeatures } from "@/lib/features";
-import { FORM_WORDS, SIGNAL_WORDS } from "@/lib/words";
+import { FORM_WORDS, PROMISE_WORDS, SIGNAL_WORDS, strongCountWords } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
 const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
@@ -148,7 +148,7 @@ export function TodayFunnel({ symbols, alsoLite = false }: { symbols: string[]; 
     const out: (Stage | null)[] = [
       { n: all, label: w ? `new this week (${span(w.start, w.end)}) across the companies Precedence follows` : `new in our data for ${shortDate(t.day)}` },
       mine && h.signals ? { n: mine.count + h.signals.firing, label: `about what you own: ${plural(mine.count, "SEC filing")} and ${plural(h.signals.firing, "signal")} firing` } : null,
-      h.signals ? { n: h.signals.strong_firing, label: `${h.signals.strong_firing === 1 ? "has" : "have"} mattered before for your holdings` } : null,
+      h.signals ? { n: h.signals.strong_firing, label: strongCountWords(h.signals.strong_firing, true).replace(/^\d+ /, "") } : null,
     ];
     return out.filter((x): x is Stage => x !== null && Number.isFinite(x.n));
   }, [t]);
@@ -170,7 +170,7 @@ export function TodayFunnel({ symbols, alsoLite = false }: { symbols: string[]; 
       <span className="ticker">{w ? "This week" : "Today"}</span>
       <Countdown stages={stages} />
       <p className="lite-only">
-        {about} about what you own · {h.signals.strong_firing} {h.signals.strong_firing === 1 ? "has" : "have"} mattered before
+        {about} about what you own · {strongCountWords(h.signals.strong_firing)}
       </p>
       <p className="pro-only" style={{ margin: 0 }}>
         <Why what="have mattered before" scan={scan}
@@ -216,7 +216,7 @@ export function StartFlow() {
     <section className="stack" style={{ gap: 28 }}>
       <div className="stack" style={{ gap: 10 }}>
         <h1 style={{ fontSize: "clamp(30px, 4.2vw, 40px)", lineHeight: 1.2, maxWidth: "22ch" }}>
-          See what&apos;s happening to what you own, and whether it has ever mattered.
+          See what&apos;s happening to what you own, {PROMISE_WORDS.start}
         </h1>
         <p className="mute" style={{ fontSize: 16 }}>No account needed.</p>
       </div>

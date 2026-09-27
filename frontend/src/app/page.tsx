@@ -11,6 +11,7 @@ import { api, type CompanyDetail, type FundPage, type PortfolioOut, type Scan, t
 import { money, pct, shortDate } from "@/lib/format";
 import { PRACTICE_CASH } from "@/lib/practice";
 import { useHoldings } from "@/lib/holdings";
+import { PROMISE_WORDS } from "@/lib/words";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 import { TodayFunnel } from "@/components/Today";
 
@@ -79,7 +80,7 @@ export default function Home() {
             <p className="home-lockup"><Mark /><b>Precedence</b> <span>for everyday investors</span></p>
             <h1>See what&rsquo;s happening to what you own</h1>
             <p className="lede">
-              And whether that kind of news has ever mattered for that stock. It doesn&rsquo;t predict.{" "}
+              {PROMISE_WORDS.hero} It doesn&rsquo;t predict.{" "}
               <Link className="home-link" href="/learn">How we check</Link>
             </p>
             <div className="home-ctas">
