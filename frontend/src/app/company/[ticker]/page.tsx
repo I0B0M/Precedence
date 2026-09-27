@@ -209,19 +209,19 @@ export default function CompanyScreen() {
           <div className="card">
             <h3>XBRL facts</h3>
             <div className="tscroll">
-              <table>
+              <table className="rtable">
                 <thead><tr><th>Fact</th><th>Concept</th><th className="num">Value</th><th>Period</th><th>Form</th><th>Accession</th></tr></thead>
                 <tbody>
                   {d.facts.map((f) => {
                     const url = filingUrl(f.accession);
                     return (
                       <tr key={f.key}>
-                        <td>{f.pro}</td>
-                        <td className="mute">{f.concept}</td>
-                        <td className="num nowrap"><b>{bigMoney(f.value)}</b></td>
-                        <td className="nowrap">{f.period_start ? `${f.period_start} → ` : "at "}{f.period_end}</td>
-                        <td className="nowrap">{f.form}</td>
-                        <td className="nowrap">{url ? <a href={url} target="_blank" rel="noopener noreferrer">{f.accession}</a> : f.accession}</td>
+                        <td data-label="Fact"><span>{f.pro}</span></td>
+                        <td data-label="Concept" className="mute"><span>{f.concept}</span></td>
+                        <td data-label="Value" className="num nowrap"><b>{bigMoney(f.value)}</b></td>
+                        <td data-label="Period" className="nowrap"><span>{f.period_start ? `${f.period_start} → ` : "at "}{f.period_end}</span></td>
+                        <td data-label="Form" className="nowrap"><span>{f.form}</span></td>
+                        <td data-label="Accession" className="nowrap">{url ? <a href={url} target="_blank" rel="noopener noreferrer">{f.accession}</a> : <span>{f.accession}</span>}</td>
                       </tr>
                     );
                   })}
@@ -236,18 +236,20 @@ export default function CompanyScreen() {
           <div className="card">
             <h3>Filings</h3>
             <div className="tscroll">
-              <table>
+              <table className="rtable">
                 <thead><tr><th>Form · accession</th><th>Accepted (SEC)</th><th>Period</th></tr></thead>
                 <tbody>
                   {d.filings.map((f) => (
                     <tr key={f.accession}>
-                      <td className="nowrap">
-                        {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer"><b>{f.form}</b></a> : <b>{f.form}</b>}
-                        <div className="note">{f.accession}</div>
-                        {SUMMARY_FORMS.has(f.form) && <FilingSummary accession={f.accession} />}
+                      <td data-label="Form" className="nowrap">
+                        <span>
+                          {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer"><b>{f.form}</b></a> : <b>{f.form}</b>}
+                          <span className="note" style={{ display: "block" }}>{f.accession}</span>
+                          {SUMMARY_FORMS.has(f.form) && <FilingSummary accession={f.accession} />}
+                        </span>
                       </td>
-                      <td className="nowrap">{shortDate(f.accepted_at)}<div className="note">{timeET(f.accepted_at)}</div></td>
-                      <td className="nowrap">{f.report_date ?? "—"}</td>
+                      <td data-label="Accepted (SEC)" className="nowrap"><span>{shortDate(f.accepted_at)}<span className="note" style={{ display: "block" }}>{timeET(f.accepted_at)}</span></span></td>
+                      <td data-label="Period" className="nowrap"><span>{f.report_date ?? "—"}</span></td>
                     </tr>
                   ))}
                 </tbody>
