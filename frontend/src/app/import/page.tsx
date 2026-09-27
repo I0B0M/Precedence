@@ -98,6 +98,7 @@ export default function ImportScreen() {
   const [check, setCheck] = useState<Reconciled | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [checkErr, setCheckErr] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false); // saved-data demo: typed rows can't be checked without the server
   const [busy, setBusy] = useState(false);
   const [empty, setEmpty] = useState(false); // "Check" pressed with no rows
 
@@ -195,6 +196,21 @@ export default function ImportScreen() {
     const kept = next.filter((r) => r.symbol.trim());  // drop blank rows so check.rows[i] lines up with rows[i]
     setEmpty(!kept.length);
     if (!kept.length) return setCheck(null);
+    setSavedOnly(false);
+    if (SAVED) {
+      // The saved-data demo has no server to check against. The untouched example is the saved closes, so its rows
+      // are added up here against its total; anything typed needs the full app.
+      setCheckErr(false);
+      if (!example) { setCheck(null); setSavedOnly(true); return; }
+      const sum = Math.round(kept.reduce((a, r) => a + (num(r.value) ?? 0), 0) * 100) / 100;
+      const tot = num(nextTotal), diff = tot == null ? null : Math.round((tot - sum) * 100) / 100;
+      setCheck({
+        status: diff == null ? "no_total" : Math.abs(diff) < 0.01 ? "ok" : "needs_review", rows_sum: sum, printed_total: tot, difference: diff,
+        message: diff != null && Math.abs(diff) < 0.01 ? `Adds up to ${money(sum, true)}, the same total the screen shows.` : `Rows add up to ${money(sum, true)}.`,
+        rows: kept.map((r) => ({ ...toRead(r), ok: true, problem: null, fix: {} })),
+      });
+      return;
+    }
     try {
       setCheckErr(false);
       // Typed rows: a missing price comes from the latest close, a missing value is shares x price. "BX 10" must work.
@@ -412,6 +428,7 @@ export default function ImportScreen() {
 
         {empty && <div className="badline">Add at least one ticker and share count first.</div>}
         {checkErr && <div className="badline">Can&apos;t reach our server. Try again.</div>}
+        {savedOnly && <div className="note">The add-up check needs the full app.</div>}
         {priced.length > 0 && (
           <p className="note">Price from the latest close: {priced.map((p) => `${p.symbol}${p.day ? ` (${shortDate(p.day)})` : ""}`).join(", ")}.</p>
         )}
