@@ -47,6 +47,9 @@ def test_signal_lab_returns_cases(client):
     assert h["first"]["n"] + h["second"]["n"] == 12 and isinstance(h["held_up"], bool)
     assert h["verdict"] == "too few cases to check" and h["held_up"] is False  # 12 cases can't fill two halves of 10
     assert client.get("/api/lab/ORCA/gap_down").json()["holdout"] is None  # only STRONG gets one
+    st = body["strict"]  # the stricter test's evidence for Pro, next to the label
+    assert st["p"] < 0.05 and st["diff_low"] > 0 and st["normal_periods"] > 0
+    assert client.get("/api/lab/ORCA/gap_down").json()["strict"] is None  # no cases, nothing to judge
     assert client.get("/api/lab/MRDN/moon_phase").status_code == 404
     assert client.get("/api/lab/BRD500/gap_down").status_code == 400
 

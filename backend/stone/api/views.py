@@ -19,6 +19,14 @@ KEY_FACTS = [
 ]
 
 
+def strict_json(r: engine.Result) -> dict | None:
+    """The same counts under the stricter test (the normal rate is uncertain too), for Pro's
+    "borderline" note. It never changes the label. None below 10 cases or without normal days."""
+    st = engine.strict_evidence(r)
+    return None if st is None else {"p": st.p, "diff_low": st.diff_low, "diff_high": st.diff_high,
+                                    "normal_periods": st.normal_periods}
+
+
 def result_json(r: engine.Result, with_cases: bool = True) -> dict:
     spec = engine.ALL_SPECS[r.signal]
     out = {
@@ -29,6 +37,7 @@ def result_json(r: engine.Result, with_cases: bool = True) -> dict:
         "low": r.low, "high": r.high, "label": r.label,
         "firing": {"known_at": r.firing.known_at.isoformat(), "note": r.firing.note} if r.firing else None,
         "note": r.note,
+        "strict": strict_json(r),
     }
     if r.holdout:
         half = lambda h: {"n": h.n, "hits": h.hits, "hit_rate": h.hit_rate, "normal_rate": h.normal_rate,

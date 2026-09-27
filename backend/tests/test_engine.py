@@ -337,3 +337,58 @@ def test_benjamini_hochberg_keeps_the_ones_that_survive_the_false_discovery_rate
     assert e.benjamini_hochberg([], q=0.10) == []
     # 0.09 is under 10%, but the smallest of 4 p-values must clear 10% / 4 = 2.5%
     assert e.benjamini_hochberg([0.09, 0.5, 0.6, 0.7], q=0.10) == [False, False, False, False]
+
+
+# ---------- the stricter test, as evidence next to the label ----------
+
+def test_newcombe_matches_the_published_reference_value():
+    # Newcombe (1998), Stat Med 17:873, example (a): 56/70 vs 48/80, method 10 at 95%
+    low, high = e.newcombe(56, 70, 48, 80, z=1.959963984540054)
+    assert low == pytest.approx(0.0524, abs=1e-4) and high == pytest.approx(0.3339, abs=1e-4)
+
+
+def test_overlapping_normal_days_count_as_the_periods_they_span():
+    bars = flat_bars(30)
+    r = e.evaluate(e.Spec("t", "", "", 5), bars, [e.Event(at(bars[10].day, 17), "x")])
+    # normal starts 0..6 (spanning days 0..10) and 16..25 (spanning 16..29): 25 days = 5 periods, not 17
+    assert r.normal_n == 17 and r.normal_periods == pytest.approx(5.0)
+
+
+def counts(n, hits, normal_rate, periods, label=e.STRONG):
+    return e.Result(signal="t", horizon=20, n=n, hits=hits, hit_rate=hits / n, normal_n=125,
+                    normal_hits=round(normal_rate * 125), normal_rate=normal_rate, low=None, high=None,
+                    label=label, firing=None, normal_periods=periods)
+
+
+def test_strict_evidence_for_amazon_s_insider_cluster_is_borderline():
+    # AMZN in frontend/fixtures: 6 of 12 vs 32 of 125 normal days (12.9 periods), STRONG under the label rule
+    st = e.strict_evidence(counts(12, 6, 32 / 125, 12.9))
+    assert st.p == pytest.approx(0.104, abs=0.001)
+    assert st.diff_low == pytest.approx(-0.070, abs=0.001) and st.diff_high == pytest.approx(0.502, abs=0.001)
+
+
+def test_strict_evidence_with_an_exactly_known_normal_rate_is_the_score_test():
+    # one-sample score test: z = (0.8 - 0.5) / sqrt(0.25 / 15) = 2.3238, P(Z > z) = 0.01007
+    assert e.strict_evidence(counts(15, 12, 0.5, 1e9)).p == pytest.approx(0.01007, abs=1e-5)
+    assert 0.5 < e.strict_evidence(counts(15, 4, 0.5, 80)).p < 1  # fewer hits than normal: no evidence at all
+
+
+def test_strict_evidence_only_for_tested_results():
+    assert e.strict_evidence(counts(9, 9, 0.2, 50)) is None  # fewer than 10 cases
+    assert e.strict_evidence(replace(counts(12, 6, 0.3, 10), normal_rate=None)) is None
+
+
+def test_strict_evidence_never_changes_the_label():
+    days = weekdays(date(2024, 1, 1), 160)
+    bars = [B(d, 100, 100.2) for d in days]
+    starts = range(5, 5 + 12 * 12, 12)  # 10-day windows with 2 clean days between: few normal periods
+    for j, s in enumerate(starts):
+        for k in range(s + 1, s + 11):
+            bars[k] = B(days[k], 100, 101 if j < 2 else 99)
+    for k in range(0, 160, 3):
+        if all(not (s + 1 <= k <= s + 10) for s in starts):
+            bars[k] = B(days[k], 100, 96)
+    r = e.evaluate(e.Spec("t", "", "", 10), bars, [e.Event(at(days[s], 17), str(s)) for s in starts])
+    st = e.strict_evidence(r)
+    assert r.label == e.STRONG and r.hits == 10 and r.n == 12  # the label rule, unchanged
+    assert st.diff_low <= 0 and st.p >= 0.05  # the stricter test calls it borderline
