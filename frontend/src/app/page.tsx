@@ -47,9 +47,11 @@ export default function Home() {
         <div className="home-hero-bg" aria-hidden><HeroLoop /></div>
         <div className="home-inner home-hero-grid">
           <div className="stack" style={{ gap: 20 }}>
-            <h1>Your wealth, governed with clarity.</h1>
+            {/* The owner's message, first: everything you own on one screen. */}
+            <h1>All your investments in one place.</h1>
             <p className="lede">
-              See whether news like today&rsquo;s has come before a drop for the stocks you own. It doesn&rsquo;t predict.{" "}
+              Stocks, funds, your 401(k) and your home, together. Then see whether news like today&rsquo;s has come
+              before a drop for the stocks you own. It doesn&rsquo;t predict.{" "}
               <Link className="home-link" href="/signals">How we check</Link>
             </p>
             <div className="home-ctas">
