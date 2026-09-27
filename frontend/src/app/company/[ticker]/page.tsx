@@ -92,10 +92,9 @@ export default function CompanyScreen() {
               <p><b>{liteVerdict(main, co.ticker)}</b></p>
               {main.firing && (() => {
                 // What to check next: the evidence behind the Heads up, never advice. Insider selling: the latest Form 4.
-                // The sale's own sec.gov link when the API sends one (BACKEND-REQUESTS #7); else every past case.
+                // Its Form 4 on sec.gov (insider_sales[].url); every past case is the link under it.
                 // Today's evidence first: the most recent Form 4 sale (who, their title, when), then every past case.
-                const s0 = [...d.insider_sales].sort((a, b) => b.accepted_at.localeCompare(a.accepted_at))[0] as
-                  (typeof d.insider_sales)[number] & { url?: string | null } | undefined;
+                const s0 = [...d.insider_sales].sort((a, b) => b.accepted_at.localeCompare(a.accepted_at))[0] as (typeof d.insider_sales)[number] | undefined;
                 const f4 = main.signal === "insider_cluster" && s0 ? s0.url ?? filingUrl(s0.accession) : null;
                 return (
                   <>
@@ -171,7 +170,8 @@ export default function CompanyScreen() {
             <h3>What&apos;s new</h3>
             <div className="list">
               {d.insider_sales[0] && (
-                <div className="list-row"><span>Insiders sold shares</span><span className="mute">{shortDate(d.insider_sales[0].accepted_at)}</span></div>
+                <div className="list-row"><span>Insiders sold shares</span><span className="mute">{shortDate(d.insider_sales[0].accepted_at)}
+                  {d.insider_sales[0].url && <> · <a href={d.insider_sales[0].url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}</span></div>
               )}
               {d.filings.slice(0, 3).map((f) => (
                 <div key={f.accession} className="list-row"><span>{FORM_WORDS[f.form] ?? f.form}{SUMMARY_FORMS.has(f.form) && <FilingSummary accession={f.accession} />}</span><span className="mute">{shortDate(f.accepted_at)}</span></div>
@@ -297,7 +297,7 @@ export default function CompanyScreen() {
                     {d.insider_sales.slice(0, 8).map((s) => (
                       <tr key={`${s.accession}-${s.seq}`}>
                         <td className="nowrap">{shortDate(s.accepted_at)}</td>
-                        <td><span className="clamp2" title={s.owner_name ?? undefined}>{s.owner_name}</span><div className="note">{s.owner_title}</div></td>
+                        <td><span className="clamp2" title={s.owner_name ?? undefined}>{s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.owner_name}</a> : s.owner_name}</span><div className="note">{s.owner_title}</div></td>
                         <td className="num">{s.shares?.toLocaleString("en-US") ?? "—"}</td>
                       </tr>
                     ))}
