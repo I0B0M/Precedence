@@ -22,16 +22,17 @@ import { addCrypto, addPrivateFund, addProperty, addRetirement, addWallet, remov
 // A localStorage flag, not just `current`'s length, guards this: effects can fire twice back to back (React
 // Strict Mode in dev, or a fast double-click) before either call's state update lands, and `current` is a
 // snapshot from render time, so two overlapping calls would both still see it empty and both would seed.
-const SEEDED_KEY = "stone.example-seeded";
+// v2: the crypto joined the example, so a browser seeded before gets the parts it's missing, once.
+const SEEDED_KEY = "stone.example-seeded.v2";
 async function seedExampleExtras(current: OtherAssets) {
-  if (current.retirement.length || current.properties.length || current.privateFunds.length || current.crypto.length) return;
   try {
     if (localStorage.getItem(SEEDED_KEY)) return;
     localStorage.setItem(SEEDED_KEY, "1");
   } catch {
     return; // no localStorage: don't risk seeding twice with nothing to guard it
   }
-  addCrypto(EXAMPLE_CRYPTO); // priced from fixed closes, no API: on the saved site too
+  if (!current.crypto.length) addCrypto(EXAMPLE_CRYPTO); // priced from fixed closes, no API: on the saved site too
+  if (current.retirement.length || current.properties.length || current.privateFunds.length) return;
   if (SAVED) {
     // No server here: the same three assets, with the live API's own answers for them saved in lib/example-extras.ts.
     addRetirement([{ account: "401(k)", name: "FXAIX", amount: 15000, lookup: EXAMPLE_FXAIX }]);

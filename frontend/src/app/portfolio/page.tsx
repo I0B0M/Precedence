@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { OwnMap } from "@/components/OwnMap";
 import { RiskCard } from "@/components/RiskCard";
@@ -12,10 +13,10 @@ import { OtherAssetsRows } from "@/components/OtherAssets";
 import { cryptoTotal } from "@/lib/crypto";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { StartFlow } from "@/components/Today";
-import { api, SAVED, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
+import { api, EXAMPLE_PORTFOLIO, SAVED, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { approxMoney, money, pct, shortDate } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
-import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
+import { portfolioExtras, removeOther, useOtherAssets } from "@/lib/other-assets";
 import { liteSummary, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
@@ -77,8 +78,24 @@ export default function HoldingsBoard() {
       .then((pairs) => setStandIn(Object.fromEntries(pairs)));
   }, [standIns]);
 
+  // Nothing saved: show the whole example (the same one /import saves) rather than an empty start screen. After
+  // "Clear it and add your own", /portfolio?start=1 shows the ways to bring your own in.
+  const router = useRouter();
+  // Read once; it only matters once holdings have loaded (client-only), so server and first render still agree.
+  const [showStart] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("start") === "1");
+  useEffect(() => {
+    if (holdings && !holdings.length && !showStart) router.replace("/import?example=1&open=portfolio");
+  }, [holdings, showStart, router]);
+  const isExample = !!holdings?.length && holdings.length === EXAMPLE_PORTFOLIO.length
+    && EXAMPLE_PORTFOLIO.every((e) => holdings.some((h) => h.symbol === e.symbol && h.shares === e.shares));
+  const clearExample = () => {
+    [...other.properties, ...other.retirement, ...other.crypto, ...other.privateFunds, ...other.wallets].forEach((x) => removeOther(x.id));
+    setHoldings([]);
+    router.push("/portfolio?start=1");
+  };
+
   if (error) return <ApiProblem />;
-  if (holdings && !holdings.length) return <StartFlow />;
+  if (holdings && !holdings.length) return showStart ? <StartFlow /> : <Loading what="the example" />;
   if (!board) return <Loading what="what you own" />;
 
   // What a look-through row is: one of your rows' kinds, a 401(k)/IRA fund, or a stock you hold only inside a fund.
@@ -121,6 +138,11 @@ export default function HoldingsBoard() {
 
   return (
     <section>
+      {isExample && (
+        <p className="example-note" style={{ marginBottom: 16 }}>
+          <b>This is an example.</b> <button className="linkb" type="button" onClick={clearExample}>Clear it and add your own</button>
+        </p>
+      )}
       <div className="pf-head">
         <div className="stack" style={{ gap: 4 }}>
           <span className="kicker">Everything you own</span>
