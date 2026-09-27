@@ -137,6 +137,7 @@ export function TodayMove({ ticker }: { ticker: string }) {
         <p className="note">
           These happened in the same days; none of them is given as the cause. {d.window.note}
           {sources.length > 0 && <> Sources: {sources.join(" · ")}.</>}
+          {d.sources.prices.source === "alpaca-iex" && <> Prices are from the IEX exchange&apos;s feed, one venue among many, so a close can differ a little from the consolidated close on a brokerage statement. Precedence hasn&apos;t measured by how much.</>}
         </p>
       </div>
     </div>
