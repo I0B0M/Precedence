@@ -46,10 +46,19 @@ export default function SignalLab() {
 
   useEffect(() => {
     if (!ticker || !signal) return;
-    api.lab(ticker, signal).then((r) => setResult({ key: `${ticker}|${signal}`, r })).catch(setError);
+    // A slower answer for an earlier pick must not land after this one, or the page waits forever for a key it replaced.
+    let live = true;
+    api.lab(ticker, signal).then((r) => {
+      if (live) setResult({ key: `${ticker}|${signal}`, r });
+    }).catch((e) => {
+      if (live) setError(e);
+    });
     try {
       window.history.replaceState(null, "", `/lab?t=${ticker}&s=${signal}`);
     } catch {}
+    return () => {
+      live = false;
+    };
   }, [ticker, signal]);
 
   if (error) return <ApiProblem />;

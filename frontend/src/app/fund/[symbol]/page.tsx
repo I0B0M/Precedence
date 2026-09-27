@@ -33,7 +33,15 @@ export default function FundScreen() {
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    loadFund(symbol).then(setF).catch(setError);
+    let live = true; // moving to another fund drops the answer still on its way for this one
+    loadFund(symbol).then((v) => {
+      if (live) setF(v);
+    }).catch((e) => {
+      if (live) setError(e);
+    });
+    return () => {
+      live = false;
+    };
   }, [symbol]);
 
   if (error) return isNotFound(error) ? <NotFollowed ticker={symbol} /> : <ApiProblem />;

@@ -26,17 +26,25 @@ export default function CompanyScreen() {
   const [scan, setScan] = useState<Scan | null>(null);
 
   useEffect(() => {
+    let live = true; // moving to another ticker drops the answers still on their way for this one
     api.scan().then(setScan).catch(() => {});
     api.company(ticker).then((body) => {
+      if (!live) return;
       setD(body);
       const holdings = readHoldings() ?? (body.company.source === "sample" ? SAMPLE_PORTFOLIO : []);
       if (holdings.length) {
         api.portfolio(holdings).then((p) => {
+          if (!live) return;
           setMine(p.exposure.find((e) => e.symbol === body.company.ticker) ?? null);
           setPortfolioTotal(p.total);
-        });
+        }).catch(() => {}); // the company page stands without "what it means for you"
       }
-    }).catch(setError);
+    }).catch((e) => {
+      if (live) setError(e);
+    });
+    return () => {
+      live = false;
+    };
   }, [ticker]);
 
   if (error) return isNotFound(error) ? <NotFollowed ticker={decodeURIComponent(ticker).toUpperCase()} /> : <ApiProblem />;
