@@ -136,7 +136,7 @@ export function PrivateFundScreen({ symbol }: { symbol: string }) {
           <p><b>Getting money out:</b> {PRIVATE_LIQUIDITY[p.symbol.toUpperCase() as PrivateFundKey]}
             {p.liquidity_url && <> <a href={p.liquidity_url} target="_blank" rel="noopener noreferrer">Read the terms on sec.gov</a></>}</p>
         )}
-        <p className="note">Basis: {p.returns.basis}. Source: {p.source}. No signals are tested on a monthly-priced fund, so it shows &quot;Not tested&quot;.</p>
+        <p className="note">{tr ? <>Total return basis: {tr.basis}. Value per share change basis: {p.returns.basis}.</> : <>Basis: {p.returns.basis}.</>} Source: {p.source}. No signals are tested on a monthly-priced fund, so it shows &quot;Not tested&quot;.</p>
 
         {p.filings.length > 0 && (
           <div className="list">

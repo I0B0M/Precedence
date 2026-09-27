@@ -11,6 +11,7 @@ import { api, type CompanyDetail, type FundPage, type PortfolioOut, type Scan, t
 import { money, pct, shortDate } from "@/lib/format";
 import { PRACTICE_CASH } from "@/lib/practice";
 import { useHoldings } from "@/lib/holdings";
+import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 import { TodayFunnel } from "@/components/Today";
 
 // The example the home page shows, and the one /import?example=1 fills in.
@@ -45,6 +46,15 @@ export default function Home() {
   const [status, setStatus] = useState<Status | null>(null);
   const [scan, setScan] = useState<Scan | null>(null);
   const [mine] = useHoldings(null); // your saved holdings: their week comes first when you come back
+  const other = useOtherAssets();
+  const extras = JSON.stringify(portfolioExtras(other));
+  const [myBoard, setMyBoard] = useState<PortfolioOut | null>(null);
+  const mineKey = mine?.length ? JSON.stringify(mine) : "";
+  useEffect(() => {
+    if (!mineKey) return;
+    api.portfolio(JSON.parse(mineKey), JSON.parse(extras)).then(setMyBoard).catch(() => {});
+  }, [mineKey, extras]);
+  const returning = !!mine?.length;
 
   useEffect(() => {
     api.portfolio(EXAMPLE).then(setBoard).catch(() => {});
@@ -73,10 +83,38 @@ export default function Home() {
               <Link className="home-link" href="/learn">How we check</Link>
             </p>
             <div className="home-ctas">
-              <Link className="btn" href="/import?example=1">Try it with an example</Link>
-              <Link className="btn light" href="/import">Add your account</Link>
+              {returning ? <>
+                <Link className="btn" href="/portfolio">Open your portfolio</Link>
+                <Link className="btn light" href="/import">Add more</Link>
+              </> : <>
+                <Link className="btn" href="/import?example=1">Try it with an example</Link>
+                <Link className="btn light" href="/import">Add your account</Link>
+              </>}
             </div>
           </div>
+          {returning ? (
+            // Coming back: your own total first, never the example.
+            <Link className="card home-example" href="/portfolio" aria-label="Your portfolio: open it">
+              <span className="home-example-top"><span className="kicker">Your portfolio</span>
+                <span className="note">{myBoard?.price_as_of ? `Close ${shortDate(myBoard.price_as_of)}` : "Loading…"}</span></span>
+              <span className="bignum price home-example-total">{myBoard ? money(myBoard.subtotals?.total ?? myBoard.total) : "—"}</span>
+              {myBoard?.subtotals?.includes_home_estimate && <span className="note">Includes a home estimate</span>}
+              {/* Your three largest holdings, with their badges. */}
+              {[...(myBoard?.rows ?? [])].sort((a, b) => b.value - a.value).slice(0, 3).map((r) => {
+                const e = myBoard?.exposure.find((x) => x.symbol === r.symbol);
+                return (
+                  <span className="home-example-row" key={r.symbol}>
+                    <span><b>{r.symbol}</b><small className="note">{r.name}</small></span>
+                    <span />
+                    <span className="home-num">{money(r.value)}
+                      <small className={r.change != null && r.change < 0 ? "down" : "up"}>{r.change != null ? pct(r.change) : ""}</small></span>
+                    {e ? <StateBadge state={e.state} /> : <span />}
+                  </span>
+                );
+              })}
+              <span className="note">Open your portfolio ›</span>
+            </Link>
+          ) : (
           <Link className="card home-example" href="/import?example=1" aria-label="Example portfolio: open it">
             <span className="home-example-top"><span className="kicker">Example</span>
               <span className="note">{board?.price_as_of ? `Close ${shortDate(board.price_as_of)}` : "Loading…"}</span></span>
@@ -98,6 +136,7 @@ export default function Home() {
             })}
             <span className="note pro-only">Prices from Alpaca (IEX); badges from our tests on SEC and FRED data.</span>
           </Link>
+          )}
         </div>
       </section>
 

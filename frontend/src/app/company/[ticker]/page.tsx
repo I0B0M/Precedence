@@ -93,11 +93,19 @@ export default function CompanyScreen() {
               {main.firing && (() => {
                 // What to check next: the evidence behind the Heads up, never advice. Insider selling: the latest Form 4.
                 // The sale's own sec.gov link when the API sends one (BACKEND-REQUESTS #7); else every past case.
-                const s0 = d.insider_sales[0] as (typeof d.insider_sales)[number] & { url?: string | null } | undefined;
+                // Today's evidence first: the most recent Form 4 sale (who, their title, when), then every past case.
+                const s0 = [...d.insider_sales].sort((a, b) => b.accepted_at.localeCompare(a.accepted_at))[0] as
+                  (typeof d.insider_sales)[number] & { url?: string | null } | undefined;
                 const f4 = main.signal === "insider_cluster" && s0 ? s0.url ?? filingUrl(s0.accession) : null;
-                return f4
-                  ? <a className="linkb" href={f4} target="_blank" rel="noopener noreferrer">What to check: who sold and how much ›</a>
-                  : inLab(main.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${main.signal}`}>See each past time this happened ›</Link>;
+                return (
+                  <>
+                    {main.signal === "insider_cluster" && s0 && (
+                      <p className="note">Latest sale: {s0.owner_name ?? "an insider"}{s0.owner_title ? `, ${s0.owner_title}` : ""}, {shortDate(s0.accepted_at).replace(/, \d{4}$/, "")}
+                        {f4 && <> · <a href={f4} target="_blank" rel="noopener noreferrer">sec.gov</a></>}</p>
+                    )}
+                    {inLab(main.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${main.signal}`}>See each past time this happened ›</Link>}
+                  </>
+                );
               })()}
               {main.signal === "rate_jump" && <MarketCard />}
             </>
