@@ -243,6 +243,18 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
 .badge.calm { background: rgba(37, 99, 235, 0.18); color: var(--accent-text); border-color: rgba(37, 99, 235, 0.7); }
 .badge.watch { background: var(--accent-fill); color: var(--on-accent); border-color: var(--accent-fill); }
 .badge.untested { background: transparent; color: var(--text-2); font-weight: 500; border-color: var(--sep); }
+/* Classic "has this mattered?": two rows of dots on the same count; gold after the news, grey in normal times. */
+.cmp { display: flex; flex-direction: column; gap: 10px; }
+.cmp-q { font-weight: 600; margin: 0; }
+.cmp-row { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr) auto; align-items: center; gap: 6px 12px; }
+.cmp-label { color: var(--text-2); font-size: 15px; }
+.cmp-count { font-weight: 600; white-space: nowrap; }
+.cmp-dots { display: flex; flex-wrap: wrap; gap: 4px; }
+.cmp-dots i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--mark); }
+.cmp-dots i.event { background: var(--gold); border-color: var(--gold); }
+.cmp-dots i.normal { background: var(--text-2); border-color: var(--text-2); }
+.cmp-a { margin: 0; }
+@media (max-width: 640px) { .cmp-row { grid-template-columns: minmax(0, 1fr) auto; } .cmp-dots { grid-column: 1 / -1; order: 3; } }
 .verdict { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 100%; }
 .verdict .caveat { white-space: normal; }
 .label { display: inline-block; line-height: 1.4; font-weight: 700; font-size: 12px; letter-spacing: 0.02em; border-radius: 6px; padding: 2px 8px; white-space: nowrap; background: transparent; color: var(--text); border: 1.5px solid var(--edge-c); }

@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
-import { BadgeKey, HitDots, HoldoutNote, ScanLine, StateBadge, Verdict } from "@/components/bits";
+import { BadgeKey, HoldoutNote, ScanLine, StateBadge, Verdict } from "@/components/bits";
 import { FilingSummary } from "@/components/FilingSummary";
 import { Why } from "@/components/Why";
 import { MarketCard } from "@/components/MarketCard";
 import { TodayMove } from "@/components/TodayMove";
+import { Compare } from "@/components/Compare";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
 import { bigMoney, money, pct, sharePct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { portfolioExtras } from "@/lib/other-assets";
-import { FORM_WORDS, headline, liteHistory, liteVerdict, personName } from "@/lib/words";
+import { FORM_WORDS, headline, personName } from "@/lib/words";
 import { StockChart } from "./StockChart";
 
 // Filings that get a plain-words summary (Gemini, figures checked against XBRL).
@@ -86,10 +87,9 @@ export default function CompanyScreen() {
           <h3>What&apos;s going on</h3>
           {main ? (
             <>
-              {main.n > 0 && main.hit_rate != null && <div className="bignum">{whole(main.hit_rate)}</div>}
-              <p className="say-big"><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
-              <HitDots cases={main.cases ?? []} vsMarket={main.vs_market} />
-              <p><b>{liteVerdict(main, co.ticker)}</b></p>
+              <p className="say-big"><b>{main.lite}.</b></p>
+              {/* Two rows on the same count, after the news and in normal times, then one plain answer. No legend. */}
+              <Compare s={main} ticker={co.ticker} />
               {main.firing && (() => {
                 // What to check next: the evidence behind the Heads up, never advice. Insider selling: the latest Form 4.
                 // Its Form 4 on sec.gov (insider_sales[].url); every past case is the link under it.
