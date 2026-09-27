@@ -183,6 +183,7 @@ export interface InsiderSale {
   price: number | null;
   accession: string;
   seq: number;
+  url?: string | null; // the Form 4 on sec.gov (SEC's readable page); null for sample data. Always sent
 }
 
 export interface CompanyDetail {

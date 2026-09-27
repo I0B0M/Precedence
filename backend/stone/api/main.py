@@ -137,8 +137,9 @@ def company(ticker: str, c: psycopg.Connection = Conn):
         """select accession, form, filed_date, accepted_at, report_date, primary_doc, source from filings
            where ticker = %s and form <> '4' order by accepted_at desc limit 12""", (t,)).fetchall()
     sales = c.execute(
-        """select accepted_at, owner_name, owner_title, transaction_date, shares, price, accession, seq
-           from insider_trades where ticker = %s and code = 'S' order by accepted_at desc, seq limit 15""", (t,)).fetchall()
+        """select i.accepted_at, i.owner_name, i.owner_title, i.transaction_date, i.shares, i.price, i.accession, i.seq,
+                  f.primary_doc, f.source from insider_trades i left join filings f on f.accession = i.accession
+           where i.ticker = %s and i.code = 'S' order by i.accepted_at desc, i.seq limit 15""", (t,)).fetchall()
     rate = c.execute("select day, value from rates where series = 'DGS10' order by day desc limit 1").fetchone()
     results = signal_results(c, t, co["kind"], service.load_market(c)[0])
     return {
@@ -148,10 +149,13 @@ def company(ticker: str, c: psycopg.Connection = Conn):
         "filings": [{**f, "filed_date": f["filed_date"].isoformat(), "accepted_at": f["accepted_at"].isoformat(),
                      "report_date": f["report_date"].isoformat() if f["report_date"] else None,
                      "url": filing_url(co["cik"], f["accession"], f["primary_doc"], f["source"])} for f in filings],
-        "insider_sales": [{**s, "accepted_at": s["accepted_at"].isoformat(),
+        "insider_sales": [{**{k: v for k, v in s.items() if k not in ("primary_doc", "source")},
+                           "accepted_at": s["accepted_at"].isoformat(),
                            "transaction_date": s["transaction_date"].isoformat() if s["transaction_date"] else None,
                            "shares": float(s["shares"]) if s["shares"] is not None else None,
-                           "price": float(s["price"]) if s["price"] is not None else None} for s in sales],
+                           "price": float(s["price"]) if s["price"] is not None else None,
+                           "url": filing_url(co["cik"], s["accession"], s["primary_doc"], s["source"] or "")}
+                          for s in sales],
         "facts": latest_facts(c, t),
         "rate": {"day": rate["day"].isoformat(), "value": float(rate["value"])} if rate else None,
         "signals": [result_json(r, fdr10=fdr10_by_signal(c, t)) for r in results or []],
