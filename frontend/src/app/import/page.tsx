@@ -6,7 +6,7 @@ import { OtherAssetsForms } from "@/components/OtherAssets";
 import { SHOW_CONNECT, SHOW_CRYPTO } from "@/lib/flags";
 import { comingNext } from "@/lib/features";
 import { api, ApiError, EXAMPLE_PORTFOLIO, type ReadRow, type Reconciled, type Status } from "@/lib/api";
-import { money, shortDate } from "@/lib/format";
+import { andList, money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 
 const CONNECT = [
@@ -200,7 +200,7 @@ export default function ImportScreen() {
       {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
       <div className="card" style={{ borderWidth: 2 }}>
         <h3>Example portfolio</h3>
-        <p>BX, AMZN and SPY at real closing prices.</p>
+        <p>{andList(EXAMPLE_PORTFOLIO.map((h) => h.symbol))} at real closing prices.</p>
         <button className="btn" type="button" onClick={fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
       </div>
 
