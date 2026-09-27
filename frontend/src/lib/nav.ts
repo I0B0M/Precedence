@@ -2,7 +2,7 @@
 export const NAV = [
   { href: "/portfolio", label: "Portfolio", also: ["/company", "/import"] },
   { href: "/signals", label: "Signals", also: [] },
-  { href: "/fund/SPY", label: "Funds", also: ["/fund"] },
+  { href: "/funds", label: "Funds", also: ["/fund"] },
   { href: "/paper", label: "Paper trading", also: [] },
   { href: "/learn", label: "Learn", also: [] },
 ];
