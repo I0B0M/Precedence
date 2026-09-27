@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from stone import config
 from stone.api.views import SOURCE_NAMES, filing_url, latest_facts, result_json, vs_market_words
 from stone import homes, retirement
+from stone.names import display_name
 from stone.config import NotConnected
 from stone.figures import check_figures, html_to_text
 from stone.ingest.tickers import HOLDINGS_FROM, RENAMED
@@ -51,6 +52,11 @@ def conn():
 
 
 Conn = Depends(conn)
+
+
+def named(ticker: str, legal: str | None) -> dict:
+    """The clean display name plus the name exactly as SEC or the issuer's file prints it."""
+    return {"name": display_name(ticker, legal), "legal_name": legal}
 
 
 def company_or_404(c: psycopg.Connection, ticker: str) -> dict:
@@ -115,7 +121,7 @@ def companies(c: psycopg.Connection = Conn):
     out = []
     for row in c.execute("select ticker, name, sector, kind, source from companies order by ticker").fetchall():
         last, change = last_two_closes(c, row["ticker"])
-        out.append({**row, "last_close": float(last["close"]) if last else None,
+        out.append({**row, **named(row["ticker"], row["name"]), "last_close": float(last["close"]) if last else None,
                     "as_of": last["day"].isoformat() if last else None, "change": change})
     return out
 
@@ -135,7 +141,7 @@ def company(ticker: str, c: psycopg.Connection = Conn):
     rate = c.execute("select day, value from rates where series = 'DGS10' order by day desc limit 1").fetchone()
     results = signal_results(c, t, co["kind"], service.load_market(c)[0])
     return {
-        "company": co,
+        "company": {**co, **named(t, co["name"])},
         "last": {"close": float(last["close"]), "day": last["day"].isoformat(), "change": change} if last else None,
         "prices": [{"day": p["day"].isoformat(), "open": float(p["open"]), "close": float(p["close"])} for p in prices],
         "filings": [{**f, "filed_date": f["filed_date"].isoformat(), "accepted_at": f["accepted_at"].isoformat(),
@@ -213,7 +219,7 @@ def company_today(ticker: str, c: psycopg.Connection = Conn):
     filing_sources = sorted({f["source"] for f in filings} | {s["source"] for s in sales}) or ["sec"]
 
     return {
-        "ticker": t, "name": co["name"], "as_of": as_of.isoformat(),
+        "ticker": t, **named(t, co["name"]), "as_of": as_of.isoformat(),
         "close": own["close"] if own else None, "prev_close": own["prev_close"] if own else None,
         "day_change": own["change"] if own else None,  # dollars per share
         "day_change_pct": stock_pct,  # a fraction, like every other change here: 0.012 = +1.2%
@@ -408,7 +414,8 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
     for r in rows[:FUND_TOP]:
         k = tracked.get(r["holding"])
         results = signal_results(c, r["holding"], k["kind"], market_symbol, rates, market) if k else None
-        holdings.append({"ticker": r["holding"], "name": k["name"] if k else r["name"],  # untracked: the issuer's name
+        holdings.append({"ticker": r["holding"],
+                         **named(r["holding"], k["name"] if k else r["name"]),  # untracked: the issuer's name
                          "weight": float(r["weight"]),
                          "in_stone": k is not None, "state": state_of(results),
                          "firing": [{"signal": x.signal, "label": x.label} for x in results or [] if x.firing],
@@ -419,7 +426,7 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
     top = {h["ticker"] for h in holdings}
     week = [f for f in filed_between(c, start, day) if f["ticker"] in top] if day else []
     return {
-        "symbol": t, "name": co["name"],
+        "symbol": t, "name": display_name(t, co["name"]),
         "price": {"last_close": closes[-1][1], "as_of": closes[-1][0].isoformat(),
                   "prev_close": closes[-2][1] if len(closes) > 1 else None,
                   "change_1d": return_over(closes, 1)} if closes else None,
@@ -516,7 +523,7 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
             continue
         value = h.shares * float(last["close"])
         values[sym] = values.get(sym, 0.0) + value
-        rows.append({"symbol": sym, "name": known[sym]["name"], "kind": known[sym]["kind"], "shares": h.shares,
+        rows.append({"symbol": sym, **named(sym, known[sym]["name"]), "kind": known[sym]["kind"], "shares": h.shares,
                      "price": float(last["close"]), "value": value, "change": change, "day": last["day"],
                      "renamed_from": typed if typed != sym else None})
 
@@ -570,14 +577,14 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
         results = (None if sym in stand_in and sym not in same_index  # close stand-in: not tested
                    else signal_results(c, tested, known[tested]["kind"], market_symbol, rates, market))
         exposure.append({
-            "symbol": sym, "name": known[sym]["name"], "sector": known[sym]["sector"],
+            "symbol": sym, **named(sym, known[sym]["name"]), "sector": known[sym]["sector"],
             "direct": row.direct, "via_etf": row.via_etf, "total": row.shown,
             "share_of_total": row.shown / total if total else None,
             "bad_day_return": bad, "bad_day_loss": bad * row.shown if bad is not None else None,
             "state": state_of(results),
             "firing": [result_json(r, with_cases=False, fdr10=fdr10_by_signal(c, tested))
                        for r in results or [] if r.firing],
-            "children": [{"symbol": k, "name": known[k]["name"], "total": v}
+            "children": [{"symbol": k, "name": display_name(k, known[k]["name"]), "total": v}
                          for k, v in sorted(row.children.items(), key=lambda kv: -kv[1])],
         })
     exposure.sort(key=lambda e: (e["state"] != engine.WATCH, -e["total"]))

@@ -90,7 +90,7 @@ def test_insider_sales_are_null_not_empty_when_form4s_are_not_loaded(client):
 
 def test_facts_and_sources_only_never_a_cause(client):
     body = client.get("/api/companies/HLCN/today").json()
-    assert set(body) == {"ticker", "name", "as_of", "close", "prev_close", "day_change", "day_change_pct",
+    assert set(body) == {"ticker", "name", "legal_name", "as_of", "close", "prev_close", "day_change", "day_change_pct",
                          "market_symbol", "spy_change_pct", "vs_market", "same_direction", "window", "events",
                          "sources"}
     text = json.dumps(body).lower()
