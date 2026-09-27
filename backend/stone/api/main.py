@@ -85,6 +85,13 @@ def same_index_note(etf: str, src: str, source: str | None) -> str | None:
             + f". Same index as {src}, so {src}'s test applies.")
 
 
+def holdings_src(c: psycopg.Connection, etf: str) -> str:
+    """Whose holdings a fund uses: its own when loaded (VOO / IVV from their N-PORT), otherwise the fund on the same
+    index we do have (SPY's State Street file), otherwise itself."""
+    own = c.execute("select exists (select 1 from etf_holdings where etf = %s) as e", (etf,)).fetchone()["e"]
+    return etf if own else HOLDINGS_FROM.get(etf, etf)
+
+
 def nport_note(as_of, source: str | None) -> str | None:
     """Holdings from an SEC N-PORT filing are months old; say so next to them."""
     if not (source or "").startswith("SEC N-PORT"):
@@ -482,7 +489,7 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
     if co["kind"] != "etf":
         raise HTTPException(400, f"{co['ticker']} is a stock, not a fund")
     t = co["ticker"]
-    src = HOLDINGS_FROM.get(t, t)  # VOO / IVV / SPLG use SPY's holdings
+    src = holdings_src(c, t)  # VOO / IVV: their own N-PORT once loaded, else SPY's
     closes = [(r["day"], float(r["close"])) for r in c.execute(
         "select day, close from prices_daily where ticker = %s order by day", (t,)).fetchall()]
     as_of = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (src,)).fetchone()["d"]
@@ -581,7 +588,7 @@ class PortfolioIn(BaseModel):
 def fund_weights(c: psycopg.Connection, etf: str, known: dict) -> tuple[dict[str, float], dict]:
     """The fund's latest holdings, only stocks we have data for (the rest stays as the fund itself).
     An ETF tracking the same index as a fund we load (VOO, IVV, SPLG -> SPY) uses that fund's holdings."""
-    src = HOLDINGS_FROM.get(etf, etf)
+    src = holdings_src(c, etf)
     latest = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (src,)).fetchone()["d"]
     rows_ = c.execute("select holding, weight, source from etf_holdings where etf = %s and as_of = %s",
                       (src, latest)).fetchall()
