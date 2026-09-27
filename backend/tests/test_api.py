@@ -240,7 +240,26 @@ def test_screenshot_import_errors_are_plain(client, monkeypatch):
     assert r.status_code == 422 and "SAFETY" in r.json()["detail"]
     monkeypatch.setattr(m, "GeminiClient", Down)
     r = client.post("/api/import/screenshot", files=png)
-    assert r.status_code == 502 and "429" in r.json()["detail"]
+    assert r.status_code == 503 and "429" in r.json()["detail"] and "type the rows" in r.json()["detail"]
+
+    class Refused(FakeGemini):
+        def read_screenshot(self, image, mime):
+            req = httpx.Request("POST", "https://generativelanguage.googleapis.com/x")
+            raise httpx.HTTPStatusError("bad key", request=req, response=httpx.Response(403, request=req))
+
+    class Slow(FakeGemini):
+        def read_screenshot(self, image, mime):
+            raise httpx.ReadTimeout("slow", request=httpx.Request("POST", "https://generativelanguage.googleapis.com/x"))
+
+    monkeypatch.setattr(m, "GeminiClient", Refused)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 502 and "HTTP 403" in r.json()["detail"]
+    monkeypatch.setattr(m, "GeminiClient", Slow)
+    r = client.post("/api/import/screenshot", files=png)
+    assert r.status_code == 504 and "in time" in r.json()["detail"]
+    svg = {"file": ("s.svg", b"<svg/>", "image/svg+xml")}  # an image, but not one Gemini reads
+    monkeypatch.setattr(m, "GeminiClient", FakeGemini)
+    assert client.post("/api/import/screenshot", files=svg).status_code == 415
     monkeypatch.setattr(m, "GeminiClient", FakeGemini)
     assert client.post("/api/import/screenshot", files={"file": ("a.pdf", b"%PDF", "application/pdf")}).status_code == 415
     big = {"file": ("s.png", b"\x89PNG" + b"0" * (m.MAX_SCREENSHOT_BYTES + 1), "image/png")}
