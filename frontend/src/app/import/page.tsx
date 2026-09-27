@@ -12,7 +12,8 @@ import { screenshotChoice, shotError } from "@/lib/importing";
 import { NotRobinhoodCsv, readRobinhoodCsv, type RobinhoodRead } from "@/lib/robinhood";
 import { walletLine, walletProblem } from "@/lib/wallets";
 import { PRACTICE_CASH } from "@/lib/practice";
-import { addPrivateFund, addProperty, addRetirement, addWallet, removeOther, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
+import { EXAMPLE_CRYPTO } from "@/lib/crypto";
+import { addCrypto, addPrivateFund, addProperty, addRetirement, addWallet, removeOther, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
 
 // The example's other assets, beside its stock rows: a 401(k) mapped to the S&P 500, a home (real FHFA estimate,
 // same ZIP as the form's own placeholder), a Blackstone fund. Live mode only — the saved-data demo is a static
@@ -22,13 +23,15 @@ import { addPrivateFund, addProperty, addRetirement, addWallet, removeOther, use
 // snapshot from render time, so two overlapping calls would both still see it empty and both would seed.
 const SEEDED_KEY = "stone.example-seeded";
 async function seedExampleExtras(current: OtherAssets) {
-  if (SAVED || current.retirement.length || current.properties.length || current.privateFunds.length) return;
+  if (current.retirement.length || current.properties.length || current.privateFunds.length || current.crypto.length) return;
   try {
     if (localStorage.getItem(SEEDED_KEY)) return;
     localStorage.setItem(SEEDED_KEY, "1");
   } catch {
     return; // no localStorage: don't risk seeding twice with nothing to guard it
   }
+  addCrypto(EXAMPLE_CRYPTO); // example prices, no API: on the saved site too
+  if (SAVED) return;
   addRetirement([{ account: "401(k)", name: "FXAIX", amount: 15000, lookup: null }]);
   if (SHOW_PRIVATE_FUNDS) addPrivateFund("BREIT", 10000);
   try {

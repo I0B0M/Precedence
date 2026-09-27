@@ -9,6 +9,7 @@ import { maybeAutoTour, startTour } from "@/lib/tour";
 import { BadgeKey, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
+import { cryptoTotal } from "@/lib/crypto";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { StartFlow } from "@/components/Today";
 import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
@@ -19,6 +20,16 @@ import { liteSummary, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
 const FUND_SOURCES: Record<string, string> = { ssga: "State Street (SSGA)", sample: "sample data" };
+
+/** A section of the board: its header in the kicker style, its subtotal on the right, then its rows. */
+function Section({ label, sum, className, children }: { label: string; sum: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={`stack${className ? ` ${className}` : ""}`} style={{ gap: 10, marginTop: 22 }}>
+      <div className="pf-sec"><span className="kicker">{label}</span><span className="pf-sec-sum">{sum}</span></div>
+      {children}
+    </div>
+  );
+}
 
 // Brief: "analyze their existing portfolio" · "understanding what they own" · "make decisions". Owner: total,
 // then the holdings list, then everything else — no duplicate totals, no detour before you can see the number.
@@ -91,9 +102,15 @@ export default function HoldingsBoard() {
   // The one-line split: only the kinds you actually have money in.
   const stocksSum = board.rows.filter((r) => r.kind === "stock").reduce((a, r) => a + r.value, 0);
   const fundsSum = board.rows.filter((r) => r.kind === "etf").reduce((a, r) => a + r.value, 0);
+  const privateSum = board.subtotals?.private_funds ?? 0;
   const privateLabel = privateRows.length ? privateRows.map((r) => r.fund).join(" & ") : "Private funds";
+  const cryptoSum = cryptoTotal(other.crypto); // at example prices (lib/crypto.ts), labelled so on every row
+  const ownRow = (r: PortfolioOut["rows"][number]) => {
+    const e = board.exposure.find((x) => x.symbol === r.symbol);
+    return e ? <HoldingRow key={`own-${r.symbol}`} e={e} kind={r.kind} value={r.value} change={r.change} spark={sparks[r.symbol]} /> : null;
+  };
   const split: [string, number, boolean?][] = ([
-    ["Stocks", stocksSum], ["Funds", fundsSum], ["401(k)", board.subtotals?.retirement ?? 0],
+    ["Stocks", stocksSum], ["Funds", fundsSum], ["Crypto", cryptoSum], ["401(k)", board.subtotals?.retirement ?? 0],
     ["Home", board.subtotals?.home_estimate ?? 0, true], [privateLabel, board.subtotals?.private_funds ?? 0],
   ] as [string, number, boolean?][]).filter(([, v]) => v > 0);
 
@@ -102,8 +119,11 @@ export default function HoldingsBoard() {
       <div className="pf-head">
         <div className="stack" style={{ gap: 4 }}>
           <span className="kicker">Everything you own</span>
-          <div className="pf-total">{money(board.subtotals?.total ?? board.total)}</div>
-          {board.subtotals?.includes_home_estimate && <p className="note">Includes a home estimate</p>}
+          <div className="pf-total">{money((board.subtotals?.total ?? board.total) + cryptoSum)}</div>
+          {(board.subtotals?.includes_home_estimate || cryptoSum > 0) && (
+            <p className="note">{[board.subtotals?.includes_home_estimate && "Includes a home estimate", cryptoSum > 0 && "crypto at example prices"]
+              .filter(Boolean).join(" · ").replace(/^c/, (c) => (board.subtotals?.includes_home_estimate ? c : "C"))}</p>
+          )}
           {todayMove != null && (
             <p className="sc-change">
               <span className={todayMove < 0 ? "down" : "up"}>{todayMove < 0 ? "−" : "+"}{money(Math.abs(todayMove))} ({pct(todayRel, true, todayRel != null && Math.abs(todayRel) < 0.001 ? 2 : 1)})</span>
@@ -120,26 +140,19 @@ export default function HoldingsBoard() {
       {watching > 0 && <BadgeKey />}
       {/* Lite: only what you entered, one row each at its full value, a link to its own page. Pro: the look-through
        *  list too (stocks inside your funds), each still one clean row and one link. */}
-      {/* Grouped: stocks, then funds (with a 401(k)/IRA fund and a private fund, below), each under its own header. */}
-      {([["stock", "Stocks"], ["etf", "Funds"]] as const).map(([kind, label]) => {
-        const group = board.rows.filter((r) => (kind === "etf" ? r.kind === "etf" : r.kind !== "etf"));
-        const moreFunds = kind === "etf" && ((board.retirement?.length ?? 0) > 0 || privateRows.length > 0);
-        return (group.length > 0 || moreFunds) && (
-          <div key={kind} className="stack" style={{ gap: 10, marginTop: 14 }}>
-            {/* Pro lists stocks and funds in its own look-through list, so there this header only heads the 401(k)/private rows. */}
-            <span className={`ticker${moreFunds ? "" : " lite-only"}`}>{label}</span>
-            <div className="rows lite-only">
-              {group.map((r) => {
-                const e = board.exposure.find((x) => x.symbol === r.symbol);
-                return e ? (
-                  <HoldingRow key={`own-${r.symbol}`} e={e} kind={r.kind} value={r.value} change={r.change} spark={sparks[r.symbol]} />
-                ) : null;
-              })}
-            </div>
-            {kind === "etf" && <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="funds" title={null} />}
-          </div>
-        );
-      })}
+      {/* Everything you own in five sections, each with its subtotal: stocks, funds, crypto, real estate, 401(k).
+       *  Pro lists stocks and funds in its look-through list below, so there those two headers stay out. */}
+      {stocksSum > 0 && (
+        <Section label="Stocks" sum={money(stocksSum)} className="lite-only">
+          <div className="rows">{board.rows.filter((r) => r.kind !== "etf").map(ownRow)}</div>
+        </Section>
+      )}
+      {(fundsSum > 0 || privateRows.length > 0) && (
+        <Section label="Funds" sum={money(fundsSum + privateSum)} className={privateRows.length ? undefined : "lite-only"}>
+          <div className="rows lite-only">{board.rows.filter((r) => r.kind === "etf").map(ownRow)}</div>
+          <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="private" title={null} />
+        </Section>
+      )}
       <div className="rows pro-only pro-add">
         {board.exposure.map((e) => {
           const kind = kindOf(e.symbol);
@@ -164,8 +177,22 @@ export default function HoldingsBoard() {
         {board.unknown.length > 0 && <p className="badline">No data yet for {board.unknown.join(", ")}.</p>}
       </div>
 
-      <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="home" title="Real estate" />
-      <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="rest" />
+      {other.crypto.length > 0 && (
+        <Section label="Crypto" sum={money(cryptoSum)}>
+          <OtherAssetsRows show="crypto" title={null} />
+        </Section>
+      )}
+      {other.properties.length > 0 && (
+        <Section label="Real estate" sum={board.subtotals?.home_estimate ? approxMoney(board.subtotals.home_estimate) : "—"}>
+          <OtherAssetsRows show="home" title={null} />
+        </Section>
+      )}
+      {other.retirement.length > 0 && (
+        <Section label="401(k)" sum={money(board.subtotals?.retirement ?? 0)}>
+          <OtherAssetsRows rows={board.retirement ?? []} show="retirement" title={null} />
+        </Section>
+      )}
+      <OtherAssetsRows show="wallets" />
 
       {status?.data === "sample" && (
         <div className="row-flex" style={{ marginTop: 20 }}>

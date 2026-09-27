@@ -7,6 +7,7 @@ import { Why } from "@/components/Why";
 import { api, ApiError, SAVED, type FundLookup, type HomeEstimate, type RetirementRow } from "@/lib/api";
 import { SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
 import { shortWallet } from "@/lib/wallets";
+import { CRYPTO_NAMES, cryptoValue, EXAMPLE_CRYPTO_PRICES } from "@/lib/crypto";
 import { navMoney, PRIVATE_FUNDS, PRIVATE_LITE, PRIVATE_WITHDRAW, type PrivateFundKey, type PrivateFundRow } from "@/lib/private-funds";
 import { approxMoney, money, pct } from "@/lib/format";
 import { addCrypto, addPrivateFund, addProperty, addRetirement, portfolioExtras, removeOther, useOtherAssets, type Property, type RetirementFund } from "@/lib/other-assets";
@@ -254,18 +255,19 @@ function HomeRow({ p }: { p: Property }) {
  *  `rows`: the board's own retirement rows, so the page doesn't ask the portfolio endpoint twice.
  *  `show`: one kind only, so the board can put each under its own header (funds: 401(k)/IRA and private funds;
  *  home; rest: crypto and wallets); `title`: that header, or null for none (the page already shows one). */
+type Kind = "private" | "crypto" | "home" | "retirement" | "wallets";
 export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yours" }: {
-  rows?: RetirementRow[]; privateRows?: PrivateFundRow[]; show?: "funds" | "home" | "rest"; title?: string | null;
+  rows?: RetirementRow[]; privateRows?: PrivateFundRow[]; show?: Kind; title?: string | null;
 } = {}) {
   const all = useOtherAssets();
-  const keep = (k: "funds" | "home" | "rest") => !show || show === k;
+  const keep = (k: Kind) => !show || show === k;
   const v = {
     ...all,
     properties: keep("home") ? all.properties : [],
-    retirement: keep("funds") ? all.retirement : [],
-    privateFunds: keep("funds") && SHOW_PRIVATE_FUNDS ? all.privateFunds : [],
-    crypto: keep("rest") && SHOW_CRYPTO ? all.crypto : [],
-    wallets: keep("rest") ? all.wallets : [],
+    retirement: keep("retirement") ? all.retirement : [],
+    privateFunds: keep("private") && SHOW_PRIVATE_FUNDS ? all.privateFunds : [],
+    crypto: keep("crypto") ? all.crypto : [], // at example prices, labelled on each row
+    wallets: keep("wallets") ? all.wallets : [],
   };
   // Ask the stateless portfolio endpoint about just these rows, so each fund's badge is the backend's own state.
   const extras = portfolioExtras(v);
@@ -347,12 +349,15 @@ export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yo
           <div key={c.id} className="hitem">
             <div className="hrow other">
               <span className="who">
-                <span className="tk">{c.symbol}</span><span className="nm">Crypto</span>
-                <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol} · Price coming soon</span>
+                <span className="tk">{c.symbol}</span><span className="nm">{CRYPTO_NAMES[c.symbol] ?? "Crypto"}</span>
+                <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol}
+                  {EXAMPLE_CRYPTO_PRICES[c.symbol] != null ? ` at ${money(EXAMPLE_CRYPTO_PRICES[c.symbol])}` : ""}</span>
                 <button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`} style={{ alignSelf: "flex-start" }}>Remove</button>
               </span>
               <span className="sp" aria-hidden />
-              <span className="val">Price<small className="mute">coming soon</small></span>
+              {cryptoValue(c) != null
+                ? <span className="val">{money(cryptoValue(c))}<small className="mute">Example price</small></span>
+                : <span className="val">—<small className="mute">price not loaded</small></span>}
               <span className="hend"><StateBadge state={null} /></span>
             </div>
           </div>
