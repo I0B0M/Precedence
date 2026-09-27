@@ -37,18 +37,20 @@ export function OtherAssetsForms() {
   const [coinsSaved, setCoinsSaved] = useState(false);
 
   const coinRows = coins.filter((c) => /^[A-Za-z0-9.]{2,10}$/.test(c.symbol.trim()) && num(c.amount) != null);
-  const homeOk = place.trim().length > 1 && num(price) != null && /^\d{4}-\d{2}$/.test(bought) && !homeBusy;
+  // The FHFA index is yearly, so only the purchase year is asked for.
+  const year = /^\d{4}$/.test(bought.trim()) ? Number(bought.trim()) : null;
+  const homeOk = place.trim().length > 1 && num(price) != null && year != null && year >= 1975 && year <= new Date().getFullYear() && !homeBusy;
   const fundRows = funds.filter((f) => f.name.trim() && num(f.amount) != null);
 
   /** Ask for the estimate (an address, or a bare 5-digit ZIP), then save the home either way. */
   async function addHome() {
     setHomeBusy(true);
     setHomeMsg(null);
-    const where = place.trim(), paid = num(price)!, [y, m] = bought.split("-").map(Number);
+    const where = place.trim(), paid = num(price)!, y = year!;
     let estimate: HomeEstimate | null = null;
     let msg: { ok: boolean; text: string };
     try {
-      estimate = await api.estimateHome({ ...(/^\d{5}$/.test(where) ? { zip: where } : { address: where }), paid, bought_year: y, bought_month: m });
+      estimate = await api.estimateHome({ ...(/^\d{5}$/.test(where) ? { zip: where } : { address: where }), paid, bought_year: y });
       msg = { ok: true, text: `About ${approxMoney(estimate.estimate)} · Estimate` };
     } catch (e) {
       const status = e instanceof ApiError ? e.status : 0;
@@ -57,7 +59,7 @@ export function OtherAssetsForms() {
         ? { ok: false, text: `${(e as ApiError).message} Saved without an estimate.` }
         : { ok: false, text: "Estimate coming soon. Saved." };
     }
-    addProperty({ address: where, paid, bought, estimate });
+    addProperty({ address: where, paid, bought: String(y), estimate });
     setPlace(""); setPrice(""); setBought("");
     setHomeMsg(msg);
     setHomeBusy(false);
@@ -92,8 +94,9 @@ export function OtherAssetsForms() {
           onChange={(e) => { setPlace(e.target.value); setHomeMsg(null); }} placeholder="3900 Main Hwy, Miami, FL 33133" />
         <label className="list-head" htmlFor="h-price">What you paid</label>
         <input id="h-price" className="field" inputMode="decimal" value={price} onChange={(e) => { setPrice(e.target.value); setHomeMsg(null); }} placeholder="$" />
-        <label className="list-head" htmlFor="h-when">When you bought it</label>
-        <input id="h-when" className="field" type="month" value={bought} onChange={(e) => { setBought(e.target.value); setHomeMsg(null); }} />
+        <label className="list-head" htmlFor="h-when">Year you bought it</label>
+        <input id="h-when" className="field" inputMode="numeric" maxLength={4} placeholder="2018" value={bought}
+          onChange={(e) => { setBought(e.target.value.replace(/[^0-9]/g, "")); setHomeMsg(null); }} />
         <button className="btn" type="button" disabled={!homeOk} style={{ alignSelf: "flex-start" }} onClick={addHome}>
           {homeBusy ? "Estimating…" : "Add this home"}
         </button>

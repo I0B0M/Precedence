@@ -11,7 +11,7 @@ export interface Property {
   id: string;
   address: string; // a street address or a 5-digit ZIP, as typed
   paid: number;
-  bought: string; // "YYYY-MM"
+  bought: string; // "YYYY" (older saves: "YYYY-MM"); only the year is used
   estimate?: HomeEstimate | null; // from POST /api/estimate/home; absent until an estimate succeeds
 }
 export interface RetirementFund {
