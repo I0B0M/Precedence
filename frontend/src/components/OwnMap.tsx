@@ -51,11 +51,10 @@ export function OwnMap({ board }: { board: PortfolioOut }) {
   const total = board.total;
 
   return (
-    <div className="card ownmap" data-tour="ownmap">
+    <div className="card ownmap pro-only pro-add" data-tour="ownmap">
       <h3>What you really own</h3>
       <p className="note">
-        <span className="lite-only">Each box is money you have in one company, sized by dollars. Funds are opened up into the stocks inside them.</span>
-        <span className="pro-only">Tiles sized by dollars, fund holdings looked through (outlined groups). Blue = WATCH.</span>
+        Tiles sized by dollars, fund holdings looked through (outlined groups). Gold = WATCH. Your investments only: a home or private fund isn&apos;t split.
       </p>
       <div ref={box} className="om-plot">
         <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} role="img" aria-label={`What you own, ${money(total)} in ${leaves.length} pieces`}>
@@ -75,7 +74,7 @@ export function OwnMap({ board }: { board: PortfolioOut }) {
                 {huge && (
                   <text x={l.x0 + 8} y={l.y0 + 38} fontSize={12} fill={watch ? "var(--on-accent)" : "var(--text-2)"}>{money(t.value)} · {whole(t.value / total)}</text>
                 )}
-                <title>{`${t.symbol} · ${t.name}${t.inside ? ` (inside ${t.inside})` : ""}: ${money(t.value)}, ${whole(t.value / total)} of what you own${watch ? " · Heads up" : ""}`}</title>
+                <title>{`${t.symbol} · ${t.name}${t.inside ? ` (inside ${t.inside})` : ""}: ${money(t.value)}, ${whole(t.value / total)} of your investments${watch ? " · Heads up" : ""}`}</title>
               </g>
             );
             return t.href ? <Link key={t.key} href={t.href} aria-label={`${t.symbol}, ${money(t.value)}`}>{body}</Link> : <g key={t.key}>{body}</g>;

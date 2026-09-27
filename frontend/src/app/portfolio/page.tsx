@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Allocation } from "@/components/Allocation";
+import { OwnMap } from "@/components/OwnMap";
+import { RiskCard } from "@/components/RiskCard";
+import { maybeAutoTour, startTour } from "@/lib/tour";
 import { BadgeKey, StateBadge, Verdict } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
@@ -30,6 +33,11 @@ export default function HoldingsBoard() {
   useEffect(() => {
     api.status().then(setStatus).catch(setError);
   }, []);
+
+  // The saved-data demo plays the tour once on a first visit, once the board is on screen.
+  useEffect(() => {
+    if (board) maybeAutoTour();
+  }, [board]);
 
   const other = useOtherAssets();
   const extras = JSON.stringify(portfolioExtras(other)); // changes when a home or 401(k) fund is added or removed
@@ -133,6 +141,9 @@ export default function HoldingsBoard() {
       </div>
 
       <Allocation board={board} />
+      <OwnMap board={board} />
+      {holdings && holdings.length > 0 && <RiskCard holdings={holdings} />}
+      <button type="button" className="linkb" onClick={startTour} style={{ alignSelf: "flex-start" }}>Take the tour</button>
 
       <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
 

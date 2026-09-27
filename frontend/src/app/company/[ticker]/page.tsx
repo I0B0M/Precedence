@@ -72,6 +72,7 @@ export default function CompanyScreen() {
         kicker={`${co.ticker}${co.sector ? ` · ${co.sector}` : ""}${co.kind === "etf" ? " · fund" : ""}`}
         badge={d.state ? <StateBadge state={d.state} /> : null}
         prices={d.prices}
+        sources={d.price_sources}
         signals={d.signals}
         initialSignal={main?.signal}
       />

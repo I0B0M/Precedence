@@ -59,11 +59,17 @@ export const splitGap = (s: SignalResult) => {
     : `; the halves hold ${n} of the ${s.n} cases and ${hits} of the ${s.hits} hits`;
 };
 
+/** STRONG by Precedence's rule, but a stricter test that also counts the normal rate's uncertainty doesn't clear it. */
+export function isBorderline(s: { label: Label; strict?: SignalResult["strict"] }): boolean {
+  return s.label === "STRONG" && s.strict != null && s.strict.p >= 0.05;
+}
+
 /** Pro, beside a STRONG result: what the stricter checks say, from the backend's own fields. Null when they don't
  *  apply or passed. A STRONG verdict describes the past; this line keeps it from reading as proven. */
-export function proCaveat(s: { label: Label; fdr10_survives?: boolean | null; holdout?: SignalResult["holdout"] }): string | null {
+export function proCaveat(s: { label: Label; fdr10_survives?: boolean | null; holdout?: SignalResult["holdout"]; strict?: SignalResult["strict"] }): string | null {
   if (s.label !== "STRONG") return null;
   const parts: string[] = [];
+  if (isBorderline(s)) parts.push("borderline: the stricter test doesn't clear it");
   if (s.fdr10_survives === false) parts.push("doesn't survive the correction");
   const h = s.holdout;
   const v = h ? h.verdict ?? (h.held_up === true ? "held up" : h.held_up === false ? "did not hold" : "too few cases to check") : null;

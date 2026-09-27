@@ -689,3 +689,23 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
 /* Phone: Epilogue is wider than the old face, so the wordmark steps down to clear the Add account pill (to 360px). */
 @media (max-width: 480px) { .logo { font-size: 21px; } }
 @media (max-width: 380px) { .logo { font-size: 19px; } .logo-link { gap: 6px; } .seg button { padding: 0 8px; font-size: 12px; gap: 4px; } }
+
+/* Bryan's additions, on Precedence's tokens: the treemap, the risk card, candles, the tour popover. */
+.ownmap, .risk { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+html[data-mode="pro"] .ownmap.pro-only { display: flex !important; }
+.om-plot { width: 100%; overflow: hidden; }
+.om-plot svg { display: block; }
+.om-plot a rect { transition: filter 0.2s var(--ease-out); }
+.om-plot a:hover rect { filter: brightness(1.25); }
+.om-plot a:focus-visible { outline: none; }
+.om-plot a:focus-visible rect { stroke: var(--accent); stroke-width: 3px; }
+.sc-candles { width: 100%; }
+.sc-kind { margin-top: 12px; }
+.driver-popover.precedence-tour { background: var(--group); color: var(--text); border: var(--edge); border-radius: var(--r-card); max-width: 340px; }
+.driver-popover.precedence-tour .driver-popover-title { font-family: var(--head); font-size: 18px; font-weight: 500; color: var(--text); }
+.driver-popover.precedence-tour .driver-popover-description { font-size: 15px; line-height: 1.45; color: var(--text-2); margin-top: 6px; }
+.driver-popover.precedence-tour .driver-popover-progress-text { color: var(--text-2); font-size: 13px; }
+.driver-popover.precedence-tour .driver-popover-footer button { min-height: 44px; padding: 0 16px; border-radius: 999px; background: transparent; color: var(--gold); border: 1px solid var(--gold); text-shadow: none; font: inherit; }
+.driver-popover.precedence-tour .driver-popover-next-btn { background: var(--gold); color: var(--on-accent); }
+.driver-popover.precedence-tour .driver-popover-close-btn { color: var(--text-2); min-width: 44px; min-height: 44px; }
+.driver-popover.precedence-tour .driver-popover-arrow { display: none; }

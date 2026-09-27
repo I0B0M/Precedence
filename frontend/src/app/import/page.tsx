@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { OtherAssetsForms } from "@/components/OtherAssets";
 import { SHOW_CONNECT, SHOW_CRYPTO } from "@/lib/flags";
 import { comingNext } from "@/lib/features";
-import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib/api";
+import { api, ApiError, SAVED, SAVED_EXAMPLE, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 
@@ -14,7 +14,7 @@ const CONNECT = [
   ...(SHOW_CRYPTO ? [{ name: "Binance", what: "Crypto" }] : []),
 ];
 
-const EXAMPLE: [string, number][] = [["BX", 10], ["AMZN", 5], ["SPY", 3]];
+const EXAMPLE: [string, number][] = SAVED ? SAVED_EXAMPLE.map((h) => [h.symbol, h.shares]) : [["BX", 10], ["AMZN", 5], ["SPY", 3]];
 
 /** Fill what a person typing would leave out: price from the latest close, value from shares x price. */
 async function fillTyped(rows: EditRow[]): Promise<{ rows: EditRow[]; priced: { symbol: string; day: string | null }[]; unpriced: string[] }> {

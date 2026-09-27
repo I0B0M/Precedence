@@ -6,7 +6,7 @@ import { StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { ChartPanel, DotsArt, FundsPanel, IconChecked, IconHonest, IconSources, IconTested, Mark, PaperPanel, RangeArt } from "@/components/landing/Art";
 import { HeroLoop } from "@/components/landing/Loops";
-import { api, type CompanyDetail, type FundPage, type PortfolioOut, type Scan, type Status, type Today } from "@/lib/api";
+import { api, SAVED, SAVED_EXAMPLE, type CompanyDetail, type FundPage, type PortfolioOut, type Scan, type Status, type Today } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { PRACTICE_CASH } from "@/lib/practice";
 import { useHoldings } from "@/lib/holdings";
@@ -15,7 +15,8 @@ import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 import { TodayFunnel } from "@/components/Today";
 
 // The example the home page shows, and the one /import?example=1 fills in.
-const EXAMPLE = [{ symbol: "BX", shares: 10 }, { symbol: "AMZN", shares: 5 }, { symbol: "SPY", shares: 3 }];
+// The saved-data demo has one portfolio saved, so it uses that one.
+const EXAMPLE = SAVED ? SAVED_EXAMPLE : [{ symbol: "BX", shares: 10 }, { symbol: "AMZN", shares: 5 }, { symbol: "SPY", shares: 3 }];
 // Not served by the API yet (no all-time totals endpoint): counted in the database load, as of Sep 25.
 const INSIDER_TRADES = 35797;
 const BADGES: [string, string, string][] = [

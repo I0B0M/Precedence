@@ -67,7 +67,7 @@ export function LabelTag({ label }: { label: Label }) {
 }
 
 /** The verdict tag, and in Pro beside a STRONG one, what the stricter checks say ("Doesn't survive the correction"). */
-export function Verdict({ s }: { s: { label: Label; fdr10_survives?: boolean | null; holdout?: SignalResult["holdout"] } }) {
+export function Verdict({ s }: { s: { label: Label; fdr10_survives?: boolean | null; holdout?: SignalResult["holdout"]; strict?: SignalResult["strict"] } }) {
   const c = proCaveat(s);
   // A small column, tag on top and the caveat under it, so the two never run into each other on a narrow screen.
   return (
