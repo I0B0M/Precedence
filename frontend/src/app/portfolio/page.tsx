@@ -143,7 +143,10 @@ export default function HoldingsBoard() {
       <Allocation board={board} />
       <OwnMap board={board} />
       {holdings && holdings.length > 0 && <RiskCard holdings={holdings} />}
-      <button type="button" className="linkb" onClick={startTour} style={{ alignSelf: "flex-start" }}>Take the tour</button>
+      <div className="row-flex" style={{ gap: 20 }}>
+        <Link className="linkb" href="/briefing">Hear today&apos;s briefing ›</Link>
+        <button type="button" className="linkb" onClick={startTour}>Take the tour</button>
+      </div>
 
       <TodayFunnel symbols={(holdings ?? []).map((h) => h.symbol)} />
 

@@ -26,7 +26,19 @@ SSGA     ──┘                                                        │
 - `backend/stone/signals/`: the signal engine. No I/O, so it is fully unit-tested.
 - `backend/stone/portfolio/`: exposure (including what you hold inside ETFs) and the
   screenshot reconcile check.
+- `backend/stone/briefing/`: the spoken briefing (below). No I/O, fully unit-tested.
 - `frontend/`: Next.js app.
+
+## The briefing: a panel of experts, every number checked
+
+`GET /api/briefing/{ticker}` and `POST /api/briefing/portfolio` return a short spoken script. Experts, each one a
+tested rule, read one kind of evidence: signals, the market, risk, look-through, figures, filings and insiders.
+Each proposes points with a salience. A gate speaks the most salient first, within a line budget and a cap per
+expert, and lists what it held back and why. It's shaped like a mixture of experts, but no model is trained or
+called: 15 to 50 past cases per stock can't train one (see `docs/adr/0001`). Every line is one sentence of at
+most 28 words, and every number it prints must round-trip to a value in its evidence (`briefing/lines.py`
+`check()`). A point that fails is never spoken, and the saved-data build stops. For the live demo,
+`build_saved.py` writes the same JSON to `frontend/public/saved/briefing/`. Terms are in `CONTEXT.md`.
 
 ## Real vs sample data
 
