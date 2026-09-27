@@ -43,6 +43,12 @@ export default function FundScreen() {
   if (error) return isNotFound(error) ? <NotFollowed ticker={symbol} /> : <ApiProblem />;
   if (!f) return <Loading what={symbol} />;
 
+  // Group identical ticker + form + day ("LLY Insider trade ×3"); keep the first filing's link.
+  const grouped = Object.values(f.week_filings.reduce<Record<string, { ticker: string; form: string; accepted_at: string; url: string | null; count: number }>>((acc, x) => {
+    const k = `${x.ticker}|${x.form}|${x.accepted_at.slice(0, 10)}`;
+    acc[k] = acc[k] ? { ...acc[k], count: acc[k].count + 1 } : { ...x, count: 1 };
+    return acc;
+  }, {}));
   const fundSignal = f.fund_firing.find((s) => s.label === "STRONG") ?? f.fund_firing[0] ?? null;
   const top = f.holdings.slice(0, 10);
   const max = Math.max(...top.map((h) => h.weight), 0.0001);
@@ -86,7 +92,7 @@ export default function FundScreen() {
         <div className="box">
           <h3>What&apos;s inside</h3>
           <p className="say-big">{f.note ?? `What's inside ${f.symbol} isn't loaded yet.`}</p>
-          <p className="mute">Stone shows this fund as one line until it has a holdings file for it. Nothing here is estimated.</p>
+          <p className="mute">Shown as one line until Stone has its holdings file.</p>
         </div>
       ) : (
         <div className="grid2">
@@ -107,14 +113,12 @@ export default function FundScreen() {
               ))}
             </div>
             <p className="note">
-              {more > 0 ? (f.built_from === "api" ? `And ${more} more. ` : `And ${more} more that Stone can see. `) : ""}
-              {unseen > 0.005 ? `The other ${w(unseen)} of the fund is in companies Stone doesn't track yet. ` : ""}
-              {f.holdings_as_of ? `Holdings as of ${shortDate(f.holdings_as_of)}${source ? `, ${source}` : ""}.` : ""}
+              {more > 0 ? `And ${more} more${f.built_from === "api" ? "" : " that Stone can see"}. ` : ""}
+              {f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}${source ? `, ${source}` : ""}.` : ""}
+              <span className="pro-only">{unseen > 0.005 ? ` The other ${w(unseen)} of the fund is in companies Stone doesn't track yet.` : ""}</span>
             </p>
             {f.heads_up.length > 0 && (
-              <p className="watchline">
-                <b>Heads up inside:</b> {f.heads_up.map((h) => `${h.ticker} (${w(h.weight)})`).join(", ")}.
-              </p>
+              <p className="watchline"><b>Heads up inside:</b> {f.heads_up.map((h) => h.ticker).join(", ")}.</p>
             )}
           </div>
 
@@ -131,24 +135,27 @@ export default function FundScreen() {
                   </div>
                 ))}
               </div>
-              <p className="note">Price change from daily closes{f.performance.as_of ? ` to ${shortDate(f.performance.as_of)}` : ""}. Basis: {f.performance.basis}.</p>
+              <p className="note">
+                Price only{f.performance.as_of ? `, to ${shortDate(f.performance.as_of)}` : ""}.
+                <span className="pro-only"> Basis: {f.performance.basis}.</span>
+              </p>
             </div>
 
             <div className="box">
               <h3>What happened inside {spanWords(f.filings_span, "this week")}</h3>
-              {f.week_filings.length ? (
+              {grouped.length ? (
                 <div className="list">
-                  {f.week_filings.map((x) => (
+                  {grouped.map((x) => (
                     <div key={`${x.ticker}-${x.accepted_at}-${x.form}`} className="list-row">
-                      <span><b>{x.ticker}</b> {FORM_WORDS[x.form] ?? x.form}</span>
+                      <span><b>{x.ticker}</b> {FORM_WORDS[x.form] ?? x.form}{x.count > 1 ? ` ×${x.count}` : ""}</span>
                       <span className="mute">
                         {shortDate(x.accepted_at)}{x.url && <> · <a href={x.url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}
                       </span>
                     </div>
                   ))}
                 </div>
-              ) : <p className="mute">No SEC filings from its top 10 holdings in Stone&apos;s data {spanWords(f.filings_span, "this week")}.</p>}
-              <p className="note">Filings from SEC EDGAR, for the fund&apos;s top 10 holdings.</p>
+              ) : <p className="mute">No filings from its top holdings {spanWords(f.filings_span, "this week")}.</p>}
+              <p className="note pro-only">Filings from SEC EDGAR, for the fund&apos;s top holdings; same ticker, form and day grouped.</p>
             </div>
           </div>
         </div>

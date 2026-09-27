@@ -57,10 +57,11 @@ export function TodayMarket({ t }: { t: Today }) {
         <span className="ticker">This week in the market</span>
         <div className="bignum count-in" style={{ fontSize: "clamp(40px, 5vw, 48px)" }}>{wn.toLocaleString("en-US")}</div>
         <p className="lede" style={{ color: "var(--text)" }}>
-          new {wn === 1 ? "thing" : "things"} this week ({span(w.start, w.end)}) across the companies Stone follows:{" "}
-          {filingWords(w.filings)}{jumps ? ` and ${plural(jumps, "interest-rate jump")}` : ""}.
+          new filings and rate moves this week ({span(w.start, w.end)}).
         </p>
-        <p>On {shortDate(t.day)} alone: {marketWords(t, false)}.</p>
+        <p className="pro-only">
+          {filingWords(w.filings)}{jumps ? ` and ${plural(jumps, "interest-rate jump")}` : ""}. On {shortDate(t.day)} alone: {marketWords(t, false)}.
+        </p>
         <p className="note">
           Filings from {SOURCES[w.filings.source] ?? w.filings.source}, {w.filings.companies} companies
           {w.rate ? `; 10-year Treasury rate ${w.rate.first_value.toFixed(2)}% → ${w.rate.last_value.toFixed(2)}% (${w.rate.change >= 0 ? "+" : ""}${w.rate.change.toFixed(2)} pt), from ${SOURCES[w.rate.source] ?? w.rate.source}` : ""}.
@@ -72,9 +73,8 @@ export function TodayMarket({ t }: { t: Today }) {
     <div className="stack" style={{ gap: 6 }}>
       <span className="ticker">Today in the market</span>
       <div className="bignum count-in" style={{ fontSize: "clamp(40px, 5vw, 48px)" }}>{n.toLocaleString("en-US")}</div>
-      <p className="lede" style={{ color: "var(--text)" }}>
-        new {n === 1 ? "thing" : "things"} in Stone&apos;s data for {shortDate(t.day)}: {marketWords(t)}.
-      </p>
+      <p className="lede" style={{ color: "var(--text)" }}>new filings and rate moves on {shortDate(t.day)}.</p>
+      <p className="pro-only">{marketWords(t)}.</p>
       <p className="note">
         Filings from {SOURCES[f.source] ?? f.source} for the companies Stone tracks
         {r ? `; 10-year Treasury rate ${r.value.toFixed(2)}% on ${shortDate(r.day)}, from ${SOURCES[r.source] ?? r.source}` : ""}.
@@ -211,7 +211,7 @@ export function StartFlow() {
               <button className="btn" type="button" disabled={!own.length} onClick={() => setStep(2)}>Next</button>
               <Link className="btn light" href="/import?example=1">Try an example portfolio</Link>
             </div>
-            <p className="note">The example uses real prices for BX, AMZN and SPY. It&apos;s labelled as an example and nothing is saved until you press Save.</p>
+            <p className="note">Real prices, clearly labelled. Nothing is saved until you press Save.</p>
           </>
         ) : (
           <>
@@ -219,7 +219,7 @@ export function StartFlow() {
             {notCovered.length > 0 && (
               <p className="watchline">
                 {notCovered.map((k) => OWN.find((o) => o.key === k)?.label).join(" and ")} {notCovered.length > 1 ? "aren't" : "isn't"} covered yet:
-                Stone has no data or signals for {notCovered.length > 1 ? "them" : "it"}. You can still bring in your stocks and funds.
+                bring in your stocks and funds for now.
               </p>
             )}
             <div className="list">
@@ -228,7 +228,7 @@ export function StartFlow() {
                 <button className="btn light small" type="button" disabled>Connecting opens soon</button>
               </div>
               <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app. We check the rows add up to the total on screen.</span></span>
+                <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app, checked against your total</span></span>
                 <Link className="btn small" href="/import">Add a screenshot</Link>
               </div>
               <div className="list-row" style={{ alignItems: "center" }}>
@@ -236,7 +236,7 @@ export function StartFlow() {
                 <Link className="btn light small" href="/import">Type them in</Link>
               </div>
             </div>
-            <p className="note">Step 3 is your board: saving your holdings takes you there.</p>
+            <p className="note">Step 3: your portfolio.</p>
             <button className="linkb" type="button" onClick={() => setStep(1)}>‹ Back</button>
           </>
         )}

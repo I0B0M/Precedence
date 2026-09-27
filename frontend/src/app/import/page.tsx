@@ -182,13 +182,13 @@ export default function ImportScreen() {
       <div className="stack" style={{ gap: 8 }}>
         <span className="ticker">Add an account</span>
         <h1>Bring in what you own</h1>
-        <p className="lede">Connect an account, or add a screenshot of any app. Stone only reads what you own; it can never trade or move money.</p>
+        <p className="lede">Stone only reads what you own. It never trades or moves money.</p>
       </div>
 
       {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
       <div className="card" style={{ borderWidth: 2 }}>
         <h3>Try an example portfolio</h3>
-        <p>See Stone with BX, AMZN and SPY at their real closing prices. It&apos;s labelled as an example, and nothing is saved until you press Save.</p>
+        <p>BX, AMZN and SPY at real closing prices. Nothing is saved until you press Save.</p>
         <button className="btn" type="button" onClick={fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
       </div>
 
@@ -207,8 +207,7 @@ export default function ImportScreen() {
 
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Your app isn&apos;t here? Add a screenshot</h2>
-        <p className="mute">Read by Gemini, then checked against your total. If the rows don&apos;t add up to the total on your screen, we find the
-          misread before anything is saved.</p>
+        <p className="mute">Read by Gemini, then checked against your total.</p>
       </div>
 
       <div className="drop">
@@ -293,7 +292,7 @@ export default function ImportScreen() {
 
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Everything else you own</h2>
-        <p className="mute">A home, a 401(k) or an IRA{SHOW_CRYPTO ? ", crypto" : ""}. Stone keeps what you type; values show only once there&apos;s a real estimate.</p>
+        <p className="mute">A home, a 401(k) or an IRA{SHOW_CRYPTO ? ", crypto" : ""}. Values show once there&apos;s a real estimate.</p>
       </div>
       <OtherAssetsForms />
     </section>
