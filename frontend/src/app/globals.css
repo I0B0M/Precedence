@@ -92,6 +92,17 @@ html[data-mode="pro"] .pro-only { display: revert !important; }
 html[data-mode="pro"] .lite-only { display: none !important; }
 html[data-mode="pro"] .stack.pro-only { display: flex !important; }
 html[data-mode="pro"] .grid2.pro-only { display: grid !important; }
+/* Pro adds layers under the same answer Lite gives; each added layer carries a gold rule on its left. */
+html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-left: 12px; }
+/* Stock page, what happened: rows wrap, and on a phone each Pro fact stacks (label over value) so nothing overlaps. */
+.today-move .list-row { flex-wrap: wrap; row-gap: 2px; }
+.today-move .list-row > span:first-child { flex: 1 1 14em; }
+.today-move .list-row > span:last-child { white-space: normal; flex: 0 1 auto; }
+@media (max-width: 560px) {
+  .today-move .kv { grid-template-columns: minmax(0, 1fr); }
+  .today-move .kv dd { text-align: left; padding-top: 0; }
+  .today-move .kv dt:not(:first-of-type) + dd { border-top: 0; }
+}
 
 /* ---------- top bar ---------- */
 .top {

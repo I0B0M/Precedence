@@ -7,10 +7,12 @@ import { BadgeKey, HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "
 import { FilingSummary } from "@/components/FilingSummary";
 import { Why } from "@/components/Why";
 import { MarketCard } from "@/components/MarketCard";
+import { TodayMove } from "@/components/TodayMove";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
 import { bigMoney, money, pct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
+import { portfolioExtras } from "@/lib/other-assets";
 import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
 import { StockChart } from "./StockChart";
 
@@ -32,10 +34,11 @@ export default function CompanyScreen() {
       setD(body);
       const holdings = readHoldings() ?? (body.company.source === "sample" ? SAMPLE_PORTFOLIO : []);
       if (holdings.length) {
-        api.portfolio(holdings).then((p) => {
+        // With the home and 401(k) funds, so "share of everything you own" is out of everything, as on the board.
+        api.portfolio(holdings, portfolioExtras()).then((p) => {
           setMine(p.exposure.find((e) => e.symbol === body.company.ticker) ?? null);
-          setPortfolioTotal(p.total);
-        });
+          setPortfolioTotal(p.subtotals?.total ?? p.total);
+        }).catch(() => {});
       }
     }).catch(setError);
   }, [ticker]);
@@ -50,7 +53,7 @@ export default function CompanyScreen() {
   const factsFrom = d.facts[0];
   // A fund's board row stands for only part of it (the rest shows as its stocks), so judge the whole fund from `direct`.
   const isFund = co.kind === "etf";
-  const myShare = mine ? (isFund ? (portfolioTotal ? mine.direct / portfolioTotal : null) : mine.share_of_total) : null;
+  const myShare = mine && portfolioTotal ? (isFund ? mine.direct : mine.total) / portfolioTotal : null;
   const myBadDay = mine ? (isFund ? (mine.bad_day_return != null ? mine.bad_day_return * mine.direct : null) : mine.bad_day_loss) : null;
   // The Lab tests single stocks; the market's own rate-jump result has no case page there.
   const inLab = (signal: string) => signal !== "market_rate_jump";
@@ -71,6 +74,7 @@ export default function CompanyScreen() {
         signals={d.signals}
         initialSignal={main?.signal}
       />
+      <TodayMove ticker={co.ticker} />
       {d.state === "WATCH" && <BadgeKey />}
 
       {/* ---------------- LITE ---------------- */}
