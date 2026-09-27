@@ -78,6 +78,14 @@ def same_index_note(etf: str, src: str, source: str | None) -> str | None:
             + f". Same index as {src}, so {src}'s test applies.")
 
 
+def nport_note(as_of, source: str | None) -> str | None:
+    """Holdings from an SEC N-PORT filing are months old; say so next to them."""
+    if not (source or "").startswith("SEC N-PORT"):
+        return None
+    return (f"Holdings as of {as_of.isoformat()}, from the fund's SEC N-PORT filing. N-PORT is published "
+            "about two months after that date, so these are older than a daily issuer file.")
+
+
 def state_of(results: list[engine.Result] | None) -> str | None:
     return engine.holding_state(results) if results is not None else None
 
@@ -429,7 +437,8 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
         "filings_span": {"start": start.isoformat(), "end": day.isoformat()} if day else None,
         "week_filings": [{"ticker": f["ticker"], "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
                           "url": filing_url(f["cik"], f["accession"], f["primary_doc"], f["source"])} for f in week],
-        "note": f"Holdings for {t} aren't loaded yet." if not rows else same_index_note(t, src, rows[0]["source"]),
+        "note": f"Holdings for {t} aren't loaded yet." if not rows else nport_note(as_of, rows[0]["source"])
+        or same_index_note(t, src, rows[0]["source"]),
     }
 
 

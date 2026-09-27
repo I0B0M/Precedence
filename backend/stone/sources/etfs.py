@@ -29,6 +29,7 @@ class Holdings:
     weights: dict[str, float]  # ticker -> share of the fund, 0..1
     source: str
     names: dict[str, str] = field(default_factory=dict)  # ticker -> the issuer's name for it, e.g. "MICRON TECHNOLOGY INC"
+    cusips: dict[str, str] = field(default_factory=dict)  # ticker -> CUSIP ("Identifier"), to match other filings exactly
 
 
 def xlsx_rows(content: bytes) -> list[list[str | None]]:
@@ -64,8 +65,10 @@ def parse_spdr(etf: str, content: bytes) -> Holdings:
     header = next(i for i, r in enumerate(rows) if "Ticker" in r and "Weight" in r)
     tcol, wcol = rows[header].index("Ticker"), rows[header].index("Weight")
     ncol = rows[header].index("Name") if "Name" in rows[header] else None
+    icol = rows[header].index("Identifier") if "Identifier" in rows[header] else None
     weights: dict[str, float] = {}
     names: dict[str, str] = {}
+    cusips: dict[str, str] = {}
     for r in rows[header + 1:]:
         if not r or not r[0]:
             break  # the table ends at the first blank row; disclaimers follow
@@ -75,7 +78,9 @@ def parse_spdr(etf: str, content: bytes) -> Holdings:
         weights[ticker] = weights.get(ticker, 0.0) + float(weight) / 100
         if ncol is not None and ncol < len(r) and (r[ncol] or "").strip():
             names.setdefault(ticker, r[ncol].strip())
-    return Holdings(etf, as_of, {t: w for t, w in weights.items() if w > 0}, "ssga", names)
+        if icol is not None and icol < len(r) and (r[icol] or "").strip() not in ("", "-"):
+            cusips.setdefault(ticker, r[icol].strip())
+    return Holdings(etf, as_of, {t: w for t, w in weights.items() if w > 0}, "ssga", names, cusips)
 
 
 class SpdrClient:

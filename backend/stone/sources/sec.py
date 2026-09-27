@@ -223,6 +223,18 @@ class SecClient:
         raw = self.http.get(f"{ARCHIVES}/{cik}/{folder}/{doc}", f"form4_{filing.accession}.xml")
         return parse_form4(raw, issuer_ciks)
 
+    def latest_nport(self, cik: int) -> tuple[str, date, date] | None:
+        """(accession, filed, report date) of a fund's newest public NPORT-P, from its submissions list."""
+        key = f"CIK{cik:010d}"
+        recent = json.loads(self.http.get(f"{DATA}/submissions/{key}.json", f"submissions_{key}.json"))["filings"]["recent"]
+        rows = [(recent["accessionNumber"][i], date.fromisoformat(recent["filingDate"][i]),
+                 date.fromisoformat(recent["reportDate"][i]))
+                for i, form in enumerate(recent["form"]) if form == "NPORT-P"]
+        return max(rows, key=lambda r: (r[2], r[1]), default=None)
+
+    def nport_xml(self, cik: int, accession: str) -> bytes:
+        return self.http.get(f"{ARCHIVES}/{cik}/{accession.replace('-', '')}/primary_doc.xml", f"nport_{accession}.xml")
+
     def document(self, cik: int, accession: str, primary_doc: str) -> bytes:
         """A filing's main document (HTML), cached."""
         folder = accession.replace("-", "")
