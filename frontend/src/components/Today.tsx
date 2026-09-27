@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { api, type Today } from "@/lib/api";
+import { api, type Scan, type Today } from "@/lib/api";
+import { Why } from "@/components/Why";
 import { shortDate } from "@/lib/format";
 import { SHOW_CRYPTO } from "@/lib/flags";
-import { FORM_WORDS } from "@/lib/words";
+import { FORM_WORDS, SIGNAL_WORDS } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
 const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
@@ -117,11 +118,11 @@ function Countdown({ stages }: { stages: Stage[] }) {
       <p className="sr-only">{stages.map((st) => `${st.n} ${st.label}`).join(", then ")}.</p>
       <div aria-hidden>
         {label > 0 && (
-          <p className="trail">{stages.slice(0, label).map((st, i) => <span key={i}><s>{st.n}</s> → </span>)}</p>
+          <p className="trail pro-only">{stages.slice(0, label).map((st, i) => <span key={i}><s>{st.n}</s> → </span>)}</p>
         )}
         <p className="countdown-now">
           <span className="bignum">{shown}</span>
-          <span>{stages[label].label}</span>
+          <span className="pro-only">{stages[label].label}</span>
         </p>
       </div>
     </div>
@@ -131,6 +132,10 @@ function Countdown({ stages }: { stages: Stage[] }) {
 /** On the board: from everything that landed this week, down to what has mattered before for what you own. */
 export function TodayFunnel({ symbols }: { symbols: string[] }) {
   const t = useToday(symbols);
+  const [scan, setScan] = useState<Scan | null>(null);
+  useEffect(() => {
+    api.scan().then(setScan).catch(() => {});
+  }, []);
   const stages = useMemo<Stage[]>(() => {
     if (!t?.day || !t.holdings) return [];
     const h = t.holdings, w = t.week;
@@ -146,21 +151,38 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
   if (!t?.day || !t.holdings || !stages.length) return null;
   const h = t.holdings, w = t.week;
   const mine = w && h.week_filings ? h.week_filings : h.filings;
+  const about = mine.count + h.signals.firing;
+  // The one filing worth showing in Lite: from a holding whose signal has mattered before, else a report or company news.
+  const strongSyms = new Set(h.signals.items.filter((i) => i.label === "STRONG").map((i) => i.symbol));
+  const top = mine.items.find((i) => strongSyms.has(i.ticker))
+    ?? mine.items.find((i) => ["8-K", "10-Q", "10-K"].includes(i.form)) ?? mine.items[0] ?? null;
+  const filingRow = (i: typeof mine.items[number]) => (
+    <><b>{i.ticker}</b> · {FORM_WORDS[i.form] ?? i.form} · {shortDate(i.accepted_at)}
+      {i.url && <> · <a href={i.url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}</>
+  );
   return (
     <div className="today">
       <span className="ticker">{w ? "This week" : "Today"}</span>
       <Countdown stages={stages} />
+      <p className="lite-only">
+        {about} about what you own · {h.signals.strong_firing} {h.signals.strong_firing === 1 ? "has" : "have"} mattered before
+      </p>
+      <p className="pro-only" style={{ margin: 0 }}>
+        <Why what="have mattered before" scan={scan}
+          rows={[
+            ["Mattered before", h.signals.items.filter((i) => i.label === "STRONG").map((i) => `${i.symbol} (${SIGNAL_WORDS[i.signal] ?? i.signal})`).join(", ") || "none"],
+            ["Firing now", h.signals.items.map((i) => `${i.symbol} ${SIGNAL_WORDS[i.signal] ?? i.signal} (${i.label})`).join(", ") || "none"],
+            ["Rule", "STRONG only when the whole 90% range beats the stock's normal rate"],
+          ]}
+          source="Stone's signal engine on prices, SEC filings and FRED" asOf={h.signals.as_of ?? t.day} />
+      </p>
+      {top && <p className="lite-only note">{filingRow(top)}</p>}
       {mine.items.length > 0 && (
-        <ul className="funnel-items">
-          {mine.items.map((i) => (
-            <li key={`${i.ticker}-${i.accepted_at}-${i.form}`}>
-              <b>{i.ticker}</b> {FORM_WORDS[i.form] ?? i.form}, {shortDate(i.accepted_at)}
-              {i.url && <> · <a href={i.url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}
-            </li>
-          ))}
+        <ul className="funnel-items pro-only">
+          {mine.items.map((i) => <li key={`${i.ticker}-${i.accepted_at}-${i.form}`}>{filingRow(i)}</li>)}
         </ul>
       )}
-      <p className="note">
+      <p className="note pro-only">
         {w ? `This week: ${filingWords(w.filings, false)}${w.rate?.jumps.length ? ` and ${plural(w.rate.jumps.length, "interest-rate jump")}` : ""}. ` : `${marketWords(t, false)}. `}
         Filings from SEC EDGAR; signals from Stone&apos;s engine on prices, SEC filings and FRED, as of {shortDate(h.signals.as_of ?? t.day)}.
         {h.signals.items.length > 0 && <> Firing: {h.signals.items.map((i) => `${i.symbol} (${i.label})`).join(", ")}.</>}
