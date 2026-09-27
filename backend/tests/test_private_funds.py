@@ -108,7 +108,8 @@ def conn():
     c = db.connect(os.environ["DATABASE_URL"])
     db.apply_schema(c)
     sample.seed(c, date(2026, 9, 26))
-    wipe = lambda: [c.execute(f"delete from {t}") for t in ("private_fund_filings", "private_fund_navs", "private_funds")]
+    wipe = lambda: [c.execute(f"delete from {t}") for t in ("private_fund_filings", "private_fund_navs",
+                                                            "private_fund_distributions", "private_funds")]
     wipe()
     store(c, collect(pf.FUNDS["BREIT"], BREIT_FILINGS, lambda f: TEXTS[f.accession], date(2025, 5, 31)))
     c.commit()

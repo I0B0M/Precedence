@@ -252,7 +252,12 @@ export interface PrivateFundPage {
   pricing: "monthly NAV";
   nav: { value: number; as_of: string; share_class: "I"; form: "424B3" | "8-K"; accession: string; url: string } | null;
   history: { as_of: string; nav: number; url: string }[]; // month ends, oldest first; each value's own filing
-  returns: { m1: number | null; m3: number | null; m12: number | null; basis: string }; // fractions; null if a month is missing
+  returns: { m1: number | null; m3: number | null; m12: number | null; basis: string }; // NAV change only; fractions; null if a month is missing
+  // Class I gross distribution per share, one per month (record-date month), each from its own 8-K; oldest first
+  distributions?: { month: string; amount: number; record_date: string; url: string }[];
+  // (NAV at the end + distributions whose record date falls in the window) / NAV at the start - 1. Not reinvested.
+  // null when either NAV or any month's distribution in the window has no filing: never estimated
+  total_return?: { m1: number | null; m3: number | null; m12: number | null; basis: string };
   invests_in: { text: string; url: string } | null; // ≤12 words, quoted from its latest 10-Q/10-K
   liquidity_note: string | null; // its own repurchase limits, quoted
   liquidity_url: string | null; // the filing that note quotes

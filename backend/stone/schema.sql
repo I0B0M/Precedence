@@ -154,6 +154,22 @@ create table if not exists private_fund_navs (
     source       text not null,
     primary key (ticker, share_class, as_of)
 );
+-- One row per month: the Class I gross distribution per share whose record date falls in that month,
+-- tied to the 8-K that declares it.
+create table if not exists private_fund_distributions (
+    ticker       text not null references private_funds (ticker),
+    share_class  text not null,
+    month        date not null,  -- month end of the record date
+    amount       numeric not null,
+    record_date  date not null,
+    form         text not null,
+    accession    text not null,
+    url          text not null,
+    filed        date not null,
+    source       text not null,
+    primary key (ticker, share_class, month)
+);
+
 -- The latest 10-Q, 10-K and NAV filing, for the fund page's links.
 create table if not exists private_fund_filings (
     ticker       text not null references private_funds (ticker),

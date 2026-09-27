@@ -406,10 +406,23 @@ def nav_return(by_month: dict, latest, months: int) -> float | None:
     return by_month[latest] / then - 1 if then else None
 
 
+def total_return(by_month: dict, paid: dict, latest, months: int) -> float | None:
+    """(NAV at the end + distributions whose record date falls in the window) / NAV at the start - 1, not
+    reinvested. None if either NAV or any month's distribution in the window has no filing."""
+    start = month_back(latest, months)
+    window = [month_back(latest, k) for k in range(months)]  # the month ends after `start`, up to `latest`
+    if start not in by_month or any(m not in paid for m in window):
+        return None
+    return (by_month[latest] + sum(paid[m] for m in window)) / by_month[start] - 1
+
+
 def private_fund_page(c: psycopg.Connection, f: dict) -> dict:
     navs = private_navs(c, f)
     last = navs[-1] if navs else None
     by_month = {n["as_of"]: float(n["nav"]) for n in navs}
+    dists = c.execute("select month, amount, record_date, url from private_fund_distributions "
+                      "where ticker = %s and share_class = %s order by month", (f["ticker"], f["share_class"])).fetchall()
+    paid = {d["month"]: float(d["amount"]) for d in dists}
     links = c.execute("select form, accepted_at, url from private_fund_filings where ticker = %s "
                       "order by accepted_at desc", (f["ticker"],)).fetchall()
     return {
@@ -421,6 +434,11 @@ def private_fund_page(c: psycopg.Connection, f: dict) -> dict:
         "returns": {**{k: nav_return(by_month, last["as_of"], m) if last else None
                        for k, m in (("m1", 1), ("m3", 3), ("m12", 12))},
                     "basis": f"monthly NAV, class {f['share_class']}, distributions not included"},
+        "distributions": [{"month": d["month"].isoformat(), "amount": float(d["amount"]),
+                           "record_date": d["record_date"].isoformat(), "url": d["url"]} for d in dists],
+        "total_return": {**{k: total_return(by_month, paid, last["as_of"], m) if last else None
+                            for k, m in (("m1", 1), ("m3", 3), ("m12", 12))},
+                         "basis": f"NAV change plus distributions paid, not reinvested, Class {f['share_class']}"},
         "invests_in": {"text": f["invests_in"], "url": f["invests_in_url"]} if f["invests_in"] else None,
         "liquidity_note": f["liquidity_note"], "liquidity_url": f["liquidity_url"],
         "filings": [{"form": x["form"], "accepted_at": x["accepted_at"].isoformat(), "url": x["url"]} for x in links],

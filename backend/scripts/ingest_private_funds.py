@@ -30,6 +30,9 @@ for fund in FUNDS.values():
           f"{months[-1] if months else '-'}; {len(load.skipped)} {fund.nav_form}s without a NAV skipped; "
           f"invests_in {'found' if load.invests_in else 'NOT FOUND'}; liquidity {'found' if load.liquidity else 'NOT FOUND'}; "
           f"links {[f.form for f in load.links]}")
+    dist = sorted(load.distributions)
+    print(f"  {len(dist)} Class I distributions {dist[0] if dist else '-'} to {dist[-1] if dist else '-'}; "
+          f"unreadable 8-Ks: {[(fl.accession, why) for fl, why in load.unreadable]}")
     if conn:
         print(f"  {store(conn, load)} new NAV rows")
         conn.commit()
