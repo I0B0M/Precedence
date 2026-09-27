@@ -52,11 +52,25 @@ Keep `STONE_READERS=0` (the default) for anything you demo until that number is 
 
 ## 3. The tunnel and the `live` branch
 
-The Netlify frontend only ever talks to one backend origin, `STONE_API_URL`, which the Next.js
-server on Netlify proxies `/api/*` to. So the tunnel goes in front of **FastAPI on port 8000**,
-never in front of Ollama.
+In plain terms: Netlify hosts the site, your Mac hosts the brain (backend, database, Ollama,
+FinBERT), and the tunnel is the wire between them. The Netlify frontend only ever talks to one
+backend origin, `STONE_API_URL`, which the Next.js server on Netlify proxies `/api/*` to. So the
+tunnel goes in front of **FastAPI on port 8000**, never in front of Ollama.
 
-### Cloudflare Tunnel (recommended: stable URL, free)
+### The one-command way
+
+```bash
+bash scripts/live-backend.sh
+```
+
+It starts the backend, opens a Cloudflare **quick tunnel** (no account, no domain) and prints the
+`https://….trycloudflare.com` URL plus the two Netlify steps below. Ctrl-C stops both. A quick
+tunnel gets a new URL every run, and the URL is baked into the deploy at build time, so each new URL
+means: paste it into the `live` branch's `STONE_API_URL` and trigger a deploy of `live` (3–4 minutes).
+Fine for a demo day; for something that stays up, use a named tunnel (next section) and run the
+script with `STONE_TUNNEL=stone`.
+
+### Cloudflare Tunnel with your own hostname (stable URL, free)
 
 You need a domain on Cloudflare (free plan; a $10 domain is fine).
 
@@ -107,8 +121,8 @@ git push -u origin live
 In Netlify:
 1. **Site configuration → Build & deploy → Branch deploys → Let me add individual branches → `live`.**
 2. **Site configuration → Environment variables → Add a variable → `STONE_API_URL`**, value
-   `https://stone-api.YOURDOMAIN.com`, and under *Scopes / Deploy contexts* choose **Branch:
-   `live`** only. Production must not get it.
+   `https://stone-api.YOURDOMAIN.com` (or the quick tunnel's `https://….trycloudflare.com`), and
+   under *Scopes / Deploy contexts* choose **Branch: `live`** only. Production must not get it.
 3. `netlify.toml` already sets `NEXT_PUBLIC_STONE_SAVED=0` for the `live` context, so this deploy
    uses the backend for everything.
 4. Push to `live` (or Deploys → Trigger deploy for the branch). The URL is

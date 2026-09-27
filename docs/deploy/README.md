@@ -14,7 +14,9 @@ backend, no database, nothing to keep alive. That is the site judges open.
 
 Everything that needs the backend (your own holdings, screenshot import, filing summaries, the
 Readers, the full S&P 100) runs locally, and can be shown on the internet through the `live`
-branch plus a tunnel from your machine.
+branch plus a tunnel from your machine. In plain terms: **Netlify hosts the site, your Mac hosts
+the brain, and `scripts/live-backend.sh` opens the wire between them.** Two deploys of one site:
+`production` (saved data, always up) and `live` (your Mac, up while the script runs).
 
 ## Pick a path
 
