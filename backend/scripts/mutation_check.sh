@@ -31,8 +31,8 @@ mut "no float rounding on rate jump"   "change = round(v - obs[j][1], 4)"    "ch
 mut "rate known same day"              "datetime.combine(next_weekday(obs_day)" "datetime.combine(obs_day"
 mut "cluster needs 2 filings not 3"    "min_filings: int = 3"                "min_filings: int = 2"
 mut "overlapping events both count"    "if i < busy_until:"                  "if False:"
-mut "normal days include windows"      "if touched[k + h] == touched[k]:"    "if True:"
-mut "normal days only skip window starts" "if touched[k + h] == touched[k]:"  "if not in_window[k]:"
+mut "normal days include windows"      "if touched[k + h] == touched[k]]"    "if True]"
+mut "normal days only skip window starts" "if touched[k + h] == touched[k]]"  "if not inside[k]]"
 mut "skipped event never firing"       "            if i + h - 1 >= len(bars):
                 firing = ev
             continue"                  "            continue"
@@ -42,18 +42,43 @@ mut "hold-out ignores the case count"  "if any(h.n < MIN_CASES for h in halves):
 mut "binomial tail leaves out k"       "for i in range(k, n + 1))"            "for i in range(k + 1, n + 1))"
 mut "BH without the step-up"           "keep[i] = rank <= cutoff"             "keep[i] = pvalues[i] <= rank / m * q"
 mut "BH ignores the rank"              "if pvalues[i] <= rank / m * q]"       "if pvalues[i] <= q]"
-mut "normal days as independent periods" "periods = (normal_n + runs * (h - 1)) / h" "periods = normal_n"
-mut "runs of normal days never counted" "runs += k != prev + 1"                "runs += 0"
+mut "normal days as independent periods" "return (len(starts) + runs * (h - 1)) / h" "return len(starts)"
+mut "runs of normal days never counted" "runs = sum(1 for j, k in enumerate(starts) if j == 0 or starts[j - 1] != k - 1)" "runs = 0"
 mut "strict test: normal rate exact"   "d - math.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2)" "d - (p1 - l1)"
 mut "strict p ignores which side"      "Strict(normal_sf(z) if d > 0 else 1 - normal_sf(z)" "Strict(normal_sf(z)"
 mut "hold-out never runs"                 "if r.label == STRONG else r"            "if False else r"
 mut "rate jump not vs market"          "5, vs_market=True)"                  "5)"
 mut "case hit ignores the market"      "own(i, last), hit(i, last)"          "own(i, last), own(i, last) < 0"
-mut "normal days ignore the market"    "normal_hits += hit(k, k + h - 1)"    "normal_hits += own(k, k + h - 1) < 0"
+mut "normal days ignore the market"    "sum(hit(k, k + h - 1) for k in starts)" "sum(own(k, k + h - 1) < 0 for k in starts)"
 mut "market matched by position"       "mkt = [by_day[b.day] for b in bars]" "mkt = sorted(market, key=lambda b: b.day)"
 mut "no market: silently absolute"     "        if not market:
             raise"                     "        if False:
             raise"
 mut "hold-out drops the market"        "e.known_at < cut], market)"          "e.known_at < cut])"
 cmp -s "$BAK" "$F" && echo "engine.py restored, identical to original"
+
+# `strict` rebuilt from saved fixtures (stone/api/views.py), checked by the API tests
+V=stone/api/views.py
+cp "$V" "$BAK"
+mutv() {
+  local desc="$1" from="$2" to="$3"
+  python3 - "$V" "$from" "$to" <<'PY'
+import sys
+p, a, b = sys.argv[1:]
+s = open(p).read()
+assert s.count(a) >= 1, f"pattern not found: {a}"
+open(p, "w").write(s.replace(a, b, 1))
+PY
+  if uv run pytest -q tests/test_api.py -k "strict or rebuild or fixture" >"$OUT" 2>&1; then
+    echo "SURVIVED (bad): $desc"
+  else
+    echo "killed: $desc  -> $(grep -c FAILED "$OUT") test(s) red"
+  fi
+  cp "$BAK" "$V"
+}
+mutv "rebuild ignores the open window"   "open_starts += list(range(max(busy_until, last - h + 1, 0), min(shown, last - 1) + 1))" "open_starts += []"
+mutv "rebuild tries only the event shown" "list(range(max(busy_until, last - h + 1, 0), min(shown, last - 1) + 1))" "([shown] if shown < last else [])"
+mutv "rebuild skips the normal-day count" 'if len(starts) == signal["normal_n"]:' "if True:"
+mutv "rebuild counts N / h periods"      "periods.add(engine.periods_spanned(starts, h))" "periods.add(len(starts) / h)"
+cmp -s "$BAK" "$V" && echo "views.py restored, identical to original"
 rm "$BAK" "$OUT"

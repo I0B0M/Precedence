@@ -1,5 +1,7 @@
+import json
 import os
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -386,3 +388,61 @@ def test_filing_summary_errors(client, monkeypatch):
     assert r.status_code == 503 and "GEMINI_API_KEY" in r.json()["detail"]
     assert client.get("/api/filings/NOPE-123/summary").status_code == 404
     assert client.get("/api/filings/SAMPLE-HLCN-4-121/summary").status_code == 400  # Form 4s aren't summarized
+
+
+# ---------- `strict` rebuilt from saved signals (fixtures exported before the field existed) ----------
+
+FIXTURES = Path(__file__).resolve().parents[2] / "frontend" / "fixtures"
+
+
+def saved(path: str) -> dict:
+    return json.loads((FIXTURES / path).read_text())["data"]
+
+
+def test_strict_rebuilt_from_a_saved_signal_matches_the_engine(client):
+    from stone.api.views import strict_from_saved
+    rebuilt = 0
+    for t in ("HLCN", "MRDN", "ORCA", "BRVE"):
+        days = [p["day"] for p in client.get(f"/api/companies/{t}").json()["prices"]]
+        for s in ("insider_cluster", "rate_jump", "gap_down"):
+            live = client.get(f"/api/lab/{t}/{s}").json()
+            again = strict_from_saved({**live, "strict": None}, days)  # as if exported before `strict` existed
+            if live["strict"] is None:
+                assert again is None
+            else:
+                assert again == pytest.approx(live["strict"])
+                rebuilt += 1
+    assert rebuilt == 5  # HLCN's insider cluster and the four rate jumps; the rest have fewer than 10 cases
+
+
+def test_strict_rebuilds_amazon_s_borderline_from_the_committed_fixtures():
+    from stone.api.views import strict_from_saved, with_strict
+    days = [p["day"] for p in saved("AMZN/company.json")["prices"]]
+    st = strict_from_saved(saved("AMZN/lab_insider_cluster.json"), days)  # 6 of 12 vs 32 of 125, STRONG
+    assert st["normal_periods"] == pytest.approx(12.9, abs=0.05) and st["p"] == pytest.approx(0.104, abs=0.001)
+    assert st["diff_low"] == pytest.approx(-0.070, abs=0.001) and st["diff_high"] == pytest.approx(0.502, abs=0.001)
+    signals = [with_strict(s, days) for s in saved("AMZN/company.json")["signals"]]
+    assert {s["signal"]: s["strict"] is not None for s in signals} == \
+        {"insider_cluster": True, "rate_jump": True, "gap_down": False}  # gap down: 3 cases, too few
+    # the market card has no prices of its own in the fixtures; the stocks' shared calendar reproduces it
+    market = strict_from_saved(saved("market_rate_jump.json"), days)
+    assert market["diff_low"] > 0 and market["p"] < 0.05
+
+
+def test_every_committed_fixture_with_ten_cases_rebuilds_exactly():
+    from stone.api.views import strict_from_saved
+    for t in ("AMZN", "BX", "AAPL", "NVDA", "JPM"):
+        days = [p["day"] for p in saved(f"{t}/company.json")["prices"]]
+        for s in ("insider_cluster", "rate_jump", "gap_down"):
+            lab = saved(f"{t}/lab_{s}.json")
+            assert (strict_from_saved(lab, days) is not None) == (lab["n"] >= 10), (t, s)
+
+
+def test_a_rebuild_that_cannot_reproduce_the_normal_days_says_nothing():
+    from stone.api.views import strict_from_saved
+    days = [p["day"] for p in saved("AMZN/company.json")["prices"]]
+    lab = saved("AMZN/lab_insider_cluster.json")
+    assert strict_from_saved({**lab, "normal_n": lab["normal_n"] + 1}, days) is None  # no match, so no guess
+    first_entry = days.index(lab["cases"][0]["entry_day"])
+    assert strict_from_saved(lab, days[:first_entry] + days[first_entry + 1:]) is None  # a case day off the calendar
+    assert strict_from_saved({**lab, "cases": None}, days) is None  # the board's firing[] carries no cases

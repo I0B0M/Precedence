@@ -294,6 +294,30 @@ def detect_insider_clusters(sales: list[tuple[str, datetime]], min_filings: int 
 
 # ---------- evaluation ----------
 
+def window_days(n_bars: int, windows: list[tuple[int, int]]) -> list[bool]:
+    """Which bars fall inside an event window [start, end)."""
+    inside = [False] * n_bars
+    for a, b in windows:
+        for k in range(max(a, 0), min(b, n_bars)):
+            inside[k] = True
+    return inside
+
+
+def normal_starts(inside: list[bool], h: int) -> list[int]:
+    """The normal days: start days whose whole horizon is clear of event windows, or they'd measure the event too."""
+    touched = [0]
+    for flag in inside:
+        touched.append(touched[-1] + flag)
+    return [k for k in range(len(inside) - h + 1) if touched[k + h] == touched[k]]
+
+
+def periods_spanned(starts: list[int], h: int) -> float:
+    """Overlapping windows share most of their days: a run of L consecutive normal days spans
+    L + h - 1 days, which is (L + h - 1) / h separate periods. The stricter test counts those."""
+    runs = sum(1 for j, k in enumerate(starts) if j == 0 or starts[j - 1] != k - 1)
+    return (len(starts) + runs * (h - 1)) / h
+
+
 def evaluate(spec: Spec, bars: list[BarLike], events: list[Event],
              market: list[BarLike] | None = None) -> Result:
     """market: the market's daily bars (SPY), required when spec.vs_market."""
@@ -340,25 +364,8 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event],
         else:  # the window is still open today
             firing = ev
 
-    in_window = [False] * len(bars)
-    for a, b in windows:
-        for k in range(a, min(b, len(bars))):
-            in_window[k] = True
-    # a normal day's whole horizon must be free of event windows, or it measures the event too
-    touched = [0]
-    for flag in in_window:
-        touched.append(touched[-1] + flag)
-    normal_n = normal_hits = runs = 0
-    prev = -2
-    for k in range(len(bars) - h + 1):
-        if touched[k + h] == touched[k]:
-            runs += k != prev + 1  # a new run of consecutive normal days
-            prev = k
-            normal_n += 1
-            normal_hits += hit(k, k + h - 1)
-    # Overlapping windows share most of their days: a run of L normal days spans L + h - 1 days,
-    # which is (L + h - 1) / h separate periods. The stricter test counts those, not all N days.
-    periods = (normal_n + runs * (h - 1)) / h
+    starts = normal_starts(window_days(len(bars), windows), h)
+    normal_n, normal_hits = len(starts), sum(hit(k, k + h - 1) for k in starts)
 
     n, hits = len(cases), sum(c.hit for c in cases)
     normal_rate = normal_hits / normal_n if normal_n else None
@@ -367,7 +374,7 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event],
         signal=spec.key, horizon=h, n=n, hits=hits, hit_rate=hits / n if n else None,
         normal_n=normal_n, normal_hits=normal_hits, normal_rate=normal_rate,
         low=low, high=high, label=label_for(n, low if low is not None else 0.0, normal_rate),
-        firing=firing, cases=cases, normal_periods=periods,
+        firing=firing, cases=cases, normal_periods=periods_spanned(starts, h),
     )
 
 
