@@ -124,9 +124,9 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
 }
 .top.scrolled { border-bottom-color: var(--sep); }
 .logo-link { text-decoration: none; color: inherit; min-height: 44px; gap: 8px; }
-.brand-castle { color: var(--gold); display: inline-flex; }
+.brand-coin { color: var(--gold); display: inline-flex; }
 .brand .logo { letter-spacing: -0.035em; }
-.castle { display: block; }
+.coin { display: block; }
 .brand { align-items: center; }
 .top-end { display: flex; align-items: center; gap: 12px; }
 .menu-btn { display: none; width: 44px; height: 44px; border: 0; background: none; cursor: pointer; place-items: center; padding: 0; }

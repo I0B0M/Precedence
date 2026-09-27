@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Castle } from "@/components/Castle";
+import { Coin } from "@/components/Coin";
 import { useMode, type Mode } from "@/lib/mode";
 import { NAV } from "@/lib/nav";
 
@@ -39,7 +39,7 @@ export function Header() {
   const seg = (
     <div className="seg" role="group" aria-label="Mode" data-value={mode}>
       {MODES.map((m) => (
-        <button key={m.value} type="button" aria-pressed={mode === m.value} onClick={() => set(m.value)}><Castle size={14} />{m.label}</button>
+        <button key={m.value} type="button" aria-pressed={mode === m.value} onClick={() => set(m.value)}><Coin size={14} />{m.label}</button>
       ))}
     </div>
   );
@@ -48,7 +48,7 @@ export function Header() {
     <header className={`top${scrolled ? " scrolled" : ""}`}>
       {/* The mark and the wordmark go home. Lite/Pro is the one pill on the right, on every screen size. */}
       <div className="brand">
-        <Link href="/" className="logo logo-link"><span className="brand-castle"><Castle size={26} /></span>Precedence</Link>
+        <Link href="/" className="logo logo-link"><span className="brand-coin"><Coin size={26} /></span>Precedence</Link>
       </div>
       <nav className="nav" aria-label="Main">
         {NAV.map((l) => (

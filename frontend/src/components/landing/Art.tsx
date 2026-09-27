@@ -1,9 +1,9 @@
-import { CASTLE_PATH } from "@/components/Castle";
+import { CoinGlyph } from "@/components/Coin";
 
 /* Landing artwork, drawn in SVG. */
 
 export const Mark = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path d={CASTLE_PATH} fill="currentColor" /></svg>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><CoinGlyph /></svg>
 );
 
 /* Card: a price line with event dots, glowing from below */
