@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { api, type Scan, type Today } from "@/lib/api";
 import { Why } from "@/components/Why";
 import { useMode } from "@/lib/mode";
@@ -100,14 +100,19 @@ function Countdown({ stages, plain = false }: { stages: Stage[]; plain?: boolean
     io.observe(box.current);
     return () => io.disconnect();
   }, [seen]);
-  const reduce = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const [done, setDone] = useState(() => (reduce() ? last : 0)); // last stage fully reached
-  const [label, setLabel] = useState(() => (reduce() ? last : 0)); // stage whose words are showing
-  const [shown, setShown] = useState(() => stages[reduce() ? last : 0].n);
+  // A boolean React can read during render, same as useMode/useHoldings do for their own client-only value: the
+  // server (and the first client render, before this syncs) always sees false, so the two never disagree — the
+  // old version read window.matchMedia inside useState's initializer, which runs on that very first client
+  // render too, so it could already differ from the server there and produce a hydration mismatch.
+  const reduce = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => false);
+  const [done, setDone] = useState(0); // last stage fully reached
+  const [label, setLabel] = useState(0); // stage whose words are showing
+  const [shown, setShown] = useState(stages[0].n);
 
   // Timers, not requestAnimationFrame: rAF pauses in a background tab, which would leave the count stuck mid-way.
+  // Reduced motion never starts this: the render below shows the last stage straight away instead.
   useEffect(() => {
-    if (!seen || done >= last) return;
+    if (!seen || reduce || done >= last) return;
     let step: ReturnType<typeof setTimeout> | undefined;
     const hold = setTimeout(() => {
       const from = stages[done].n, to = stages[done + 1].n, t0 = Date.now();
@@ -121,24 +126,35 @@ function Countdown({ stages, plain = false }: { stages: Stage[]; plain?: boolean
       tick();
     }, 1300);
     return () => { clearTimeout(hold); clearTimeout(step); };
-  }, [seen, done, last, stages]);
+  }, [seen, reduce, done, last, stages]);
+
+  const shownLabel = reduce ? last : label;
+  const shownNum = reduce ? stages[last].n : shown;
 
   return (
     <div className={`countdown${plain ? " countdown-plain" : ""}`} ref={box}>
       <p className="sr-only">{stages.map((st) => `${st.n} ${st.label}`).join(". ")}.</p>
       <div aria-hidden>
-        {!plain && label > 0 && (
-          <p className="trail pro-only">{stages.slice(0, label).map((st, i) => <span key={i}><s>{st.n}</s> → </span>)}</p>
+        {!plain && shownLabel > 0 && (
+          <p className="trail pro-only">{stages.slice(0, shownLabel).map((st, i) => <span key={i}><s>{st.n}</s> → </span>)}</p>
         )}
         <p className="countdown-now">
-          <span className="bignum">{shown}</span>
-          <span className={plain ? "countdown-label" : "pro-only"}>{stages[label].label}</span>
+          <span className="bignum">{shownNum}</span>
+          <span className={plain ? "countdown-label" : "pro-only"}>{stages[shownLabel].label}</span>
         </p>
-        {plain && <p className="countdown-dots">{stages.map((_, i) => <i key={i} className={i <= label ? "on" : undefined} />)}</p>}
+        {plain && <p className="countdown-dots">{stages.map((_, i) => <i key={i} className={i <= shownLabel ? "on" : undefined} />)}</p>}
       </div>
     </div>
   );
 }
+
+function subscribeReducedMotion(cb: () => void) {
+  const mq = typeof window === "undefined" ? null : window.matchMedia?.("(prefers-reduced-motion: reduce)");
+  if (!mq) return () => {};
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+const readReducedMotion = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /** The landing: this week's count stepping down to what has come before drops, for your holdings or the example.
  *  Real counts from /api/today, the same numbers as the board's funnel; plain words in Lite and Pro. */
