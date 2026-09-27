@@ -77,7 +77,6 @@ export function Header() {
         </nav>
         <div className="menu-end">
           {seg}
-          <Link className="btn t-go" href="/import">Add account</Link>
         </div>
       </div>
     </header>

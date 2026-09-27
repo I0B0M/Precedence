@@ -147,7 +147,7 @@ html[data-mode="pro"] .grid2.pro-only { display: grid !important; }
 .menu-end .seg { align-self: flex-start; }
 @media (max-width: 900px) {
   .top { grid-template-columns: 1fr auto; }
-  .top > .nav, .top-end > .seg, .top-add { display: none; }
+  .top > .nav, .top-end > .seg { display: none; }
   .menu-btn { display: grid; }
   .menu { display: flex; }
   .menu:not([data-open="true"]) { pointer-events: none; visibility: hidden; transition: opacity 0.3s var(--ease-out), visibility 0s linear 0.3s; }
@@ -502,6 +502,19 @@ a.list-row:hover span:first-child { text-decoration: underline; text-underline-o
   .land-row .spark { width: 56px; }
   .land-row > :last-child { grid-column: 1 / -1; justify-self: start; margin-bottom: 8px; }
 }
+
+/* ---------- learn ---------- */
+.learn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.learn-tile { border: 1px solid var(--sep); border-radius: var(--r-card); padding: 20px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.learn-tile p { font-size: 17px; line-height: 24px; }
+.learn-tile .rangebar { width: 100%; margin: 4px 0 20px; }
+.learn-rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 24px; }
+
+/* One obvious next step at the end of a page. */
+.next-step { border-top: 1px solid var(--sep); padding-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.next-step p { font-family: var(--head); font-weight: 700; font-size: 24px; line-height: 32px; }
+.next-step .btn.t-go { width: auto; padding: 0 28px; }
+@media (max-width: 640px) { .next-step .btn.t-go { width: 100%; } }
 
 /* ---------- fund page ---------- */
 .weight-row > span:first-child { display: flex; flex-direction: column; gap: 4px; }
