@@ -21,7 +21,8 @@ export function Allocation({ board }: { board: PortfolioOut }) {
   const sum = (kind: string) => board.rows.filter((r) => r.kind === kind).reduce((a, r) => a + r.value, 0);
   const value: Record<(typeof PARTS)[number]["key"], number> = {
     stocks: sum("stock"),
-    funds: sum("etf"),
+    // BREIT / BCRED are funds too: their entered amount joins this part (subtotals.private_funds, when the API sends it).
+    funds: sum("etf") + ((board.subtotals as { private_funds?: number } | undefined)?.private_funds ?? 0),
     retirement: board.subtotals?.retirement ?? 0,
     home: board.subtotals?.home_estimate ?? 0,
   };

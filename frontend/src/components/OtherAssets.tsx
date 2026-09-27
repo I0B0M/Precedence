@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { Why } from "@/components/Why";
 import { api, ApiError, type FundLookup, type HomeEstimate, type RetirementRow } from "@/lib/api";
-import { SHOW_CRYPTO } from "@/lib/flags";
+import { SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
+import { PRIVATE_FUNDS, PRIVATE_LITE, type PrivateFundKey, type PrivateFundRow } from "@/lib/private-funds";
 import { approxMoney, money, pct } from "@/lib/format";
-import { addCrypto, addProperty, addRetirement, portfolioExtras, removeOther, useOtherAssets, type Property, type RetirementFund } from "@/lib/other-assets";
+import { addCrypto, addPrivateFund, addProperty, addRetirement, portfolioExtras, removeOther, useOtherAssets, type Property, type RetirementFund } from "@/lib/other-assets";
 
 const num = (s: string) => {
   const v = Number(s.replace(/[$,\s]/g, ""));
@@ -20,6 +21,7 @@ function matchWords(match: FundLookup["match"] | undefined, behaves: string | nu
   if (match === "close stand-in") return "Close stand-in";
   return "Not tested";
 }
+const shortMonth = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
 const LEVEL_WORDS: Record<string, string> = { zip5: "ZIP", county: "County", state: "State" };
 
 /** Import page: add a home (estimated from FHFA prices), 401(k) / IRA funds (matched to an index), crypto when shown. */
@@ -35,6 +37,9 @@ export function OtherAssetsForms() {
   const [fundBusy, setFundBusy] = useState(false);
   const [coins, setCoins] = useState([{ symbol: "", amount: "" }]);
   const [coinsSaved, setCoinsSaved] = useState(false);
+  const [pfFund, setPfFund] = useState<PrivateFundKey>("BREIT");
+  const [pfAmount, setPfAmount] = useState("");
+  const [pfSaved, setPfSaved] = useState<string | null>(null);
 
   const coinRows = coins.filter((c) => /^[A-Za-z0-9.]{2,10}$/.test(c.symbol.trim()) && num(c.amount) != null);
   // The FHFA index is yearly, so only the purchase year is asked for.
@@ -127,6 +132,22 @@ export function OtherAssetsForms() {
         <p className="note">A ticker like FXAIX works best.</p>
       </div>
 
+      {SHOW_PRIVATE_FUNDS && <div className="card">
+        <h3>Add a Blackstone fund</h3>
+        <div className="seg-choice" role="group" aria-label="Fund">
+          {PRIVATE_FUNDS.map((f) => (
+            <button key={f} type="button" aria-pressed={pfFund === f} onClick={() => { setPfFund(f); setPfSaved(null); }}>{f}</button>
+          ))}
+        </div>
+        <label className="list-head" htmlFor="pf-amount">What it&apos;s worth</label>
+        <input id="pf-amount" className="field" inputMode="decimal" placeholder="$" value={pfAmount}
+          onChange={(e) => { setPfAmount(e.target.value); setPfSaved(null); }} />
+        <button className="btn" type="button" disabled={num(pfAmount) == null} style={{ alignSelf: "flex-start" }}
+          onClick={() => { addPrivateFund(pfFund, num(pfAmount)!); setPfAmount(""); setPfSaved(pfFund); }}>Add {pfFund}</button>
+        {pfSaved && <p className="okline">Saved. {pfSaved} is priced monthly from its SEC filings.</p>}
+        <p className="note">{PRIVATE_LITE[pfFund]}</p>
+      </div>}
+
       {SHOW_CRYPTO && <div className="card">
         <h3>Add crypto</h3>
         <p className="note">Symbol and how much you hold, as your wallet or exchange shows it. Fractions are fine (0.035).</p>
@@ -190,9 +211,9 @@ function HomeRow({ p }: { p: Property }) {
 
 /** Board: a home, 401(k) / IRA funds (and crypto, when shown). One line each in Lite; the working in Pro.
  *  `rows`: the board's own retirement rows, so the page doesn't ask the portfolio endpoint twice. */
-export function OtherAssetsRows({ rows }: { rows?: RetirementRow[] } = {}) {
+export function OtherAssetsRows({ rows, privateRows = [] }: { rows?: RetirementRow[]; privateRows?: PrivateFundRow[] } = {}) {
   const all = useOtherAssets();
-  const v = SHOW_CRYPTO ? all : { ...all, crypto: [] };
+  const v = { ...all, crypto: SHOW_CRYPTO ? all.crypto : [], privateFunds: SHOW_PRIVATE_FUNDS ? all.privateFunds : [] };
   // Ask the stateless portfolio endpoint about just these rows, so each fund's badge is the backend's own state.
   const extras = portfolioExtras(v);
   const key = JSON.stringify(extras);
@@ -204,7 +225,7 @@ export function OtherAssetsRows({ rows }: { rows?: RetirementRow[] } = {}) {
   }, [key, rows]);
   const backend = rows ?? (got?.key === key ? got.rows : []);
 
-  if (!v.properties.length && !v.retirement.length && !v.crypto.length) return null;
+  if (!v.properties.length && !v.retirement.length && !v.crypto.length && !v.privateFunds.length) return null;
   return (
     <div className="stack" style={{ gap: 10, marginTop: 24 }}>
       <span className="ticker">Also yours</span>
@@ -238,6 +259,32 @@ export function OtherAssetsRows({ rows }: { rows?: RetirementRow[] } = {}) {
                 <span className="sp" aria-hidden />
                 <span className="val">{money(r.amount)}<small className="mute">you entered</small></span>
                 <span className="hend"><StateBadge state={b?.state ?? null} /></span>
+              </div>
+            </div>
+          );
+        })}
+        {v.privateFunds.map((pf) => {
+          const b = privateRows.find((x) => x.fund === pf.fund);
+          return (
+            <div key={pf.id} className="hitem">
+              <div className="hrow other">
+                <span className="who">
+                  <span className="tk">{pf.fund}</span><span className="nm">{b?.name ?? pf.fund}</span>
+                  <span className="say">
+                    <Link href={`/fund/${pf.fund}`}>{PRIVATE_LITE[pf.fund]} ›</Link>
+                    {b?.nav != null && (
+                      <span className="pro-only note" style={{ display: "block" }}>
+                        {money(b.nav, true)} a share (Class {b.share_class}){b.nav_as_of ? `, ${shortMonth(b.nav_as_of)}` : ""}
+                        {b.shares != null ? ` · about ${b.shares.toLocaleString("en-US", { maximumFractionDigits: 1 })} shares` : ""}
+                        {b.nav_url && <> · <a href={b.nav_url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}
+                      </span>
+                    )}
+                  </span>
+                  <button className="linkb" type="button" onClick={() => removeOther(pf.id)} aria-label={`Remove ${pf.fund}`} style={{ alignSelf: "flex-start" }}>Remove</button>
+                </span>
+                <span className="sp" aria-hidden />
+                <span className="val">{money(pf.amount)}<small className="mute">priced monthly</small></span>
+                <span className="hend"><StateBadge state={null} /></span>
               </div>
             </div>
           );

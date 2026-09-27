@@ -9,6 +9,8 @@ import { money, pct, shortDate } from "@/lib/format";
 import { readHoldings } from "@/lib/holdings";
 import { useOtherAssets } from "@/lib/other-assets";
 import { fundLine } from "@/lib/words";
+import { SHOW_PRIVATE_FUNDS } from "@/lib/flags";
+import { PRIVATE_FUNDS, PRIVATE_LITE, privateFund, type PrivateFundKey, type PrivateFundPage } from "@/lib/private-funds";
 
 // The S&P 500 funds and QQQ that Precedence has fund pages for, shown after the funds you hold.
 const SHOWN = ["SPY", "VOO", "IVV", "QQQ"];
@@ -20,6 +22,12 @@ export default function FundsIndex() {
   const [held, setHeld] = useState<string[] | null>(null);
   const [pages, setPages] = useState<Record<string, FundPage | null>>({});
   const [error, setError] = useState<unknown>(null);
+  const [priv, setPriv] = useState<Record<string, PrivateFundPage | null>>({});
+  useEffect(() => {
+    if (!SHOW_PRIVATE_FUNDS) return;
+    Promise.all(PRIVATE_FUNDS.map((s) => privateFund(s).then((p) => [s, p] as const).catch(() => [s, null] as const)))
+      .then((pairs) => setPriv(Object.fromEntries(pairs)));
+  }, []);
 
   // Which of your holdings are funds: the API's own kind for each ticker.
   useEffect(() => {
@@ -41,6 +49,8 @@ export default function FundsIndex() {
   if (!held || (key && !Object.keys(pages).length)) return <Loading what="funds" />;
 
   const yours = held.filter((s) => pages[s]);
+  const privHeld = SHOW_PRIVATE_FUNDS ? PRIVATE_FUNDS.filter((s) => other.privateFunds.some((f) => f.fund === s)) : [];
+  const privRest = SHOW_PRIVATE_FUNDS ? PRIVATE_FUNDS.filter((s) => !privHeld.includes(s)) : [];
   const rest = SHOWN.filter((s) => !held.includes(s) && pages[s]);
   const first = yours[0] ?? retirement.find((r) => r.lookup?.behaves_like)?.lookup?.behaves_like ?? rest[0] ?? null;
 
@@ -52,11 +62,12 @@ export default function FundsIndex() {
         <p className="lede">Many stocks in one. Tap one to see what&apos;s inside.</p>
       </div>
 
-      {(yours.length > 0 || retirement.length > 0) && (
+      {(yours.length > 0 || retirement.length > 0 || privHeld.length > 0) && (
         <div className="card">
           <h3>What you own</h3>
           <div className="list">
             {yours.map((s) => <FundRow key={s} f={pages[s] as FundPage} />)}
+            {privHeld.map((s) => <PrivateRow key={s} symbol={s} p={priv[s] ?? null} />)}
             {retirement.map((r) => {
               const like = r.lookup?.behaves_like ?? null;
               const label = `${r.lookup?.ticker ?? r.name}`;
@@ -91,12 +102,44 @@ export default function FundsIndex() {
         </div>
       )}
 
+      {privRest.length > 0 && (
+        <div className="card">
+          <h3>Blackstone funds</h3>
+          <div className="list">
+            {privRest.map((s) => <PrivateRow key={s} symbol={s} p={priv[s] ?? null} />)}
+          </div>
+          <p className="note">Not traded on an exchange. Priced once a month from their own SEC filings.</p>
+        </div>
+      )}
+
       {first && (
         <div className="next-step">
           <Link className="btn t-go" href={`/fund/${first}`}>See what&apos;s inside {first} →</Link>
         </div>
       )}
     </section>
+  );
+}
+
+/** A monthly-priced Blackstone fund: one Classic line; Pro adds its latest monthly value and where it comes from. */
+function PrivateRow({ symbol, p }: { symbol: PrivateFundKey; p: PrivateFundPage | null }) {
+  return (
+    <Link className="list-row" href={`/fund/${symbol}`}>
+      <span>
+        <b>{symbol}</b> <span className="mute">{p?.name ?? ""}</span>
+        <span className="note" style={{ display: "block" }}>{PRIVATE_LITE[symbol]}</span>
+        {p?.nav && (
+          <span className="note pro-only pro-add" style={{ display: "block" }}>
+            {money(p.nav.value, true)} a share, Class {p.nav.share_class}, {shortDate(p.nav.as_of)} · {p.source}
+          </span>
+        )}
+      </span>
+      <span className="row-flex" style={{ gap: 8, flexWrap: "nowrap" }}>
+        {p?.returns.m1 != null && <span className={p.returns.m1 < 0 ? "down" : "up"}>{pct(p.returns.m1)} <span className="note">1M</span></span>}
+        <StateBadge state={null} />
+        <span aria-hidden>›</span>
+      </span>
+    </Link>
   );
 }
 

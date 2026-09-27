@@ -13,6 +13,7 @@ import { api, type CompanyDetail, type ExposureRow, type FundInfo, type Portfoli
 import { money, pct, sharePct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
+import type { PrivateFundRow } from "@/lib/private-funds";
 import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
@@ -167,7 +168,7 @@ export default function HoldingsBoard() {
         {board.unknown.length > 0 && <p className="badline">No data yet for {board.unknown.join(", ")}.</p>}
       </div>
 
-      <OtherAssetsRows rows={board.retirement ?? []} />
+      <OtherAssetsRows rows={board.retirement ?? []} privateRows={(board as PortfolioOut & { private_funds?: PrivateFundRow[] }).private_funds ?? []} />
 
       {status?.data === "sample" && (
         <div className="row-flex" style={{ marginTop: 20 }}>

@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import type { FundLookup, HomeEstimate, PortfolioIn, PropertyIn, RetirementIn } from "./api";
+import { SHOW_PRIVATE_FUNDS } from "./flags";
+import type { PrivateFundIn, PrivateFundKey } from "./private-funds";
 
 // Things you own beyond brokerage holdings: a home, 401(k) / IRA funds, crypto (hidden for now). Kept in this browser,
 // like holdings; the API is stateless, so portfolioExtras() sends them with every POST /api/portfolio.
@@ -22,9 +24,10 @@ export interface RetirementFund {
   lookup?: FundLookup | null; // from GET /api/funds/lookup; absent if the lookup didn't answer
 }
 export interface CryptoHolding { id: string; kind: "crypto"; symbol: string; amount: number } // amount may be fractional
-export interface OtherAssets { properties: Property[]; retirement: RetirementFund[]; crypto: CryptoHolding[] }
+export interface PrivateFund { id: string; fund: PrivateFundKey; amount: number } // BREIT / BCRED, dollars as entered
+export interface OtherAssets { properties: Property[]; retirement: RetirementFund[]; crypto: CryptoHolding[]; privateFunds: PrivateFund[] }
 
-const EMPTY: OtherAssets = { properties: [], retirement: [], crypto: [] };
+const EMPTY: OtherAssets = { properties: [], retirement: [], crypto: [], privateFunds: [] };
 let memory: string | null = null;
 let cachedRaw: string | null | undefined;
 let cached: OtherAssets = EMPTY;
@@ -39,7 +42,7 @@ function raw(): string | null {
 }
 
 // Older saves used place / price for a home.
-type Stored = { properties?: (Partial<Property> & { id: string; bought: string; place?: string; price?: number })[]; retirement?: RetirementFund[]; crypto?: CryptoHolding[] };
+type Stored = { properties?: (Partial<Property> & { id: string; bought: string; place?: string; price?: number })[]; retirement?: RetirementFund[]; crypto?: CryptoHolding[]; privateFunds?: PrivateFund[] };
 
 function read(): OtherAssets {
   const r = raw();
@@ -51,6 +54,7 @@ function read(): OtherAssets {
         properties: (v.properties ?? []).map((p) => ({ id: p.id, bought: p.bought, estimate: p.estimate ?? null, address: p.address ?? p.place ?? "", paid: p.paid ?? p.price ?? 0 })),
         retirement: v.retirement ?? [],
         crypto: v.crypto ?? [],
+        privateFunds: v.privateFunds ?? [],
       };
     } catch {
       cached = EMPTY;
@@ -93,12 +97,18 @@ export function addCrypto(rows: { symbol: string; amount: number }[]) {
   write({ ...v, crypto: [...v.crypto, ...rows.map((r) => ({ ...r, kind: "crypto" as const, id: newId() }))] });
 }
 
+export function addPrivateFund(fund: PrivateFundKey, amount: number) {
+  const v = read();
+  write({ ...v, privateFunds: [...v.privateFunds, { id: newId(), fund, amount }] });
+}
+
 export function removeOther(id: string) {
   const v = read();
   write({
     properties: v.properties.filter((p) => p.id !== id),
     retirement: v.retirement.filter((r) => r.id !== id),
     crypto: v.crypto.filter((c) => c.id !== id),
+    privateFunds: v.privateFunds.filter((f) => f.id !== id),
   });
 }
 
@@ -113,6 +123,7 @@ export function portfolioExtras(v: OtherAssets = read()): Omit<PortfolioIn, "hol
     bought_year: Number(p.bought.slice(0, 4)), estimate: p.estimate!.estimate, source: p.estimate!.source, as_of: p.estimate!.as_of,
   }));
   const funds: RetirementIn[] = v.retirement.map((r) => ({ kind: "retirement", fund: r.lookup?.ticker ?? r.name, amount: r.amount, account: r.account }));
-  const other = [...homes, ...funds];
-  return other.length ? { other } : {};
+  const priv: PrivateFundIn[] = SHOW_PRIVATE_FUNDS ? v.privateFunds.map((f) => ({ kind: "private_fund", fund: f.fund, amount: f.amount })) : [];
+  const other = [...homes, ...funds, ...priv];
+  return other.length ? { other: other as NonNullable<PortfolioIn["other"]> } : {};
 }

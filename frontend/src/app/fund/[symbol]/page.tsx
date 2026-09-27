@@ -9,6 +9,9 @@ import { Why } from "@/components/Why";
 import { api, type Scan } from "@/lib/api";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { loadFund, type FundView } from "@/lib/fund";
+import { SHOW_PRIVATE_FUNDS } from "@/lib/flags";
+import { isPrivateFund } from "@/lib/private-funds";
+import { PrivateFundScreen } from "@/components/PrivateFundScreen";
 import { money, pct, shortDate } from "@/lib/format";
 import { FORM_WORDS, fundLine, SIGNAL_WORDS } from "@/lib/words";
 
@@ -29,7 +32,13 @@ const w = (x: number) => `${(x * 100).toFixed(x >= 0.1 ? 1 : 2)}%`;
 const monthDay = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 // Brief: "understanding what they own". Blackstone coaching: investors think in funds: what's in it, how it's doing, what's next.
-export default function FundScreen() {
+export default function FundRoute() {
+  const { symbol: raw } = useParams<{ symbol: string }>();
+  const symbol = decodeURIComponent(raw).toUpperCase();
+  return SHOW_PRIVATE_FUNDS && isPrivateFund(symbol) ? <PrivateFundScreen symbol={symbol} /> : <FundScreen />;
+}
+
+function FundScreen() {
   const { symbol: raw } = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(raw).toUpperCase();
   const [f, setF] = useState<FundView | null>(null);
