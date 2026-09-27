@@ -126,6 +126,44 @@ create table if not exists signal_scan_pairs (
     primary key (run_at, ticker, signal)
 );
 
+-- Non-traded funds (BREIT, BCRED): no daily price, a monthly NAV per share from their own SEC filings.
+-- Kept apart from companies: they aren't stocks or ETFs and have no prices_daily rows.
+-- invests_in / liquidity_note are quoted from the filing at *_url, never written by us.
+create table if not exists private_funds (
+    ticker          text primary key,
+    cik             integer not null,
+    name            text not null,
+    share_class     text not null,
+    nav_form        text not null,  -- the form the monthly NAV comes from: '424B3' or '8-K'
+    invests_in      text,
+    invests_in_url  text,
+    liquidity_note  text,
+    liquidity_url   text,
+    source          text not null
+);
+-- One row per month end, each tied to the filing that states it.
+create table if not exists private_fund_navs (
+    ticker       text not null references private_funds (ticker),
+    share_class  text not null,
+    as_of        date not null,
+    nav          numeric not null,
+    form         text not null,
+    accession    text not null,
+    url          text not null,
+    filed        date not null,
+    source       text not null,
+    primary key (ticker, share_class, as_of)
+);
+-- The latest 10-Q, 10-K and NAV filing, for the fund page's links.
+create table if not exists private_fund_filings (
+    ticker       text not null references private_funds (ticker),
+    accession    text not null,
+    form         text not null,
+    accepted_at  timestamptz not null,
+    url          text not null,
+    primary key (ticker, accession)
+);
+
 -- FHFA annual house price index (developmental, all-transactions, NSA), for home estimates.
 -- area: 5-digit ZIP, county FIPS, or two-letter state. hpi: 100 in the first recorded year.
 create table if not exists house_price_index (

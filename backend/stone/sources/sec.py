@@ -223,6 +223,11 @@ class SecClient:
         raw = self.http.get(f"{ARCHIVES}/{cik}/{folder}/{doc}", f"form4_{filing.accession}.xml")
         return parse_form4(raw, issuer_ciks)
 
+    def recent_filings(self, cik: int) -> list[Filing]:
+        """Every form in the submissions 'recent' block (about the last 1,000 filings), newest first, unfiltered."""
+        key = f"CIK{cik:010d}"
+        return parse_submissions(json.loads(self.http.get(f"{DATA}/submissions/{key}.json", f"submissions_{key}.json")))[0]
+
     def latest_nport(self, cik: int) -> tuple[str, date, date] | None:
         """(accession, filed, report date) of a fund's newest public NPORT-P, from its submissions list."""
         key = f"CIK{cik:010d}"

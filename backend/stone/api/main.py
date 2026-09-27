@@ -25,6 +25,7 @@ from stone.portfolio import reconcile as rc
 from stone.portfolio.exposure import bad_day_return, board_rows
 from stone.signals import engine, service
 from stone.signals.scan import fdr10_by_signal
+from stone.sources.private_funds import month_back
 from stone.sources.gemini import MODEL as GEMINI_MODEL
 from stone.sources.gemini import GeminiClient, ScreenshotUnreadable, first_sentences
 from stone.sources.gemini import connected as gemini_connected
@@ -387,6 +388,62 @@ def return_over(closes: list[tuple], bars: int) -> float | None:
     return closes[-1][1] / closes[-1 - bars][1] - 1 if len(closes) > bars else None
 
 
+PRIVATE_SOURCE = {"424B3": "SEC EDGAR: {t} monthly 424B3 NAV supplements", "8-K": "SEC EDGAR: {t} monthly 8-K (Item 8.01)"}
+
+
+def private_fund_or_none(c: psycopg.Connection, symbol: str) -> dict | None:
+    return c.execute("select * from private_funds where ticker = %s", (symbol.strip().upper(),)).fetchone()
+
+
+def private_navs(c: psycopg.Connection, f: dict) -> list[dict]:
+    return c.execute("select as_of, nav, form, accession, url from private_fund_navs "
+                     "where ticker = %s and share_class = %s order by as_of", (f["ticker"], f["share_class"])).fetchall()
+
+
+def nav_return(by_month: dict, latest, months: int) -> float | None:
+    """Latest month-end NAV against the one `months` month ends earlier; None if that month has no filed NAV."""
+    then = by_month.get(month_back(latest, months))
+    return by_month[latest] / then - 1 if then else None
+
+
+def private_fund_page(c: psycopg.Connection, f: dict) -> dict:
+    navs = private_navs(c, f)
+    last = navs[-1] if navs else None
+    by_month = {n["as_of"]: float(n["nav"]) for n in navs}
+    links = c.execute("select form, accepted_at, url from private_fund_filings where ticker = %s "
+                      "order by accepted_at desc", (f["ticker"],)).fetchall()
+    return {
+        "kind": "private_fund", "symbol": f["ticker"], "name": f["name"], "sponsor": "Blackstone",
+        "pricing": "monthly NAV",
+        "nav": {"value": float(last["nav"]), "as_of": last["as_of"].isoformat(), "share_class": f["share_class"],
+                "form": last["form"], "accession": last["accession"], "url": last["url"]} if last else None,
+        "history": [{"as_of": n["as_of"].isoformat(), "nav": float(n["nav"]), "url": n["url"]} for n in navs],
+        "returns": {**{k: nav_return(by_month, last["as_of"], m) if last else None
+                       for k, m in (("m1", 1), ("m3", 3), ("m12", 12))},
+                    "basis": f"monthly NAV, class {f['share_class']}, distributions not included"},
+        "invests_in": {"text": f["invests_in"], "url": f["invests_in_url"]} if f["invests_in"] else None,
+        "liquidity_note": f["liquidity_note"], "liquidity_url": f["liquidity_url"],
+        "filings": [{"form": x["form"], "accepted_at": x["accepted_at"].isoformat(), "url": x["url"]} for x in links],
+        "holdings": [], "state": None,
+        "source": PRIVATE_SOURCE[f["nav_form"]].format(t=f["ticker"]),
+    }
+
+
+def private_fund_row(c: psycopg.Connection, fund: str | None, amount: float | None) -> dict:
+    """A BREIT/BCRED holding: worth the amount entered. The NAV only gives Pro a share count."""
+    f = private_fund_or_none(c, fund or "")
+    if f is None:
+        raise HTTPException(422, f"Unknown private fund {fund!r}. Precedence has BREIT and BCRED.")
+    if not amount or amount <= 0:
+        raise HTTPException(422, "A private fund row needs the amount you hold.")
+    navs = private_navs(c, f)
+    last = navs[-1] if navs else None
+    nav = float(last["nav"]) if last else None
+    return {"kind": "private_fund", "fund": f["ticker"], "name": f["name"], "amount": amount, "nav": nav,
+            "nav_as_of": last["as_of"].isoformat() if last else None, "nav_url": last["url"] if last else None,
+            "share_class": f["share_class"], "shares": amount / nav if nav else None, "state": None}
+
+
 @app.get("/api/funds/lookup")  # declared before /api/funds/{symbol} so "lookup" isn't read as a fund
 def funds_lookup(q: str):
     """Which index a 401(k) / IRA fund tracks, from a small checked list."""
@@ -395,7 +452,10 @@ def funds_lookup(q: str):
 
 @app.get("/api/funds/{symbol}")
 def fund(symbol: str, c: psycopg.Connection = Conn):
-    """A fund page: what's in it, how it's doing, what's next. Holdings come from the issuer's file."""
+    """A fund page: what's in it, how it's doing, what's next. Holdings come from the issuer's file.
+    BREIT / BCRED (non-traded, monthly NAV) get the private-fund page instead."""
+    if (pfund := private_fund_or_none(c, symbol)) is not None:
+        return private_fund_page(c, pfund)
     co = company_or_404(c, symbol)
     if co["kind"] != "etf":
         raise HTTPException(400, f"{co['ticker']} is a stock, not a fund")
@@ -478,8 +538,8 @@ class HoldingIn(BaseModel):
 
 class OtherIn(BaseModel):
     """Something owned outside a brokerage account. The API stays stateless: the browser sends these each time."""
-    kind: Literal["retirement", "property"]
-    fund: str | None = None  # retirement
+    kind: Literal["retirement", "property", "private_fund"]
+    fund: str | None = None  # retirement: the fund as typed; private_fund: "BREIT" | "BCRED"
     amount: float | None = None
     account: str | None = None
     label: str | None = None  # property, carrying the fields from /api/estimate/home
@@ -542,9 +602,11 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
     # state; a "close stand-in" holds other companies too, so SPY's test isn't its test. Unmapped: listed only.
     stand_in: dict[str, str] = {}
     same_index: set[str] = set()
-    retirement_rows, properties = [], []
+    retirement_rows, properties, private_rows = [], [], []
     for o in body.other:
-        if o.kind == "retirement":
+        if o.kind == "private_fund":
+            private_rows.append(private_fund_row(c, o.fund, o.amount))
+        elif o.kind == "retirement":
             if not o.fund or not o.amount or o.amount <= 0:
                 raise HTTPException(422, "A retirement row needs a fund and an amount.")
             f = retirement.find(o.fund)
@@ -596,11 +658,13 @@ def portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
     price_as_of = max((r.pop("day") for r in rows), default=None)  # the close the values are priced at
     retirement_total = sum(r["amount"] for r in retirement_rows)
     home_estimate = sum(p["estimate"] for p in properties)
+    private_total = sum(r["amount"] for r in private_rows)
     return {"total": total, "rows": rows, "exposure": exposure, "unknown": unknown, "funds": funds,
             "price_as_of": price_as_of.isoformat() if price_as_of else None,
-            "retirement": retirement_rows, "properties": properties,
+            "retirement": retirement_rows, "properties": properties, "private_funds": private_rows,
             "subtotals": {"investments": investments, "retirement": retirement_total, "home_estimate": home_estimate,
-                          "total": investments + retirement_total + home_estimate,
+                          "private_funds": private_total,
+                          "total": investments + retirement_total + home_estimate + private_total,
                           "includes_home_estimate": home_estimate > 0}}
 
 
