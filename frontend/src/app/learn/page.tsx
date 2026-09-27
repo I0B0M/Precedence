@@ -56,11 +56,11 @@ export default function Learn() {
       </div>
 
       <div className="stack" style={{ gap: 16 }}>
-        <h2>Real pattern, or not proven?</h2>
-        <p className="lede">The bar is where the real rate likely is. The gold line is normal.</p>
+        <h2><span className="lite-only">Has it mattered before?</span><span className="pro-only">Real pattern, or not proven?</span></h2>
+        <p className="lede">The bar is where the real rate likely is. The gold line is a usual day.</p>
         <div className="learn-grid">
-          <Figure label="STRONG" words="The whole bar is right of the line: it has mattered." left={58} width={26} normal={40} />
-          <Figure label="NOT PROVEN" words="The bar crosses the line: could be chance." left={30} width={44} normal={48} />
+          <Figure label="STRONG" lite="This has mattered before." words="The whole bar is right of the line." left={58} width={26} normal={40} />
+          <Figure label="NOT PROVEN" lite="No clear pattern." words="The bar crosses the line: could be chance." left={30} width={44} normal={48} />
         </div>
         <p className="note">Illustrations, not data.</p>
         <div className="pro-only card">
@@ -84,14 +84,17 @@ export default function Learn() {
   );
 }
 
-function Figure({ label, words, left, width, normal }: { label: "STRONG" | "NOT PROVEN"; words: string; left: number; width: number; normal: number }) {
+function Figure({ label, lite, words, left, width, normal }: {
+  label: "STRONG" | "NOT PROVEN"; lite: string; words: string; left: number; width: number; normal: number;
+}) {
   return (
     <div className="learn-tile">
-      <LabelTag label={label} />
+      <b className="lite-only">{lite}</b>
+      <span className="pro-only"><LabelTag label={label} /></span>
       <div className="rangebar" aria-hidden>
         <div className="track" />
         <div className="span" style={{ left: `${left}%`, width: `${width}%` }} />
-        <div className="normal" style={{ left: `${normal}%` }}><span>normal</span></div>
+        <div className="normal" style={{ left: `${normal}%` }}><span>usual</span></div>
       </div>
       <p>{words}</p>
     </div>

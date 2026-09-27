@@ -33,9 +33,8 @@ export const RangeArt = () => (
     <rect x="120" y="258" width="336" height="10" rx="5" fill="url(#bar)" />
     <rect x="230" y="250" width="120" height="26" rx="13" fill="none" stroke="rgba(255,255,255,0.7)" strokeDasharray="4 4" />
     <circle cx="300" cy="263" r="11" fill="#D4AF37" />
-    <text x="120" y="236" fill="#fff" fontFamily="Epilogue, sans-serif" fontSize="18">Hit rate vs normal</text>
-    <text x="456" y="236" fill="#D4AF37" fontFamily="Epilogue, sans-serif" fontSize="18" textAnchor="end">Not proven</text>
-    <text x="120" y="302" fill="rgba(255,255,255,0.6)" fontFamily="Epilogue, sans-serif" fontSize="13">90% range</text>
+    <text x="120" y="236" fill="#fff" fontFamily="Epilogue, sans-serif" fontSize="18">Mattered before?</text>
+    <text x="456" y="236" fill="#D4AF37" fontFamily="Epilogue, sans-serif" fontSize="18" textAnchor="end">No clear pattern</text>
   </svg>
 );
 
