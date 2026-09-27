@@ -3,7 +3,7 @@ filing summary, once a key is set), the SEC (a filing's document for a summary) 
 geocoder (home estimate)."""
 
 import os
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from functools import lru_cache
 from typing import Literal
 
@@ -166,6 +166,56 @@ def company(ticker: str, c: psycopg.Connection = Conn):
         "rate": {"day": rate["day"].isoformat(), "value": float(rate["value"])} if rate else None,
         "signals": [result_json(r, fdr10=fdr10_by_signal(c, t)) for r in results or []],
         "state": state_of(results),
+        "days": extreme_days(c, co, prices),
+    }
+
+
+EXTREME_DAYS = 3  # the biggest daily falls and rises shown
+DAY_WINDOW = 5  # trading days up to and including a move's close, for what was known then
+
+
+def extreme_days(c: psycopg.Connection, co: dict, prices: list[dict]) -> dict:
+    """The biggest daily falls and rises in the price history we hold, each a close against the one before, with
+    what was filed, sold by insiders or moved in rates in the 5 trading days up to that close. Facts only: it
+    never says an event caused the move."""
+    closes = [(p["day"], float(p["close"])) for p in prices]
+    moves = [(c1 / c0 - 1, i) for i, ((_, c0), (_, c1)) in enumerate(zip(closes, closes[1:]), start=1) if c0]
+    jumps = engine.detect_rate_jumps(service.load_rates(c)) if moves else []
+
+    def one(change: float, i: int) -> dict:
+        start = datetime.combine(closes[max(0, i - (DAY_WINDOW - 1))][0], time(0), tzinfo=engine.EASTERN)
+        end = datetime.combine(closes[i][0], time(16), tzinfo=engine.EASTERN)  # the close: known before it, not after
+        filed = c.execute("""select form, accepted_at, accession, primary_doc, source from filings
+                             where ticker = %s and form <> '4' and accepted_at between %s and %s
+                             order by accepted_at""", (co["ticker"], start, end)).fetchall()
+        sold = c.execute("""select i.accession, min(i.accepted_at) as accepted_at, min(i.owner_name) as owner_name,
+                                   min(i.owner_title) as owner_title, sum(i.shares) as shares,
+                                   min(f.primary_doc) as primary_doc, min(f.source) as source
+                            from insider_trades i left join filings f on f.accession = i.accession
+                            where i.ticker = %s and i.code = 'S' and coalesce(i.acquired_disposed, 'D') = 'D'
+                              and i.accepted_at between %s and %s
+                            group by i.accession order by accepted_at""", (co["ticker"], start, end)).fetchall()
+        events = [{"kind": "filing", "form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+                   "url": filing_url(co["cik"], f["accession"], f["primary_doc"], f["source"])} for f in filed]
+        events += [{"kind": "insider_sale", "accession": s["accession"], "accepted_at": s["accepted_at"].isoformat(),
+                    "owner_name": s["owner_name"], "owner_title": s["owner_title"],
+                    "shares": float(s["shares"]) if s["shares"] is not None else None,
+                    "url": filing_url(co["cik"], s["accession"], s["primary_doc"], s["source"] or "")} for s in sold]
+        events += [{"kind": "rate_jump", "known_at": e.known_at.isoformat(), "note": e.note}
+                   for e in jumps if start <= e.known_at <= end]
+        events.sort(key=lambda e: e.get("accepted_at") or e["known_at"])
+        return {"day": closes[i][0].isoformat(), "change_pct": change, "close": closes[i][1],
+                "prev_close": closes[i - 1][1], "window_start": closes[max(0, i - (DAY_WINDOW - 1))][0].isoformat(),
+                "events": events}
+
+    ranked = sorted(moves)
+    return {
+        "worst": [one(ch, i) for ch, i in ranked[:EXTREME_DAYS]],
+        "best": [one(ch, i) for ch, i in ranked[::-1][:EXTREME_DAYS]],
+        "window_days": DAY_WINDOW,
+        "basis": (f"daily closes, {closes[0][0].isoformat()} to {closes[-1][0].isoformat()}; each day's change is its "
+                  "close against the one before" if closes else "daily closes"),
+        "source": "Alpaca market data (IEX feed); events from SEC EDGAR and FRED",
     }
 
 

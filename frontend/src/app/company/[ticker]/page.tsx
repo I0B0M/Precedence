@@ -8,17 +8,15 @@ import { FilingSummary } from "@/components/FilingSummary";
 import { Why } from "@/components/Why";
 import { MarketCard } from "@/components/MarketCard";
 import { TodayMove } from "@/components/TodayMove";
-import { Compare } from "@/components/Compare";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
 import { bigMoney, money, pct, sharePct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { portfolioExtras } from "@/lib/other-assets";
-import { FORM_WORDS, headline, personName } from "@/lib/words";
+import { SUMMARY_FORMS } from "@/lib/company";
+import { headline } from "@/lib/words";
+import { AfterNews, BigDays, RecentNews } from "./Moves";
 import { StockChart } from "./StockChart";
-
-// Filings that get a plain-words summary (Gemini, figures checked against XBRL).
-const SUMMARY_FORMS = new Set(["8-K", "10-Q", "10-K"]);
 
 // Brief: "understanding what they own" · "spread across different sources" · "summarize complex information"
 export default function CompanyScreen() {
@@ -49,7 +47,6 @@ export default function CompanyScreen() {
 
   const { company: co } = d;
   const main = headline(d.signals);
-  const others = d.signals.filter((s) => s !== main);
   const rateJump = d.signals.find((s) => s.signal === "rate_jump");
   const factsFrom = d.facts[0];
   // A fund's board row stands for only part of it (the rest shows as its stocks), so judge the whole fund from `direct`.
@@ -82,108 +79,14 @@ export default function CompanyScreen() {
       <TodayMove ticker={co.ticker} />
       {d.state === "WATCH" && <BadgeKey />}
 
-      {/* ---------------- LITE ---------------- */}
-      <div className="grid2 lite-only">
-        <div className="box">
-          <h3>What&apos;s going on</h3>
-          {main ? (
-            <>
-              <p className="say-big"><b>{main.lite}.</b></p>
-              {/* Two rows on the same count, after the news and in normal times, then one plain answer. No legend. */}
-              <Compare s={main} ticker={co.ticker} />
-              {main.firing && (() => {
-                // What to check next: the evidence behind the Heads up, never advice. Insider selling: the latest Form 4.
-                // Its Form 4 on sec.gov (insider_sales[].url); every past case is the link under it.
-                // Today's evidence first: the most recent Form 4 sale (who, their title, when), then every past case.
-                const s0 = [...d.insider_sales].sort((a, b) => b.accepted_at.localeCompare(a.accepted_at))[0] as (typeof d.insider_sales)[number] | undefined;
-                const f4 = main.signal === "insider_cluster" && s0 ? s0.url ?? filingUrl(s0.accession) : null;
-                return (
-                  <>
-                    {main.signal === "insider_cluster" && s0 && (() => {
-                      // One Form 4 can have several sale lines: add them up. The date is the trade, not the filing.
-                      const lines = d.insider_sales.filter((x) => x.accession === s0.accession);
-                      const shares = lines.reduce((a, x) => a + (x.shares ?? 0), 0);
-                      const md = (iso: string) => shortDate(iso).replace(/, \d{4}$/, "");
-                      // The trade date, and when it was reported if that's a different day (the date the rest of the page uses).
-                      const traded = s0.transaction_date ? md(s0.transaction_date) : null, reported = md(s0.accepted_at);
-                      const when = traded && traded !== reported ? `${traded} (reported ${reported})` : reported;
-                      return (
-                        <p className="note">Latest sale: {personName(s0.owner_name) ?? "An insider"}{s0.owner_title ? `, ${s0.owner_title},` : ""} sold{" "}
-                          {shares > 0 ? `${shares.toLocaleString("en-US")} shares` : "shares"} on {when}.
-                          {f4 && <> <a href={f4} target="_blank" rel="noopener noreferrer">sec.gov ›</a></>}</p>
-                      );
-                    })()}
-                    {inLab(main.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${main.signal}`}>See each past time this happened ›</Link>}
-                  </>
-                );
-              })()}
-              {main.signal === "rate_jump" && <MarketCard />}
-            </>
-          ) : (
-            <>
-              <p className="say-big">{co.kind === "etf" ? "A fund: many stocks in one." : "Nothing unusual right now."}</p>
-              {isFund && <MarketCard onlyFor={co.ticker} />}
-              {isFund && <Link className="linkb" href={`/fund/${co.ticker}`}>See what&apos;s inside {co.ticker} ›</Link>}
-            </>
-          )}
-          {others.length > 0 && (
-            <div className="list">
-              <p className="list-head">Also checked</p>
-              {others.map((s) => (
-                inLab(s.signal) ? (
-                  <Link key={s.signal} className="list-row" href={`/signals?t=${co.ticker}&s=${s.signal}`}>
-                    <span>{s.lite}</span>
-                    <span className="mute">{s.label === "NO DATA" ? "Not loaded yet" : s.firing ? "Happening now" : "Not now"} ›</span>
-                  </Link>
-                ) : (
-                  <div key={s.signal} className="list-row">
-                    <span>{s.lite}</span>
-                    <span className="mute">{s.label === "NO DATA" ? "Not loaded yet" : s.firing ? "Happening now" : "Not now"}</span>
-                  </div>
-                )
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="stack" style={{ gap: 20 }}>
-          <div className="box">
-            <h3>What it means for you</h3>
-            {mine ? (
-              <dl className="kv">
-                {mine.direct > 0 && <><dt>You own directly</dt><dd>{money(mine.direct)}</dd></>}
-                {Object.values(mine.via_etf).some((v) => v > 0) && (
-                  <><dt>Inside your funds</dt><dd>{money(Object.values(mine.via_etf).reduce((a, b) => a + b, 0))}</dd></>
-                )}
-                <dt>Share of everything you own</dt><dd>{sharePct(myShare)}</dd>
-                <dt>A bad day could cost you</dt><dd className="down">{money(myBadDay)}</dd>
-              </dl>
-            ) : (
-              <>
-                <p className="mute">You don&apos;t own {co.ticker}.</p>
-                <Link className="btn light small" href="/import" style={{ alignSelf: "flex-start" }}>Add account</Link>
-              </>
-            )}
-            {mine && <p className="note">Bad day: the worst 1 in 20 days, past year.</p>}
-          </div>
-
-          <div className="box">
-            <h3>What&apos;s new</h3>
-            <div className="list">
-              {d.insider_sales[0] && (
-                <div className="list-row"><span>Insiders sold shares</span><span className="mute">{shortDate(d.insider_sales[0].accepted_at)}
-                  {d.insider_sales[0].url && <> · <a href={d.insider_sales[0].url} target="_blank" rel="noopener noreferrer">sec.gov</a></>}</span></div>
-              )}
-              {d.filings.slice(0, 3).map((f) => (
-                <div key={f.accession} className="list-row"><span>{FORM_WORDS[f.form] ?? f.form}{SUMMARY_FORMS.has(f.form) && <FilingSummary accession={f.accession} />}</span><span className="mute">{shortDate(f.accepted_at)}</span></div>
-              ))}
-              {d.rate && (
-                <div className="list-row"><span>10-year Treasury rate {d.rate.value.toFixed(2)}%</span><span className="mute">{shortDate(d.rate.day)}</span></div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ---------------- the top: biggest days, after news like this, recent news (Lite and Pro) ---------------- */}
+      <BigDays days={d.days} ticker={co.ticker} />
+      <AfterNews signals={d.signals} ticker={co.ticker} />
+      {/* Pro shows the market card inside its signals table. */}
+      {main?.signal === "rate_jump" && <div className="lite-only"><MarketCard /></div>}
+      {isFund && <MarketCard onlyFor={co.ticker} />}
+      {isFund && <Link className="linkb" href={`/fund/${co.ticker}`}>See what&apos;s inside {co.ticker} ›</Link>}
+      <RecentNews d={d} />
 
       {/* ---------------- PRO ---------------- */}
       <div className="stack pro-only" style={{ gap: 20 }}>
@@ -236,6 +139,32 @@ export default function CompanyScreen() {
           </div>
         )}
 
+      </div>
+
+      {/* ---------------- everything else, collapsed ---------------- */}
+      <details className="more-about">
+        <summary>More about {co.ticker}: {mine ? "what it means for you, " : ""}figures and every filing</summary>
+        <div className="stack" style={{ gap: 20, marginTop: 12 }}>
+          <div className="box lite-only">
+            <h3>What it means for you</h3>
+            {mine ? (
+              <dl className="kv">
+                {mine.direct > 0 && <><dt>You own directly</dt><dd>{money(mine.direct)}</dd></>}
+                {Object.values(mine.via_etf).some((v) => v > 0) && (
+                  <><dt>Inside your funds</dt><dd>{money(Object.values(mine.via_etf).reduce((a, b) => a + b, 0))}</dd></>
+                )}
+                <dt>Share of everything you own</dt><dd>{sharePct(myShare)}</dd>
+                <dt>A bad day could cost you</dt><dd className="down">{money(myBadDay)}</dd>
+              </dl>
+            ) : (
+              <>
+                <p className="mute">You don&apos;t own {co.ticker}.</p>
+                <Link className="btn light small" href="/import" style={{ alignSelf: "flex-start" }}>Add account</Link>
+              </>
+            )}
+            {mine && <p className="note">Bad day: the worst 1 in 20 days, past year.</p>}
+          </div>
+          <div className="stack pro-only" style={{ gap: 20 }}>
         {factsFrom && (
           <div className="card">
             <h3>XBRL facts</h3>
@@ -320,7 +249,9 @@ export default function CompanyScreen() {
             {d.rate && <p className="note">DGS10 {d.rate.value.toFixed(2)}% ({d.rate.day}, FRED)</p>}
           </div>
         </div>
-      </div>
+          </div>
+        </div>
+      </details>
 
       {nextSignal && (
         <div className="next-step">

@@ -203,6 +203,33 @@ export interface CompanyDetail {
   rate: { day: string; value: number } | null;
   signals: SignalResult[];
   state: State | null;
+  /** Worst days · Best days (always sent by the API; older saved data may not have it). */
+  days?: CompanyDays;
+}
+
+/** What was public in the 5 trading days up to a big move's close. Listed beside the move, never as its cause. */
+export type DayEvent =
+  | { kind: "filing"; form: string; accepted_at: string; url: string | null }
+  | { kind: "insider_sale"; accession: string; accepted_at: string; owner_name: string | null; owner_title: string | null;
+      shares: number | null; url: string | null }
+  | { kind: "rate_jump"; known_at: string; note: string };
+
+export interface BigDay {
+  day: string;
+  change_pct: number; // a fraction: its close against the one before
+  close: number;
+  prev_close: number;
+  window_start: string; // first of the 5 trading days the events come from
+  events: DayEvent[];
+}
+
+/** The 3 biggest daily falls and rises in the price history we hold (about 2 years), from our own daily closes. */
+export interface CompanyDays {
+  worst: BigDay[]; // biggest fall first
+  best: BigDay[]; // biggest rise first
+  window_days: number; // 5
+  basis: string; // "daily closes, 2024-08-19 to 2026-09-25; each day's change is its close against the one before"
+  source: string;
 }
 
 export interface Holding {
