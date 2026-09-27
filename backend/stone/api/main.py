@@ -15,7 +15,7 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
 from stone import config
-from stone.api.views import filing_url, latest_facts, result_json
+from stone.api.views import SOURCE_NAMES, filing_url, latest_facts, result_json, vs_market_words
 from stone import homes, retirement
 from stone.config import NotConnected
 from stone.figures import check_figures, html_to_text
@@ -138,6 +138,108 @@ def company(ticker: str, c: psycopg.Connection = Conn):
         "rate": {"day": rate["day"].isoformat(), "value": float(rate["value"])} if rate else None,
         "signals": [result_json(r, fdr10=fdr10_by_signal(c, t)) for r in results or []],
         "state": state_of(results),
+    }
+
+
+RECENT_TRADING_DAYS = 5
+
+
+def close_change(c: psycopg.Connection, ticker: str, day) -> dict | None:
+    """The close on `day` against the close before it; None if there's no bar that day or none before."""
+    rows = c.execute("select day, close, source from prices_daily where ticker = %s and day <= %s "
+                     "order by day desc limit 2", (ticker, day)).fetchall()
+    if len(rows) < 2 or rows[0]["day"] != day:
+        return None
+    close, prev = float(rows[0]["close"]), float(rows[1]["close"])
+    return {"close": close, "prev_close": prev, "prev_day": rows[1]["day"], "change": round(close - prev, 4),
+            "change_pct": close / prev - 1, "source": rows[0]["source"]}
+
+
+def source_json(source: str | None, **extra) -> dict:
+    return {"source": source, "name": SOURCE_NAMES.get(source, source), **extra}
+
+
+@app.get("/api/companies/{ticker}/today")
+def company_today(ticker: str, c: psycopg.Connection = Conn):
+    """One holding's last trading day and what was filed, sold, moved or fired in its last 5 trading days.
+    Facts with their sources only: nothing here says why the price moved."""
+    co = company_or_404(c, ticker)
+    t = co["ticker"]
+    days = [r["day"] for r in c.execute("select day from prices_daily where ticker = %s order by day desc limit %s",
+                                        (t, RECENT_TRADING_DAYS)).fetchall()]
+    if not days:
+        raise HTTPException(404, f"No prices for {t}")
+    as_of, start = days[0], days[-1]
+    own = close_change(c, t, as_of)
+    market_symbol = service.load_market(c)[0]
+    market = close_change(c, market_symbol, as_of)  # the market on the same day, not its own latest day
+    stock_pct, market_pct = (own or {}).get("change_pct"), (market or {}).get("change_pct")
+
+    filings = c.execute(
+        """select form, accepted_at, accession, primary_doc, source from filings
+           where ticker = %s and form <> '4' and (accepted_at at time zone 'America/New_York')::date >= %s
+           order by accepted_at desc""", (t, start)).fetchall()
+    insider_loaded = service.insider_loaded(c, t)
+    sales = c.execute(
+        """select i.accepted_at, i.owner_name, i.owner_title, i.transaction_date, i.shares, i.price, i.accession,
+                  i.source, f.primary_doc from insider_trades i left join filings f on f.accession = i.accession
+           where i.ticker = %s and i.code = 'S' and coalesce(i.acquired_disposed, 'D') = 'D'
+             and (i.accepted_at at time zone 'America/New_York')::date >= %s
+           order by i.accepted_at desc, i.seq""", (t, start)).fetchall() if insider_loaded else []
+
+    base = c.execute("select day, value from rates where series = 'DGS10' and day < %s order by day desc limit 1",
+                     (start,)).fetchone()
+    latest = c.execute("select day, value, source from rates where series = 'DGS10' order by day desc limit 1").fetchone()
+    jumps = [e for e in engine.detect_rate_jumps(service.load_rates(c)) if e.known_at.date() >= start]
+
+    results = signal_results(c, t, co["kind"], market_symbol) or []
+    fdr10 = fdr10_by_signal(c, t)
+    firing = [{"signal": r.signal, "lite": engine.ALL_SPECS[r.signal].lite, "label": r.label,
+               "known_at": r.firing.known_at.isoformat(), "note": r.firing.note,
+               "in_window": r.firing.known_at.astimezone(engine.EASTERN).date() >= start,
+               "fdr10_survives": fdr10.get(r.signal)} for r in results if r.firing]
+    scan_row = c.execute("select run_at from signal_scans order by run_at desc limit 1").fetchone()
+    filing_sources = sorted({f["source"] for f in filings} | {s["source"] for s in sales}) or ["sec"]
+
+    return {
+        "ticker": t, "name": co["name"], "as_of": as_of.isoformat(),
+        "close": own["close"] if own else None, "prev_close": own["prev_close"] if own else None,
+        "day_change": own["change"] if own else None,  # dollars per share
+        "day_change_pct": stock_pct,  # a fraction, like every other change here: 0.012 = +1.2%
+        "market_symbol": market_symbol,  # "SPY" on real data
+        "spy_change_pct": market_pct,  # the market's change on the same day, a fraction
+        "vs_market": vs_market_words(stock_pct, market_pct),  # size of the move only; see same_direction
+        "same_direction": (stock_pct >= 0) == (market_pct >= 0) if own and market else None,
+        "window": {"start": start.isoformat(), "end": as_of.isoformat(), "trading_days": len(days),
+                   "note": "Filings and insider sales from the start date on, including any after the last close."},
+        "events": {
+            "filings": [{"form": f["form"], "accepted_at": f["accepted_at"].isoformat(),
+                         "url": filing_url(co["cik"], f["accession"], f["primary_doc"], f["source"])} for f in filings],
+            # None, not []: Form 4s aren't loaded for this stock, so "no sales" would be a guess
+            "insider_sales": [{"accepted_at": s["accepted_at"].isoformat(), "owner_name": s["owner_name"],
+                               "owner_title": s["owner_title"],
+                               "transaction_date": s["transaction_date"].isoformat() if s["transaction_date"] else None,
+                               "shares": float(s["shares"]) if s["shares"] is not None else None,
+                               "price": float(s["price"]) if s["price"] is not None else None,
+                               "url": filing_url(co["cik"], s["accession"], s["primary_doc"], s["source"])}
+                              for s in sales] if insider_loaded else None,
+            # the 10-year yield's latest reading against the last reading before the window
+            "rate_move": {"series": "DGS10", "from_day": base["day"].isoformat(), "from_value": float(base["value"]),
+                          "to_day": latest["day"].isoformat(), "to_value": float(latest["value"]),
+                          "change": round(float(latest["value"] - base["value"]), 4),
+                          "known_at": engine.rate_known_at(latest["day"]).isoformat(),
+                          "jumps": [{"known_at": e.known_at.isoformat(), "note": e.note} for e in jumps]}
+                         if base and latest else None,
+            "signals_firing": firing,  # every signal firing now; in_window = it became known inside the window
+        },
+        "sources": {
+            "prices": source_json(own["source"] if own else None, as_of=as_of.isoformat()),
+            "market": source_json(market["source"] if market else None, symbol=market_symbol),
+            "filings": [source_json(s) for s in filing_sources],
+            "rate": source_json(latest["source"], series="DGS10", as_of=latest["day"].isoformat()) if latest else None,
+            "signals": {"source": "stone", "name": "Precedence signal engine (prices, SEC, FRED)",
+                        "scan_run_at": scan_row["run_at"].isoformat() if scan_row else None},
+        },
     }
 
 

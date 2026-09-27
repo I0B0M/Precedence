@@ -330,6 +330,49 @@ export interface Today {
   } | null; // null when no symbols were passed
 }
 
+export interface SourceRef {
+  source: string | null; // as stored: "alpaca-iex" | "sec" | "fred" | "sample"
+  name: string | null; // in words, e.g. "SEC EDGAR"
+}
+
+/** GET /api/companies/{t}/today: one holding's last trading day and its last 5 trading days, as facts with
+ *  sources. Nothing in it says why the price moved; don't add a cause in the UI either. */
+export interface CompanyToday {
+  ticker: string;
+  name: string;
+  as_of: string; // the stock's last trading day in the price data
+  close: number | null;
+  prev_close: number | null;
+  day_change: number | null; // dollars per share
+  day_change_pct: number | null; // a fraction, like every other change here: 0.012 = +1.2%
+  market_symbol: string; // "SPY" on real data
+  spy_change_pct: number | null; // the market on the same day, a fraction; null if it has no bar that day
+  // size of the move only: within 0.5 percentage point of the market = "with"; otherwise the bigger move wins.
+  // A stock up 0.1% on a day the market fell 1.5% is "less than the market" — read same_direction too
+  vs_market: "with the market" | "more than the market" | "less than the market" | null;
+  same_direction: boolean | null;
+  window: { start: string; end: string; trading_days: number; note: string };
+  events: {
+    filings: { form: string; accepted_at: string; url: string | null }[]; // not Form 4s (those are insider_sales)
+    // null: Form 4s aren't loaded for this stock, so say "not loaded", never "no insider sales"
+    insider_sales: { accepted_at: string; owner_name: string | null; owner_title: string | null;
+      transaction_date: string | null; shares: number | null; price: number | null; url: string | null }[] | null;
+    // 10-year yield: latest reading vs the last reading before the window; change in percentage points
+    rate_move: { series: "DGS10"; from_day: string; from_value: number; to_day: string; to_value: number;
+      change: number; known_at: string; jumps: { known_at: string; note: string }[] } | null;
+    // every signal firing now; in_window = it became known inside the window
+    signals_firing: { signal: string; lite: string; label: Label; known_at: string; note: string;
+      in_window: boolean; fdr10_survives: boolean | null }[];
+  };
+  sources: {
+    prices: SourceRef & { as_of: string };
+    market: SourceRef & { symbol: string };
+    filings: SourceRef[];
+    rate: (SourceRef & { series: "DGS10"; as_of: string }) | null;
+    signals: { source: "stone"; name: string; scan_run_at: string | null };
+  };
+}
+
 export interface ReadRow {
   symbol: string;
   shares: number | null;
@@ -374,6 +417,7 @@ export const api = {
   status: () => call<Status>("/api/status"),
   companies: () => call<CompanyRow[]>("/api/companies"),
   company: (t: string) => call<CompanyDetail>(`/api/companies/${encodeURIComponent(t)}`),
+  companyToday: (t: string) => call<CompanyToday>(`/api/companies/${encodeURIComponent(t)}/today`),
   scan: () => call<Scan | null>("/api/scan"),
   labSignals: () => call<{ key: string; lite: string; pro: string; horizon: number }[]>("/api/lab/signals"),
   lab: (t: string, s: string) => call<SignalResult>(`/api/lab/${encodeURIComponent(t)}/${s}`),
