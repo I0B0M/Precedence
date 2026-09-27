@@ -39,6 +39,8 @@ function citeChip(cite: string, line: Line): { label: string; href: string } | n
     case "filing": return { label: "Filing", href: t ? `/company/${t}` : "/" };
     case "fact": return { label: `Filing figure · ${rest.replace(/_/g, " ")}`, href: t ? `/company/${t}` : "/" };
     case "fund": return { label: `Inside ${rest}`, href: `/fund/${rest}` };
+    case "rate": return { label: `10-year yield · ${shortDate(rest)}`, href: "/company/SPY" };
+    case "portfolio": return { label: rest === "exposure" ? "What you really own" : "The board", href: "/" };
     default: return null;
   }
 }
@@ -258,7 +260,7 @@ export function Stage() {
             </table>
             {script.panel.held_back.length > 0 && (
               <ul className="bf-held">
-                {script.panel.held_back.map((h, i) => <li key={i}><span>{h.text}</span> <em>{h.reason}</em></li>)}
+                {script.panel.held_back.map((h, i) => <li key={i}>{h.expert && <b>{h.expert}: </b>}<span>{h.text}</span> <em>{h.reason}</em></li>)}
               </ul>
             )}
           </details>

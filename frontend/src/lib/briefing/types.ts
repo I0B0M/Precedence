@@ -30,6 +30,7 @@ export interface ExpertReport {
 }
 
 export interface HeldBack {
+  expert?: string;
   text: string;
   reason: string;
 }

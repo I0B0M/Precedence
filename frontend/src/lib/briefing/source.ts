@@ -37,7 +37,7 @@ export function normalizeScript(raw: unknown, names: Record<string, string>): Sc
     name: String(e.name ?? "?"), considered: Number(e.considered ?? 0) || 0, spoken: Number(e.spoken ?? 0) || 0,
   })) : [];
   const held = Array.isArray(panel.held_back) ? panel.held_back.filter(isRecord).map((h) => ({
-    text: String(h.text ?? ""), reason: String(h.reason ?? ""),
+    expert: typeof h.expert === "string" ? h.expert : undefined, text: String(h.text ?? ""), reason: String(h.reason ?? ""),
   })) : [];
   return {
     as_of: typeof raw.as_of === "string" ? raw.as_of : null,
