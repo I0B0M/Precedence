@@ -5,6 +5,7 @@ parse_* functions are pure and unit-tested against hand-written files in EDGAR's
 """
 
 import json
+import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
@@ -236,6 +237,14 @@ class SecClient:
                  date.fromisoformat(recent["reportDate"][i]))
                 for i, form in enumerate(recent["form"]) if form == "NPORT-P"]
         return max(rows, key=lambda r: (r[2], r[1]), default=None)
+
+    def series_nports(self, series_id: str) -> list[tuple[str, date]]:
+        """(accession, filed) of a fund series' NPORT-P filings, newest first, from EDGAR's listing for that series
+        (a trust like iShares files hundreds of series under one CIK, so its submissions list can't tell them apart)."""
+        raw = self.http.get(f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={series_id}&type=NPORT-P"
+                            "&dateb=&owner=include&count=10&output=atom", f"browse_{series_id}_nport.xml").decode()
+        found = re.findall(r"<accession-number>([^<]+)</accession-number>.*?<filing-date>([^<]+)</filing-date>", raw, re.S)
+        return [(acc, date.fromisoformat(d)) for acc, d in found]
 
     def nport_xml(self, cik: int, accession: str) -> bytes:
         return self.http.get(f"{ARCHIVES}/{cik}/{accession.replace('-', '')}/primary_doc.xml", f"nport_{accession}.xml")

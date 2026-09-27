@@ -16,6 +16,22 @@ from datetime import date
 
 QQQ_CIK = 1067839  # Invesco QQQ Trust, Series 1
 QQQ_SOURCE = "SEC N-PORT (Invesco QQQ Trust)"
+
+
+@dataclass(frozen=True)
+class SeriesFund:
+    """A fund that is one series of a larger trust: its N-PORTs are found by series, not by the trust's CIK.
+    Series ids from SEC's company_tickers_mf.json."""
+    etf: str
+    cik: int  # the trust
+    series_id: str
+    source: str
+
+
+SERIES_FUNDS = {
+    "VOO": SeriesFund("VOO", 36405, "S000002839", "SEC N-PORT (Vanguard 500 Index Fund)"),  # VOO is its ETF class
+    "IVV": SeriesFund("IVV", 1100663, "S000004310", "SEC N-PORT (iShares Core S&P 500 ETF)"),
+}
 WEIGHT_RANGE = (0.97, 1.01)  # stock lines must add up to about the whole fund, or nothing is loaded
 
 
@@ -40,11 +56,35 @@ def _key(cusip: str | None, isin: str | None, lei: str | None) -> str | None:
     return None
 
 
-def parse_nport(xml_bytes: bytes, ticker_by_cusip: dict[str, str]) -> NportHoldings:
+def _root(xml_bytes: bytes):
     root = ET.fromstring(xml_bytes)
     ns = {"n": root.tag.split("}")[0].strip("{")} if root.tag.startswith("{") else {"n": ""}
     text = lambda node, path: (node.findtext(f"n:{path}", namespaces=ns) or "").strip() or None
+    return root, ns, text
+
+
+def cusips_by_isin(xml_bytes: bytes) -> dict[str, str]:
+    """ISIN -> CUSIP for every line that gives both. iShares reports some non-US stocks by ISIN only; another fund's
+    filing for the same stocks (Vanguard's lists both) lets them be matched exactly instead of guessed."""
+    root, ns, text = _root(xml_bytes)
+    out = {}
+    for s in root.findall(".//n:invstOrSec", ns):
+        isin, cusip = s.find("n:identifiers/n:isin", ns), text(s, "cusip")
+        if isin is not None and isin.get("value") and cusip and cusip != "N/A":
+            out[isin.get("value")] = cusip
+    return out
+
+
+def parse_nport(xml_bytes: bytes, ticker_by_cusip: dict[str, str], cusip_by_isin: dict[str, str] | None = None,
+                series_id: str | None = None) -> NportHoldings:
+    """series_id: the fund's SEC series (e.g. IVV S000004310); a trust files one N-PORT per series, so a filing
+    for any other series is refused."""
+    root, ns, text = _root(xml_bytes)
+    cusip_by_isin = cusip_by_isin or {}
     gen = root.find(".//n:genInfo", ns)
+    if series_id and (gen is None or text(gen, "seriesId") != series_id):
+        raise NportRejected(f"This filing is for series {text(gen, 'seriesId') if gen is not None else None}, "
+                            f"not {series_id}.")
     if gen is None or not text(gen, "repPdDate"):
         raise NportRejected("No repPdDate in the filing, so its holdings can't be dated.")
     as_of = date.fromisoformat(text(gen, "repPdDate"))
@@ -61,9 +101,12 @@ def parse_nport(xml_bytes: bytes, ticker_by_cusip: dict[str, str]) -> NportHoldi
         pct = float(text(s, "pctVal") or 0) / 100
         cusip = text(s, "cusip")
         isin_node = s.find("n:identifiers/n:isin", ns)
+        isin = isin_node.get("value") if isin_node is not None else None
+        if (not cusip or cusip == "N/A") and isin in cusip_by_isin:
+            cusip = cusip_by_isin[isin]
         key = ticker_by_cusip.get(cusip or "")
         if key is None:
-            key = _key(cusip, isin_node.get("value") if isin_node is not None else None, text(s, "lei"))
+            key = _key(cusip, isin, text(s, "lei"))
             if key is None:
                 raise NportRejected(f"{name}: no CUSIP, ISIN or LEI to identify it by.")
             unmatched.append(key)

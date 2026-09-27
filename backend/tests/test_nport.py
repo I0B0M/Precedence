@@ -77,3 +77,54 @@ def test_fund_page_shows_the_nport_date_and_says_it_lags(by_cusip):
         conn.execute("delete from etf_holdings where etf = 'NPQ'")
         conn.execute("delete from companies where ticker = 'NPQ'")
         conn.commit()
+
+
+VOO = (FIXTURES / "nport_voo.xml").read_bytes()  # Vanguard 500 Index Fund NPORT-P 0000036405-26-000473, filed 2026-08-28
+IVV = (FIXTURES / "nport_ivv.xml").read_bytes()  # iShares Core S&P 500 ETF NPORT-P 0002071691-26-019760, filed 2026-08-25
+
+
+def test_voo_and_ivv_from_their_own_series_filings(by_cusip):
+    from stone.sources.nport import SERIES_FUNDS, cusips_by_isin
+    voo = parse_nport(VOO, by_cusip, series_id=SERIES_FUNDS["VOO"].series_id)
+    assert voo.as_of == date(2026, 6, 30) and voo.fiscal_period_end == date(2026, 12, 31)  # repPdDate, not repPdEnd
+    assert len(voo.weights) == 506 and sum(voo.weights.values()) == pytest.approx(0.9975, abs=1e-4)
+    ivv = parse_nport(IVV, by_cusip, cusips_by_isin(VOO), series_id=SERIES_FUNDS["IVV"].series_id)
+    assert ivv.as_of == date(2026, 6, 30) and len(ivv.weights) == 503
+    assert "LIN" in ivv.weights and len(ivv.unmatched) == 8  # Linde plc: ISIN only in iShares' filing
+
+
+def test_ivv_isin_only_lines_stay_identifiers_without_a_filing_that_pairs_them(by_cusip):
+    ivv = parse_nport(IVV, by_cusip)
+    assert "LIN" not in ivv.weights and ivv.names["ISIN:IE000S9YS762"] == "Linde plc"  # never a guessed ticker
+
+
+def test_a_trusts_filing_for_another_series_is_refused(by_cusip):
+    from stone.sources.nport import SERIES_FUNDS
+    with pytest.raises(NportRejected, match="S000002839"):
+        parse_nport(VOO, by_cusip, series_id=SERIES_FUNDS["IVV"].series_id)
+
+
+def test_a_fund_uses_its_own_holdings_once_loaded_and_borrows_until_then(by_cusip, monkeypatch):
+    from stone.api import main
+    monkeypatch.setitem(main.HOLDINGS_FROM, "NPV", "BRD500")  # like VOO -> SPY
+    conn = db.connect(os.environ["DATABASE_URL"])
+    db.apply_schema(conn)
+    sample.seed(conn, date(2026, 9, 26))
+    conn.execute("insert into companies (ticker, cik, name, sector, kind, source) values "
+                 "('NPV', null, 'N-PORT series test fund', null, 'etf', 'sample') on conflict do nothing")
+    conn.commit()
+    client = TestClient(app)
+    try:
+        before = client.get("/api/funds/NPV").json()
+        assert before["holdings_source"] == "sample" and before["holdings_as_of"] == "2026-09-25"  # BRD500's
+        assert "Tracks the same index as BRD500" in before["note"]
+        h = parse_nport(VOO, by_cusip)
+        store.upsert_etf_holdings(conn, "NPV", h.as_of, h.weights, "SEC N-PORT (Vanguard 500 Index Fund)", h.names)
+        conn.commit()
+        after = client.get("/api/funds/NPV").json()
+        assert after["holdings_as_of"] == "2026-06-30" and after["total_holdings_count"] == 506
+        assert after["note"].startswith("Holdings as of 2026-06-30, from the fund's SEC N-PORT filing.")
+    finally:
+        conn.execute("delete from etf_holdings where etf = 'NPV'")
+        conn.execute("delete from companies where ticker = 'NPV'")
+        conn.commit()
