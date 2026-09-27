@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { OtherAssetsForms } from "@/components/OtherAssets";
 import { SHOW_CONNECT, SHOW_CRYPTO } from "@/lib/flags";
 import { comingNext } from "@/lib/features";
-import { api, ApiError, SAVED, SAVED_EXAMPLE, type ReadRow, type Reconciled, type Status } from "@/lib/api";
+import { api, ApiError, EXAMPLE_PORTFOLIO, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
 
@@ -13,8 +13,6 @@ const CONNECT = [
   { name: "Robinhood", what: "Stocks and funds" },
   ...(SHOW_CRYPTO ? [{ name: "Binance", what: "Crypto" }] : []),
 ];
-
-const EXAMPLE: [string, number][] = SAVED ? SAVED_EXAMPLE.map((h) => [h.symbol, h.shares]) : [["BX", 10], ["AMZN", 5], ["SPY", 3]];
 
 /** Fill what a person typing would leave out: price from the latest close, value from shares x price. */
 async function fillTyped(rows: EditRow[]): Promise<{ rows: EditRow[]; priced: { symbol: string; day: string | null }[]; unpriced: string[] }> {
@@ -48,11 +46,11 @@ type Example = { rows: EditRow[]; total: string; asOf: string | null; check: Rec
 async function loadExample(): Promise<Example | null> {
   try {
     const cos = await api.companies();
-    const picks = EXAMPLE.map(([t, sh]) => ({ c: cos.find((x) => x.ticker === t), sh })).filter((p) => p.c?.last_close != null);
+    const picks = EXAMPLE_PORTFOLIO.map(({ symbol: t, shares: sh }) => ({ c: cos.find((x) => x.ticker === t), sh })).filter((p) => p.c?.last_close != null);
     if (!picks.length) return null;
     const rows = picks.map(({ c, sh }) => ({ symbol: c!.ticker, shares: String(sh), price: c!.last_close!.toFixed(2), value: (sh * c!.last_close!).toFixed(2) }));
     const total = rows.reduce((a, r) => a + Number(r.value), 0).toFixed(2);
-    const check = SAVED ? null : await api.reconcile(rows.map(toRead), Number(total)).catch(() => null);
+    const check = await api.reconcile(rows.map(toRead), Number(total)).catch(() => null);
     return { rows, total, asOf: picks[0].c!.as_of, check };
   } catch {
     return null;

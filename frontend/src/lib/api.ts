@@ -1,5 +1,7 @@
 // Shapes returned by the FastAPI backend (backend/stone/api). Keep in step with views.py.
 
+import { andList } from "./format";
+
 export type Label = "STRONG" | "WEAK" | "NOT PROVEN" | "NO DATA"; // NO DATA: source data not loaded, nothing tested
 export type State = "CALM" | "WATCH";
 
@@ -498,38 +500,52 @@ export class ApiError extends Error {
 // what needs the backend (screenshots, typed rows, filing summaries), and every page already handles both.
 export const SAVED = process.env.NEXT_PUBLIC_STONE_SAVED === "1";
 
+const ticker = (s: string) => s.trim().toUpperCase();
+const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0); // Python's sorted() order, as build_saved.py
+
 /** Same key as holdings_key() in build_saved.py: symbols sorted, "SYM-shares" joined by "_". */
 export const savedKey = (holdings: Holding[]) =>
-  [...holdings].map((h) => ({ s: h.symbol.trim().toUpperCase(), n: h.shares })).sort((a, b) => (a.s < b.s ? -1 : a.s > b.s ? 1 : 0))
-    .map((h) => `${h.s}-${h.n}`).join("_");
+  holdings.map((h) => ({ s: ticker(h.symbol), n: h.shares })).sort((a, b) => byText(a.s, b.s)).map((h) => `${h.s}-${h.n}`).join("_");
+
+/** `?symbols=` as the saved files are named: each once, upper case, sorted, comma-joined (build_saved.py live_extras). */
+const symbolsKey = (symbols: string) => [...new Set(symbols.split(",").map(ticker).filter(Boolean))].sort(byText).join(",");
 
 /** The one portfolio the saved data has (frontend/fixtures/holdings.json): real prices, illustrative share counts. */
 export const SAVED_EXAMPLE: Holding[] = [
   { symbol: "BX", shares: 10 }, { symbol: "AAPL", shares: 10 }, { symbol: "NVDA", shares: 10 },
   { symbol: "JPM", shares: 10 }, { symbol: "AMZN", shares: 10 }, { symbol: "SPY", shares: 5 },
 ];
-export const SAVED_TICKERS = "BX, AAPL, NVDA, JPM, AMZN and SPY";
+export const SAVED_TICKERS = andList(SAVED_EXAMPLE.map((h) => h.symbol));
 export const SAVED_AS_OF = "Sep 25, 2026";
+
+/** The example portfolio: the home page shows it, /import?example=1 fills it in. Saved data has one portfolio saved. */
+export const EXAMPLE_PORTFOLIO: Holding[] = SAVED ? SAVED_EXAMPLE
+  : [{ symbol: "BX", shares: 10 }, { symbol: "AMZN", shares: 5 }, { symbol: "SPY", shares: 3 }];
 
 const NEEDS_BACKEND = "This needs the full app; the live demo runs on saved data.";
 
-async function fromSaved<T>(path: string): Promise<T> {
+/** Where the saved data keeps the answer to this call, in the layout build_saved.py writes:
+ *  GET /api/a/b → /saved/a/b.json, GET /api/a?symbols=X,Y → /saved/a/<symbolsKey>.json,
+ *  POST /api/a with holdings → /saved/a/<savedKey>.json, keyed on the holdings only (a home or 401(k) sent
+ *  alongside gets the saved board without it). Throws ApiError 503 for what only the backend can do
+ *  (a POST without holdings: reconcile, screenshots, home estimates; filing summaries). */
+export function savedFile(path: string, init?: RequestInit): string {
   const [route, query] = path.replace(/^\/api\//, "").split("?");
-  const sym = new URLSearchParams(query ?? "").get("symbols");
-  const res = await fetch(`/saved/${route}${sym ? `/${sym}` : ""}.json`);
-  if (!res.ok) throw new ApiError(404, "Not in the saved data.");
-  return res.json() as Promise<T>;
+  if (init?.method === "POST") {
+    const body = typeof init.body === "string" ? JSON.parse(init.body) : null;
+    if (!Array.isArray(body?.holdings)) throw new ApiError(503, NEEDS_BACKEND);
+    return `/saved/${route}/${savedKey(body.holdings)}.json`;
+  }
+  if (route.endsWith("/summary")) throw new ApiError(503, NEEDS_BACKEND);
+  const symbols = new URLSearchParams(query ?? "").get("symbols");
+  return `/saved/${route}${symbols ? `/${symbolsKey(symbols)}` : ""}.json`;
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   if (SAVED) {
-    if (init?.method === "POST") {
-      const body = typeof init.body === "string" ? JSON.parse(init.body) : null;
-      if (!body?.holdings) throw new ApiError(503, NEEDS_BACKEND);
-      return fromSaved<T>(`${path}/${savedKey(body.holdings)}`);
-    }
-    if (path.includes("/summary")) throw new ApiError(503, NEEDS_BACKEND);
-    return fromSaved<T>(path);
+    const res = await fetch(savedFile(path, init));
+    if (!res.ok) throw new ApiError(404, "Not in the saved data.");
+    return res.json() as Promise<T>;
   }
   const res = await fetch(path, { cache: "no-store", ...init });
   if (!res.ok) {
@@ -569,8 +585,9 @@ export const api = {
   reconcile: (rows: ReadRow[], printed_total: number | null) =>
     call<Reconciled>("/api/import/reconcile", post({ rows, printed_total })),
   risk: (holdings: Holding[]) => call<PortfolioRisk>("/api/portfolio/risk", post({ holdings })),
+  /** The backend panel's briefing, unparsed: lib/briefing/source.ts checks its shape before anything is spoken. */
+  briefing: (holdings: Holding[]) => call<unknown>("/api/briefing/portfolio", post({ holdings })),
   screenshot: (file: File) => {
-    if (SAVED) return Promise.reject(new ApiError(503, NEEDS_BACKEND));
     const form = new FormData();
     form.append("file", file);
     return call<Reconciled>("/api/import/screenshot", { method: "POST", body: form });

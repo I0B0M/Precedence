@@ -1,8 +1,8 @@
-// Where the script comes from. First the backend's panel (POST /api/briefing/portfolio; in saved mode,
-// /saved/briefing/portfolio/<key>.json). If that isn't there, the same panel runs here on the board
+// Where the script comes from. First the backend's panel (api.briefing: POST /api/briefing/portfolio, or its
+// saved copy on the saved-data demo). If that isn't there, the same panel runs here on the board
 // the page already fetched. Either way the page always has lines to say.
 
-import { ApiError, SAVED, savedKey, type Holding, type PortfolioOut, type PortfolioRisk } from "@/lib/api";
+import { api, type Holding, type PortfolioOut, type PortfolioRisk } from "@/lib/api";
 import { composeScript, namesOf } from "./compose";
 import { toSpeech } from "./spoken";
 import type { Line, Script, Tone } from "./types";
@@ -47,25 +47,12 @@ export function normalizeScript(raw: unknown, names: Record<string, string>): Sc
   };
 }
 
-async function fetchRemote(holdings: Holding[]): Promise<unknown> {
-  if (SAVED) {
-    const res = await fetch(`/saved/briefing/portfolio/${savedKey(holdings)}.json`);
-    if (!res.ok) throw new ApiError(res.status, "Not in the saved data.");
-    return res.json();
-  }
-  const res = await fetch("/api/briefing/portfolio", {
-    method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ holdings }),
-  });
-  if (!res.ok) throw new ApiError(res.status, res.statusText);
-  return res.json();
-}
-
 /** The script for these holdings: the backend's when it has one, else composed here. Never throws
     for a missing backend script; only the board itself is required. */
 export async function loadScript(holdings: Holding[], portfolio: PortfolioOut, risk: PortfolioRisk | null): Promise<Script> {
   const names = namesOf(portfolio);
   try {
-    const remote = normalizeScript(await fetchRemote(holdings), names);
+    const remote = normalizeScript(await api.briefing(holdings), names);
     if (remote) return remote;
   } catch {
     // 404 in saved mode, backend without the endpoint, or a network slip: the browser panel takes over.

@@ -72,8 +72,9 @@ def live_extras() -> None:
     market_day = get("/api/today")
     if market_day["day"] != as_of:
         raise SystemExit(f"The API at {API} is on {market_day['day']}, the saved data on {as_of}; not mixing them.")
-    symbols = ",".join(h["symbol"] for h in request["holdings"])  # the example's order, as the start screen asks
-    files = {"today": market_day, f"today/{symbols}": get(f"/api/today?symbols={symbols}"),
+    asked = ",".join(h["symbol"] for h in request["holdings"])  # the example's order, as the start screen asks
+    saved_as = ",".join(sorted(set(asked.split(","))))  # the file name savedFile() in api.ts looks up, any order
+    files = {"today": market_day, f"today/{saved_as}": get(f"/api/today?symbols={asked}"),
              "companies/MSFT": get("/api/companies/MSFT"),
              **{f"companies/{t}/today": get(f"/api/companies/{t}/today") for t in [*stocks, MARKET]}}
     for path, data in files.items():

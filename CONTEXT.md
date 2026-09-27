@@ -81,3 +81,13 @@ _Avoid_: verified, fact-checked
 **Reader**:
 A trained model that turns unstructured input (filing text, a press release, a brokerage screenshot) into candidate cases of a signal, or figures for a check. It never assigns a label or a state; the engine tests what it proposes like any other signal.
 _Avoid_: expert (that's a rule), agent, model on its own
+
+### The live demo
+
+**Saved data**:
+The API's own answers for the example portfolio, saved as files at one market close (`frontend/public/saved`, written by `backend/scripts/build_saved.py`), so the live demo runs with no backend. Only `lib/api.ts` knows where each answer is saved; anything not saved answers 404, and what needs the backend answers 503.
+_Avoid_: mock data, fixtures (those are the database export the saved data is built from), offline mode
+
+**Example portfolio**:
+The holdings the home page shows and /import?example=1 fills in; with saved data, the one portfolio that was saved.
+_Avoid_: sample portfolio (that's the fictional HLCN/MRDN set in sample mode), demo portfolio

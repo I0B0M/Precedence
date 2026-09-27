@@ -66,3 +66,6 @@ export function dateTimeET(iso: string): string {
 export function timeET(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET";
 }
+
+/** "BX", "BX and SPY", "BX, AMZN and SPY". */
+export const andList = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}` : items[0] ?? "");

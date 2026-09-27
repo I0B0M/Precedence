@@ -7,14 +7,10 @@ import { Spark } from "@/components/HoldingsRail";
 import { Mark } from "@/components/landing/Art";
 import { HeroLoop } from "@/components/landing/Loops";
 import { Stage } from "@/components/briefing/Stage";
-import { api, SAVED, SAVED_EXAMPLE, type CompanyDetail, type PortfolioOut } from "@/lib/api";
+import { api, EXAMPLE_PORTFOLIO, type CompanyDetail, type PortfolioOut } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { useHoldings } from "@/lib/holdings";
 import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
-
-// The example the home page shows, and the one /import?example=1 fills in.
-// The saved-data demo has one portfolio saved, so it uses that one.
-const EXAMPLE = SAVED ? SAVED_EXAMPLE : [{ symbol: "BX", shares: 10 }, { symbol: "AMZN", shares: 5 }, { symbol: "SPY", shares: 3 }];
 
 // The three tiles below the hero: the rest of what Precedence does, one line each (owner's trim).
 const TILES: [string, string, string][] = [
@@ -40,8 +36,8 @@ export default function Home() {
   const returning = !!mine?.length;
 
   useEffect(() => {
-    api.portfolio(EXAMPLE).then(setBoard).catch(() => {});
-    Promise.all(EXAMPLE.map((h) => api.company(h.symbol).then((d) => [h.symbol, d.prices.slice(-30)] as const).catch(() => null)))
+    api.portfolio(EXAMPLE_PORTFOLIO).then(setBoard).catch(() => {});
+    Promise.all(EXAMPLE_PORTFOLIO.map((h) => api.company(h.symbol).then((d) => [h.symbol, d.prices.slice(-30)] as const).catch(() => null)))
       .then((p) => setSparks(Object.fromEntries(p.filter((x) => x !== null))));
   }, []);
 
@@ -95,7 +91,7 @@ export default function Home() {
             <span className="home-example-top"><span className="kicker">Example</span>
               <span className="note">{board?.price_as_of ? `Close ${shortDate(board.price_as_of)}` : "Loading…"}</span></span>
             <span className="bignum home-example-total">{board ? money(board.total) : "—"}</span>
-            {EXAMPLE.map((h) => {
+            {EXAMPLE_PORTFOLIO.map((h) => {
               const row = board?.rows.find((r) => r.symbol === h.symbol);
               const e = board?.exposure.find((x) => x.symbol === h.symbol);
               const spk = sparks[h.symbol];
@@ -123,7 +119,7 @@ export default function Home() {
             <span className="kicker">Briefing</span>
             <h2>{returning ? "Hear what's happening to what you own" : "Hear the example, read out loud"}</h2>
           </div>
-          <Stage fallback={EXAMPLE} />
+          <Stage fallback={EXAMPLE_PORTFOLIO} />
         </div>
       </section>
 
