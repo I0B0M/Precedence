@@ -446,3 +446,24 @@ def test_a_rebuild_that_cannot_reproduce_the_normal_days_says_nothing():
     first_entry = days.index(lab["cases"][0]["entry_day"])
     assert strict_from_saved(lab, days[:first_entry] + days[first_entry + 1:]) is None  # a case day off the calendar
     assert strict_from_saved({**lab, "cases": None}, days) is None  # the board's firing[] carries no cases
+
+
+def test_saved_hold_outs_get_the_current_verdict():
+    from stone.api.views import holdout_from_saved, with_strict
+    amzn = saved("AMZN/lab_insider_cluster.json")  # exported before `verdict`: halves of 6 and 5 cases, held_up true
+    assert "verdict" not in amzn["holdout"] and amzn["holdout"]["held_up"] is True
+    now = with_strict(amzn, [p["day"] for p in saved("AMZN/company.json")["prices"]])["holdout"]
+    assert now["verdict"] == "too few cases to check" and now["held_up"] is False
+    assert holdout_from_saved(saved("market_rate_jump.json")["holdout"])["verdict"] == "too few cases to check"
+    assert holdout_from_saved(None) is None
+    enough = {"first": {"n": 10, "hit_rate": 0.7, "normal_rate": 0.4}, "second": {"n": 11, "hit_rate": 0.6, "normal_rate": 0.5}}
+    assert holdout_from_saved(enough)["verdict"] == "held up"
+    enough["second"]["hit_rate"] = 0.4
+    assert holdout_from_saved(enough)["verdict"] == "did not hold"
+
+
+def test_saved_hold_out_rebuilt_matches_the_live_one(client):
+    from stone.api.views import holdout_from_saved
+    live = client.get("/api/lab/MRDN/rate_jump").json()["holdout"]
+    old = {k: v for k, v in live.items() if k != "verdict"}  # as exported before `verdict`
+    assert holdout_from_saved(old) == live

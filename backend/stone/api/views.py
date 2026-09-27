@@ -64,9 +64,26 @@ def strict_from_saved(signal: dict, price_days: list[str]) -> dict | None:
         low=signal["low"], high=signal["high"], label=signal["label"], firing=None, normal_periods=periods.pop()))
 
 
+def holdout_from_saved(holdout: dict | None) -> dict | None:
+    """A saved hold-out (exported before `verdict` existed) under the current rule: each half needs
+    10 cases of its own before it can confirm anything, so held_up can only follow from the verdict."""
+    if holdout is None:
+        return None
+    halves = (holdout["first"], holdout["second"])
+    if any(h["n"] < engine.MIN_CASES for h in halves):
+        verdict = engine.TOO_FEW_TO_CHECK
+    elif all(h["hit_rate"] is not None and h["normal_rate"] is not None and h["hit_rate"] > h["normal_rate"]
+             for h in halves):
+        verdict = engine.HELD_UP
+    else:
+        verdict = engine.DID_NOT_HOLD
+    return {**holdout, "verdict": verdict, "held_up": verdict == engine.HELD_UP}
+
+
 def with_strict(signal: dict, price_days: list[str]) -> dict:
-    """A saved signal with `strict` filled in whenever it can be rebuilt exactly (for the offline snapshot)."""
-    return {**signal, "strict": strict_from_saved(signal, price_days)}
+    """A saved signal as the live API would send it now (for the offline snapshot): `strict` filled in
+    whenever it can be rebuilt exactly, and the hold-out's verdict under the current rule."""
+    return {**signal, "strict": strict_from_saved(signal, price_days), "holdout": holdout_from_saved(signal.get("holdout"))}
 
 
 def result_json(r: engine.Result, with_cases: bool = True) -> dict:
