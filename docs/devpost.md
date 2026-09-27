@@ -1,7 +1,25 @@
 # Devpost submission: Precedence (ShellHacks 2026, Blackstone track)
 
-Everything below is ready to paste. Replace the three placeholders in ⟨angle brackets⟩: the Netlify URL, the
-video link and the Devpost usernames. Field names follow Devpost's submission form.
+Everything below is ready to paste. Replace the placeholders in ⟨angle brackets⟩: the Netlify URL, the video
+link and a Discord tag. Field names follow Devpost's submission form. Submissions close **Sunday Sep 27, 11:00 am ET**.
+
+## Before 11:00, in this order (from the Hacker Guide)
+
+1. **Make the repo public.** https://github.com/I0B0M/Stone is private; the guide requires the GitHub link, and
+   a private link shows judges nothing. Only Ibrahim (admin) can do it: Settings → General → Danger Zone →
+   Change visibility → Public.
+2. **One person creates the Devpost project** (m-ibrahimchapra or blondres04) with the **same email used to
+   register for ShellHacks**, then invites the other as a collaborator. Both accounts registered with first and
+   last names.
+3. **Video: 1 to 2 minutes** (the guide says 1–2, not 3), showing features, how it works, and why it matters.
+   Upload to YouTube (unlisted is fine) and paste the link.
+4. **Opt into the challenges** on the submission form; a project with no category selected is not judged for
+   any prize. Pick: Blackstone "Reimagining the Investor Experience", MLH "Best Use of Gemini API", Microsoft
+   "What's Missing?", and Best First-Time Hacker only if at least half the team has never submitted at a hackathon.
+   Best Overall is automatic.
+5. **Put at least one Discord tag** in the submission (the field below); judges call teams on Discord.
+6. Paste the Netlify URL once the site is imported (docs/deploy/01-netlify.md, ten minutes).
+7. Submit before 11:00. Then be at the assigned table by 1:00 pm with the 3-minute pitch (Round 2 is 3–5 minutes).
 
 ---
 
@@ -13,9 +31,13 @@ Precedence
 
 Start from what you own, and test whether the news ever mattered. Every holding stays Calm until a kind of news that has actually mattered for it before is happening now.
 
-## Track / challenge
+## Challenges to opt into
 
-Blackstone: Reimagining the Investor Experience
+- **Blackstone: Reimagining the Investor Experience** (the track this was built for)
+- **MLH: Best Use of Gemini API** (Gemini reads brokerage screenshots and summarizes filings, with every number checked)
+- **Microsoft: What's Missing?** (an AI-powered experience whose core is not a chat window: the Briefing talks, the user never types to it)
+- **Best First-Time Hacker** only if at least 50% of the team is submitting at a hackathon for the first time
+- Not eligible, don't opt in: ElevenLabs (the voice is Kokoro), Tiger Data, DigitalOcean, MongoDB, Solana, Snowflake, GoDaddy (no domain registered)
 
 ## Try it out (links)
 
@@ -25,7 +47,11 @@ Blackstone: Reimagining the Investor Experience
 
 ## Video demo
 
-⟨YouTube or Vimeo link, 3 minutes⟩
+⟨YouTube or Vimeo link, 1 to 2 minutes⟩
+
+## Discord tag (required: at least one)
+
+⟨discord tag⟩
 
 ## Image gallery (suggested order)
 
@@ -186,13 +212,13 @@ Benjamini & Hochberg (1995).
 
 ## Team
 
-- ⟨Devpost username⟩ (GitHub @I0B0M)
-- ⟨Devpost username⟩ (GitHub @blondres04)
+- m-ibrahimchapra (GitHub @I0B0M)
+- blondres04 (GitHub @blondres04)
 
 ## Notes for the form
 
 - **Built at the event:** yes. The repository's history starts Sep 26, 2026; the v2 scaffolding (Readers,
-  deploy specs) was pushed after the Sunday freeze and is off by default.
+  deploy specs) was pushed on Sunday morning before the 11:00 close and is off by default.
 - **Not investment advice:** say so wherever the form allows; the app's footer already does.
 - **If the form asks about AI use in the product:** Gemini reads screenshots and filings (both checked
   against the source numbers); Kokoro-82M voices sentences that are already written; no model decides
