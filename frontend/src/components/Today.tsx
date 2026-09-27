@@ -65,8 +65,8 @@ export function TodayMarket({ t }: { t: Today }) {
           {filingWords(w.filings)}{jumps ? ` and ${plural(jumps, "interest-rate jump")}` : ""}. On {shortDate(t.day)} alone: {marketWords(t, false)}.
         </p>
         <p className="note">
-          Filings from {SOURCES[w.filings.source] ?? w.filings.source}, {w.filings.companies} companies
-          {w.rate ? `; 10-year Treasury rate ${w.rate.first_value.toFixed(2)}% → ${w.rate.last_value.toFixed(2)}% (${w.rate.change >= 0 ? "+" : ""}${w.rate.change.toFixed(2)} pt), from ${SOURCES[w.rate.source] ?? w.rate.source}` : ""}.
+          {w.filings.companies} companies{w.rate ? ` · 10-year rate ${w.rate.first_value.toFixed(2)}% → ${w.rate.last_value.toFixed(2)}%` : ""}
+          <span className="pro-only"> · filings from {SOURCES[w.filings.source] ?? w.filings.source}{w.rate ? `, rate from ${SOURCES[w.rate.source] ?? w.rate.source}` : ""}</span>
         </p>
       </div>
     );
@@ -215,7 +215,7 @@ export function StartFlow() {
         <h1 style={{ fontSize: "clamp(30px, 4.2vw, 40px)", lineHeight: 1.2, maxWidth: "22ch" }}>
           See what&apos;s happening to what you own, and whether it has ever mattered.
         </h1>
-        <p className="mute" style={{ fontSize: 16 }}>Real SEC filings, Fed data and prices. No account needed to start.</p>
+        <p className="mute" style={{ fontSize: 16 }}>No account needed.</p>
       </div>
       {t && <TodayMarket t={t} />}
 
@@ -224,7 +224,6 @@ export function StartFlow() {
         {step === 1 ? (
           <>
             <h2>What do you own?</h2>
-            <p className="mute">Pick all that apply.</p>
             <div className="tiles">
               {OWN.map((o) => (
                 <button key={o.key} type="button" className="tile" aria-pressed={own.includes(o.key)} onClick={() => toggle(o.key)}>
@@ -236,24 +235,22 @@ export function StartFlow() {
               <button className="btn" type="button" disabled={!own.length} onClick={() => setStep(2)}>Next</button>
               <Link className="btn light" href="/import?example=1">Try an example portfolio</Link>
             </div>
-            <p className="note">Real prices, clearly labelled. Nothing is saved until you press Save.</p>
           </>
         ) : (
           <>
             <h2>Bring it in</h2>
             {notCovered.length > 0 && (
               <p className="watchline">
-                {notCovered.map((k) => OWN.find((o) => o.key === k)?.label).join(" and ")} {notCovered.length > 1 ? "aren't" : "isn't"} covered yet:
-                bring in your stocks and funds for now.
+                {notCovered.map((k) => OWN.find((o) => o.key === k)?.label).join(" and ")} {notCovered.length > 1 ? "aren't" : "isn't"} covered yet.
               </p>
             )}
             <div className="list">
               <div className="list-row" style={{ alignItems: "center" }}>
                 <span><b>Connect Robinhood{SHOW_CRYPTO ? " or Binance" : ""}</b><span className="note" style={{ display: "block" }}>Read-only</span></span>
-                <button className="btn light small" type="button" disabled>Connecting opens soon</button>
+                <button className="btn light small" type="button" disabled>Coming soon</button>
               </div>
               <div className="list-row" style={{ alignItems: "center" }}>
-                <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app, checked against your total</span></span>
+                <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app</span></span>
                 <Link className="btn small" href="/import">Add a screenshot</Link>
               </div>
               <div className="list-row" style={{ alignItems: "center" }}>
@@ -261,7 +258,6 @@ export function StartFlow() {
                 <Link className="btn light small" href="/import">Type them in</Link>
               </div>
             </div>
-            <p className="note">Step 3: your portfolio.</p>
             <button className="linkb" type="button" onClick={() => setStep(1)}>‹ Back</button>
           </>
         )}

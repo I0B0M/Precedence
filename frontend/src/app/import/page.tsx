@@ -206,7 +206,7 @@ export default function ImportScreen() {
           {CONNECT.map((c) => (
             <div key={c.name} className="list-row" style={{ alignItems: "center" }}>
               <span><b>{c.name}</b><span className="note" style={{ display: "block" }}>{c.what} · read-only</span></span>
-              <button className="btn light small" type="button" disabled>Connecting opens soon</button>
+              <button className="btn light small" type="button" disabled>Coming soon</button>
             </div>
           ))}
         </div>
