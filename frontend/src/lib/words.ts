@@ -49,7 +49,11 @@ export const splitGap = (s: SignalResult) => {
   const h = s.holdout;
   if (!h) return "";
   const n = h.first.n + h.second.n, hits = h.first.hits + h.second.hits;
-  return n === s.n ? "" : `; the halves hold ${n} of the ${s.n} cases and ${hits} of the ${s.hits} hits`;
+  if (n === s.n) return "";
+  const x = h.excluded;
+  return x?.reason
+    ? `; ${x.n} case${x.n === 1 ? "" : "s"} (${x.hits} hit${x.hits === 1 ? "" : "s"}) in neither half. ${x.reason}`
+    : `; the halves hold ${n} of the ${s.n} cases and ${hits} of the ${s.hits} hits`;
 };
 
 /** Market card: "The market fell a week after 10 of 15 rate jumps." */

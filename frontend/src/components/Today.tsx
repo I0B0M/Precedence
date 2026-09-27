@@ -6,7 +6,8 @@ import { api, type Scan, type Today } from "@/lib/api";
 import { Why } from "@/components/Why";
 import { useMode } from "@/lib/mode";
 import { shortDate } from "@/lib/format";
-import { COMING_NEXT, SHOW_CONNECT, SHOW_CRYPTO, SHOW_SCREENSHOT } from "@/lib/flags";
+import { SHOW_CONNECT, SHOW_CRYPTO } from "@/lib/flags";
+import { comingNext, useFeatures } from "@/lib/features";
 import { FORM_WORDS, SIGNAL_WORDS } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
@@ -208,6 +209,7 @@ export function StartFlow() {
   const [step, setStep] = useState<1 | 2>(1);
   const toggle = (k: string) => setOwn(own.includes(k) ? own.filter((x) => x !== k) : [...own, k]);
   const notCovered = own.filter((k) => k === "crypto" || k === "other");
+  const shots = useFeatures().screenshots === true;
 
   return (
     <section className="stack" style={{ gap: 28 }}>
@@ -258,7 +260,7 @@ export function StartFlow() {
                 <span><b>A home or 401(k)</b><span className="note" style={{ display: "block" }}>Address or fund name</span></span>
                 <Link className="btn light small" href="/import#other">Add one</Link>
               </div>
-              {SHOW_SCREENSHOT && (
+              {shots && (
                 <div className="list-row" style={{ alignItems: "center" }}>
                   <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app</span></span>
                   <Link className="btn light small" href="/import">Add a screenshot</Link>
@@ -271,7 +273,7 @@ export function StartFlow() {
                 </div>
               )}
             </div>
-            {!(SHOW_CONNECT && SHOW_SCREENSHOT) && <p className="note">{COMING_NEXT}</p>}
+            {!(SHOW_CONNECT && shots) && <p className="note">{comingNext(shots)}</p>}
             <button className="linkb" type="button" onClick={() => setStep(1)}>‹ Back</button>
           </>
         )}

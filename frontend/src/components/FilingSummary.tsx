@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiError, type FilingSummary as FilingSummaryData } from "@/lib/api";
+import { features } from "@/lib/features";
 import { shortDate } from "@/lib/format";
 
 type Got = { kind: "ok"; s: FilingSummaryData } | { kind: "soon" } | { kind: "none" } | { kind: "down" };
@@ -21,7 +22,8 @@ async function fetchSummary(accession: string): Promise<Got> {
 // so no filing shows a button that could only say "not available". Summaries are cached by the API, so this is cheap.
 let service: Promise<boolean> | null = null;
 function serviceOn(accession: string): Promise<boolean> {
-  service ??= api.filingSummary(accession).then(() => true, (e) => !(e instanceof ApiError && e.status === 503));
+  // status.summaries answers without a call; an older API doesn't send it, so then ask the endpoint once (503 = off).
+  service ??= features().then((f) => f.summaries ?? api.filingSummary(accession).then(() => true, (e) => !(e instanceof ApiError && e.status === 503)));
   return service;
 }
 

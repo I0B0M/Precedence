@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { OtherAssetsForms } from "@/components/OtherAssets";
-import { COMING_NEXT, SHOW_CONNECT, SHOW_CRYPTO, SHOW_SCREENSHOT } from "@/lib/flags";
+import { SHOW_CONNECT, SHOW_CRYPTO } from "@/lib/flags";
+import { comingNext } from "@/lib/features";
 import { api, ApiError, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
@@ -183,6 +184,7 @@ export default function ImportScreen() {
   // Typed in with no screenshot total: nothing to reconcile against, so every row just needs a value.
   const typedOk = check?.status === "no_total" && check.rows.length > 0 && check.rows.every((r) => r.ok);
   const canSave = check?.status === "ok" || typedOk;
+  const shots = status?.screenshots === true; // the upload shows only when the API says it can read one
 
   return (
     <section className="stack" style={{ gap: 22 }}>
@@ -212,7 +214,7 @@ export default function ImportScreen() {
         </div>
       </div>}
 
-      {SHOW_SCREENSHOT && <>
+      {shots && <>
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
         <h2>Or add a screenshot</h2>
         <p className="mute">Checked against the total on your screen.</p>
@@ -233,7 +235,7 @@ export default function ImportScreen() {
       </>}
 
       <div className="card" id="check-rows" style={{ scrollMarginTop: 110 }}>
-        <h3>{SHOW_SCREENSHOT ? "Check the rows" : "Type what you own"}</h3>
+        <h3>{shots ? "Check the rows" : "Type what you own"}</h3>
         <p className="note">Ticker and shares.</p>
         {example && (
           <p className="example-note"><b>Example, not yours.</b> Prices at the {shortDate(example)} close. Not saved until you press Save.</p>
@@ -304,7 +306,7 @@ export default function ImportScreen() {
         <p className="mute">A home, a 401(k) or an IRA{SHOW_CRYPTO ? ", crypto" : ""}.</p>
       </div>
       <OtherAssetsForms />
-      {!(SHOW_CONNECT && SHOW_SCREENSHOT) && <p className="note">{COMING_NEXT}</p>}
+      {!(SHOW_CONNECT && shots) && <p className="note">{comingNext(shots)}</p>}
     </section>
   );
 }
