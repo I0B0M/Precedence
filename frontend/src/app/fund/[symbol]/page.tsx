@@ -60,6 +60,10 @@ export default function FundScreen() {
   const from = f.note?.match(/holdings from ([A-Z.]+)/)?.[1] ?? null;
   const borrowed = from && from !== f.symbol ? from : null;
   const fileWords = borrowed ? `${borrowed}'s ${source ?? "holdings"} file` : source;
+  // QQQ: holdings from the fund's quarterly SEC N-PORT filing, published about two months after its date.
+  const nport = !!f.holdings_source?.startsWith("SEC N-PORT");
+  // A holding with no ticker match is keyed by an identifier ("CUSIP:N07059210"): show its name, never as a symbol.
+  const label = (h: { ticker: string; name: string | null }) => (h.ticker.includes(":") ? h.name ?? h.ticker : h.ticker);
 
   return (
     <section className="stack" style={{ gap: 28 }}>
@@ -106,7 +110,7 @@ export default function FundScreen() {
               {top.map((h) => (
                 <WeightRow key={h.ticker} href={h.in_stone ? `/company/${h.ticker}` : null}>
                   <span>
-                    <b>{h.ticker}</b> <span className="mute">{h.name ?? ""}</span>
+                    <b>{label(h)}</b> {label(h) === h.ticker && <span className="mute">{h.name ?? ""}</span>}
                     <span className="wbar" aria-hidden><i style={{ width: `${(h.weight / max) * 100}%` }} /></span>
                   </span>
                   <span className="row-flex" style={{ gap: 8, flexWrap: "nowrap" }}>
@@ -118,9 +122,10 @@ export default function FundScreen() {
             </div>
             <p className="note">
               {more > 0 ? `And ${more} more${f.built_from === "api" ? "" : " that we can see"}. ` : ""}
-              {borrowed
+              {nport && f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)} · SEC N-PORT (quarterly filing).` : borrowed
                 ? `Same index as ${borrowed}. Holdings shown from ${borrowed}'s ${(source ?? "").replace(/ \(.*\)$/, "")} file${f.holdings_as_of ? ` (${monthDay(f.holdings_as_of)})` : ""}.`
                 : f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}.` : ""}
+              {nport && <span className="pro-only"> N-PORT is published about two months after that date, so these are older than a daily issuer file.</span>}
               <span className="pro-only">{unseen > 0.005 ? ` The other ${w(unseen)} of the fund is in companies Precedence doesn't track yet.` : ""}</span>
             </p>
             {f.heads_up.length > 0 && (
@@ -182,7 +187,7 @@ export default function FundScreen() {
                 {f.holdings.map((h, i) => (
                   <tr key={h.ticker}>
                     <td className="num">{i + 1}</td>
-                    <td>{h.in_stone ? <Link href={`/company/${h.ticker}`}><b>{h.ticker}</b></Link> : <b>{h.ticker}</b>}<div className="note">{h.name ?? ""}{h.in_stone ? "" : `${h.name ? " · " : ""}not tracked by Precedence`}</div></td>
+                    <td>{h.in_stone ? <Link href={`/company/${h.ticker}`}><b>{h.ticker}</b></Link> : <b>{label(h)}</b>}<div className="note">{h.name ?? ""}{h.in_stone ? "" : `${h.name ? " · " : ""}not tracked by Precedence`}</div></td>
                     <td className="num nowrap">{w(h.weight)}</td>
                     <td><StateBadge state={h.state} /></td>
                     <td>{h.firing.length ? h.firing.map((s) => `${SIGNAL_WORDS[s.signal] ?? s.signal} (${s.label === "NO DATA" ? "not loaded" : s.label})`).join("; ") : <span className="mute">—</span>}</td>
