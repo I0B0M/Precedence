@@ -198,13 +198,55 @@ export interface ExposureRow {
   children: { symbol: string; name: string; total: number }[]; // fund rows: slices under 1%, kept inside
 }
 
+/** A 401(k)/IRA fund as typed or read from a statement. */
+export interface RetirementIn { kind: "retirement"; fund: string; amount: number; account?: "401(k)" | "IRA" }
+
+/** A home, carrying the fields from POST /api/estimate/home. The API stays stateless: the browser sends it each time. */
+export interface PropertyIn { kind: "property"; label?: string; address?: string; paid: number; bought_year: number;
+  estimate: number; source?: string; as_of?: string | null }
+
+export interface PortfolioIn { holdings: Holding[]; other?: (PropertyIn | RetirementIn)[] }
+
+export interface RetirementRow {
+  kind: "retirement";
+  fund: string; // as typed
+  ticker: string | null;
+  name: string | null;
+  account: string | null;
+  amount: number;
+  behaves_like: string | null; // "SPY" when mapped; its dollars then join SPY's look-through on the board
+  match: "exact index" | "close stand-in" | null;
+  state: State | null; // the stand-in's state; null when not mapped ("Not tested")
+  note: string | null;
+}
+
+export interface PropertyRow {
+  kind: "property";
+  label: string;
+  paid: number;
+  bought_year: number;
+  estimate: number; // an estimate, never a price
+  source: string | null;
+  as_of: string | null;
+  state: null; // no signals run on a home
+}
+
 export interface PortfolioOut {
-  total: number;
+  total: number; // what the exposure rows add up to: investments + mapped retirement funds
   rows: { symbol: string; name: string; kind: string; shares: number; price: number; value: number; change: number | null }[];
   exposure: ExposureRow[];
   unknown: string[];
   funds: FundInfo[];
   price_as_of: string | null; // the market close the values are priced at, e.g. "2026-09-25"
+  retirement: RetirementRow[];
+  properties: PropertyRow[];
+  subtotals: {
+    investments: number; // brokerage holdings
+    retirement: number; // every 401(k)/IRA row, mapped or not
+    home_estimate: number;
+    total: number; // everything above
+    includes_home_estimate: boolean; // say "includes a home estimate" next to the total when true
+  };
 }
 
 /** One per ETF held. The board should say "holdings as of <as_of>, <source>" for each fund. */
@@ -213,6 +255,48 @@ export interface FundInfo {
   as_of: string | null; // null: no holdings loaded, so the whole fund shows as one row
   source: string | null; // "ssga" = State Street's daily file; "sample" in sample mode
   looked_through: number; // share of the fund split out into stocks we have data for, 0..1
+  holdings_from?: string | null; // VOO / IVV / SPLG: "SPY" (they track the S&P 500; SPY's holdings are used)
+  note?: string | null; // e.g. "Tracks the S&P 500; holdings from SPY, State Street."
+}
+
+/** POST /api/estimate/home: purchase price × the FHFA house price index change since the purchase year. */
+/** Either a full street address (geocoded by the Census) or a 5-digit ZIP (no geocoding). */
+export interface HomeEstimateIn { address?: string; zip?: string; paid: number; bought_year: number; bought_month?: number | null }
+
+export interface HomeEstimate {
+  kind: "property";
+  located_by: "address" | "zip"; // which input was used
+  address: string | null; // as typed
+  address_matched: string | null; // as the Census geocoder matched it
+  zip: string | null;
+  county_fips: string | null;
+  us_state: string | null; // two-letter state
+  paid: number;
+  bought_year: number;
+  estimate: number; // an estimate, never a price
+  index_change: number | null; // fraction, 0.42 = +42% since the purchase year
+  index_from: { year: number; value: number } | null;
+  index_to: { year: number; value: number } | null;
+  index_level: "zip5" | "county" | "state" | null; // which FHFA series was used
+  method: string; // "paid × FHFA ZIP5 index change"
+  source: string; // "FHFA House Price Index, 5-digit ZIP (annual, developmental)"
+  geocoder: string; // "US Census Geocoder"
+  as_of: string | null; // the latest index year used
+  note: string | null; // e.g. fallback to county, or bought after the latest index year
+  state: null;
+}
+
+/** GET /api/funds/lookup?q=FXAIX: which index a 401(k)/IRA fund tracks. */
+export interface FundLookup {
+  query: string;
+  ticker: string | null;
+  name: string | null;
+  category: string | null; // "S&P 500 index", "US total market index", "Target date", "Bond", "International"…
+  behaves_like: "SPY" | null;
+  match: "exact index" | "close stand-in" | null;
+  basis: string | null; // e.g. "Benchmark: S&P 500 Index"
+  source: string | null; // where the benchmark was checked (prospectus / SEC filing)
+  note: string | null;
 }
 
 /** GET /api/today: real counts for the last trading day, from Stone's database only. */
@@ -293,7 +377,10 @@ export const api = {
   filingSummary: (accession: string) => call<FilingSummary>(`/api/filings/${encodeURIComponent(accession)}/summary`),
   today: (symbols: string[] = []) =>
     call<Today>(`/api/today${symbols.length ? `?symbols=${encodeURIComponent(symbols.join(","))}` : ""}`),
-  portfolio: (holdings: Holding[]) => call<PortfolioOut>("/api/portfolio", post({ holdings })),
+  portfolio: (holdings: Holding[], extra: Omit<PortfolioIn, "holdings"> = {}) =>
+    call<PortfolioOut>("/api/portfolio", post({ holdings, ...extra })),
+  estimateHome: (body: HomeEstimateIn) => call<HomeEstimate>("/api/estimate/home", post(body)),
+  lookupFund: (q: string) => call<FundLookup>(`/api/funds/lookup?q=${encodeURIComponent(q)}`),
   reconcile: (rows: ReadRow[], printed_total: number | null) =>
     call<Reconciled>("/api/import/reconcile", post({ rows, printed_total })),
   screenshot: (file: File) => {
