@@ -9,7 +9,6 @@ import { maybeAutoTour, startTour } from "@/lib/tour";
 import { BadgeKey, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
-import { PracticeRows } from "@/components/PracticeRows";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { StartFlow } from "@/components/Today";
 import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
@@ -121,14 +120,23 @@ export default function HoldingsBoard() {
       {watching > 0 && <BadgeKey />}
       {/* Lite: only what you entered, one row each at its full value, a link to its own page. Pro: the look-through
        *  list too (stocks inside your funds), each still one clean row and one link. */}
-      <div className="rows lite-only">
-        {board.rows.map((r) => {
-          const e = board.exposure.find((x) => x.symbol === r.symbol);
-          return e ? (
-            <HoldingRow key={`own-${r.symbol}`} e={e} kind={r.kind} value={r.value} change={r.change} spark={sparks[r.symbol]} />
-          ) : null;
-        })}
-      </div>
+      {/* Grouped: stocks, then funds, each under its own header. */}
+      {([["stock", "Stocks"], ["etf", "Funds"]] as const).map(([kind, label]) => {
+        const group = board.rows.filter((r) => (kind === "etf" ? r.kind === "etf" : r.kind !== "etf"));
+        return group.length > 0 && (
+          <div key={kind} className="stack lite-only" style={{ gap: 10, marginTop: 14 }}>
+            <span className="ticker">{label}</span>
+            <div className="rows">
+              {group.map((r) => {
+                const e = board.exposure.find((x) => x.symbol === r.symbol);
+                return e ? (
+                  <HoldingRow key={`own-${r.symbol}`} e={e} kind={r.kind} value={r.value} change={r.change} spark={sparks[r.symbol]} />
+                ) : null;
+              })}
+            </div>
+          </div>
+        );
+      })}
       <div className="rows pro-only pro-add">
         {board.exposure.map((e) => {
           const kind = kindOf(e.symbol);
@@ -154,7 +162,6 @@ export default function HoldingsBoard() {
       </div>
 
       <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} />
-      <PracticeRows />
 
       {status?.data === "sample" && (
         <div className="row-flex" style={{ marginTop: 20 }}>
