@@ -45,7 +45,17 @@ TICKERS: list[Ticker] = [
     # Prices only: ETFs have no XBRL financials.
     Ticker("SPY", None, "SPDR S&P 500 ETF", "Index", kind="etf"),
     Ticker("QQQ", None, "Invesco QQQ", "Index", kind="etf"),
+    # Other S&P 500 ETFs: their own prices, SPY's holdings (see HOLDINGS_FROM).
+    Ticker("VOO", None, "Vanguard S&P 500 ETF", "Index", kind="etf"),
+    Ticker("IVV", None, "iShares Core S&P 500 ETF", "Index", kind="etf"),
+    Ticker("SPYM", None, "State Street SPDR Portfolio S&P 500 ETF", "Index", kind="etf"),
 ]
+
+# ETFs that track the same index as another fund whose holdings we load: use that fund's holdings.
+HOLDINGS_FROM = {"VOO": "SPY", "IVV": "SPY", "SPYM": "SPY"}
+
+# Old tickers that statements may still print. SPLG became SPYM on 2025-10-31 (same fund and holdings).
+RENAMED = {"SPLG": "SPYM"}
 
 SP100_EXTRA = """ABBV ABT ACN ADBE AIG AMGN AMT AVGO AXP BA BNY BKNG BLK BMY C CAT CHTR CL CMCSA COF COP COST
 CRM CSCO CVS DE DHR DUK EMR F FDX GD GE GILD GM GS HD HON IBM INTU ISRG LIN LLY LMT LOW MA MCD MDLZ MDT
