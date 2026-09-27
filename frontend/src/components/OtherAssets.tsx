@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { Why } from "@/components/Why";
 import { api, ApiError, type FundLookup, type HomeEstimate, type RetirementRow } from "@/lib/api";
 import { SHOW_CRYPTO } from "@/lib/flags";
-import { money, pct } from "@/lib/format";
+import { approxMoney, money, pct } from "@/lib/format";
 import { addCrypto, addProperty, addRetirement, portfolioExtras, removeOther, useOtherAssets, type Property, type RetirementFund } from "@/lib/other-assets";
 
 const num = (s: string) => {
@@ -48,7 +49,7 @@ export function OtherAssetsForms() {
     let msg: { ok: boolean; text: string };
     try {
       estimate = await api.estimateHome({ ...(/^\d{5}$/.test(where) ? { zip: where } : { address: where }), paid, bought_year: y, bought_month: m });
-      msg = { ok: true, text: `About ${money(estimate.estimate)} · Estimate` };
+      msg = { ok: true, text: `About ${approxMoney(estimate.estimate)} · Estimate` };
     } catch (e) {
       const status = e instanceof ApiError ? e.status : 0;
       // 400/422: the address couldn't be used; 502: the geocoder didn't answer. The API's own words say which.
@@ -160,7 +161,7 @@ function HomeRow({ p }: { p: Property }) {
         <span className="who">
         <span className="tk">Home</span><span className="nm">{place}</span>
         <span className="say">
-          {e ? <>About {money(e.estimate)} · Estimate</> : "Estimate coming soon"}
+          {e ? <>About {approxMoney(e.estimate)} · Estimate</> : "Estimate coming soon"}
           {change && <span className="pro-only note"> · {change} (FHFA)</span>}
           {e && (
             <Why what={`home estimate for ${place}`} source={e.source} asOf={e.as_of}
@@ -177,15 +178,16 @@ function HomeRow({ p }: { p: Property }) {
         <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`} style={{ alignSelf: "flex-start" }}>Remove</button>
         </span>
         <span className="sp" aria-hidden />
-        <span className="val">{e ? money(e.estimate) : "—"}<small className="mute">{e ? "estimate" : "coming soon"}</small></span>
+        <span className="val">{e ? `About ${approxMoney(e.estimate)}` : "—"}<small className="mute">{e ? "estimate" : "coming soon"}</small></span>
         <span className="hend"><StateBadge state={null} /></span>
       </div>
     </div>
   );
 }
 
-/** Board: a home, 401(k) / IRA funds (and crypto, when shown). One line each in Lite; the working in Pro. */
-export function OtherAssetsRows() {
+/** Board: a home, 401(k) / IRA funds (and crypto, when shown). One line each in Lite; the working in Pro.
+ *  `rows`: the board's own retirement rows, so the page doesn't ask the portfolio endpoint twice. */
+export function OtherAssetsRows({ rows }: { rows?: RetirementRow[] } = {}) {
   const all = useOtherAssets();
   const v = SHOW_CRYPTO ? all : { ...all, crypto: [] };
   // Ask the stateless portfolio endpoint about just these rows, so each fund's badge is the backend's own state.
@@ -194,10 +196,10 @@ export function OtherAssetsRows() {
   const [got, setGot] = useState<{ key: string; rows: RetirementRow[] } | null>(null);
   useEffect(() => {
     const ask = portfolioExtras();
-    if (!ask.other?.some((o) => o.kind === "retirement")) return;
+    if (rows || !ask.other?.some((o) => o.kind === "retirement")) return;
     api.portfolio([], ask).then((p) => setGot({ key, rows: p.retirement ?? [] })).catch(() => {});
-  }, [key]);
-  const backend = got?.key === key ? got.rows : [];
+  }, [key, rows]);
+  const backend = rows ?? (got?.key === key ? got.rows : []);
 
   if (!v.properties.length && !v.retirement.length && !v.crypto.length) return null;
   return (
@@ -215,7 +217,9 @@ export function OtherAssetsRows() {
                 <span className="who">
                 <span className="tk">{r.account}</span><span className="nm">{r.lookup?.name ?? r.name}</span>
                 <span className="say">
-                  {matchWords(match, behaves)}
+                  {behaves && match === "exact index"
+                    ? <Link href={`/fund/${behaves}`}>{r.lookup?.ticker ?? r.name} behaves like {behaves === "SPY" ? "the S&P 500" : behaves} ›</Link>
+                    : matchWords(match, behaves)}
                   {r.lookup && (
                     <Why what={`${r.name} match`} source={r.lookup.source ?? undefined}
                       rows={[

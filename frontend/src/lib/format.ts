@@ -7,6 +7,14 @@ export function money(v: number | null | undefined, cents = false): string {
   return (v < 0 ? "−$" : "$") + abs;
 }
 
+/** An estimate, rounded so it doesn't look exact: $1.33M, $412K. */
+export function approxMoney(v: number | null | undefined): string {
+  if (v == null || Number.isNaN(v)) return "—";
+  const a = Math.abs(v);
+  const s = a >= 1e6 ? `${(a / 1e6).toFixed(2)}M` : a >= 1e3 ? `${Math.round(a / 1e3)}K` : a.toFixed(0);
+  return (v < 0 ? "−$" : "$") + s;
+}
+
 /** Big dollar figures from filings: $4.21B, $612M. */
 export function bigMoney(v: number | null | undefined): string {
   if (v == null) return "—";
