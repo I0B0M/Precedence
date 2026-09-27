@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from stone import config
 from stone.api.views import filing_url, latest_facts, result_json
+from stone.briefing.panel import briefing_json, company_briefing, portfolio_briefing
 from stone.config import NotConnected
 from stone.figures import check_figures, html_to_text
 from stone.portfolio import reconcile as rc
@@ -538,3 +539,23 @@ async def import_screenshot(file: UploadFile = File(...)):
         raise gemini_failed(e, " You can type the rows instead.")
     rows = [rc.Row(r.symbol, r.shares, r.price, r.value) for r in read.rows]
     return reconciled_json(rc.reconcile(rows, read.printed_total), rows)
+
+
+@app.get("/api/briefing/{ticker}")
+def briefing_company(ticker: str, c: psycopg.Connection = Conn):
+    """The spoken briefing for one holding: the expert panel's lines, every number checked against its evidence."""
+    return briefing_json(company_briefing(company(ticker, c)))
+
+
+@app.post("/api/briefing/portfolio")
+def briefing_portfolio(body: PortfolioIn, c: psycopg.Connection = Conn):
+    """The spoken briefing for a whole portfolio, from the same responses the board, risk card and company pages use."""
+    board = portfolio(body, c)
+    try:
+        risk = portfolio_risk_card(body, c)
+    except HTTPException:
+        risk = None  # too little shared history: the risk expert just has nothing to say
+    companies = {r["symbol"]: company(r["symbol"], c) for r in board["rows"]}
+    key = "_".join(f"{h.symbol.strip().upper()}-{h.shares:g}"
+                   for h in sorted(body.holdings, key=lambda h: h.symbol.strip().upper()))
+    return briefing_json(portfolio_briefing(board, companies, market_rate_jump(c), risk, key))
