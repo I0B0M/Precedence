@@ -126,6 +126,13 @@ html[data-mode="pro"] .pro-add { border-left: 2px solid var(--gold); padding-lef
 .top.scrolled { border-bottom-color: var(--sep); }
 .logo-link { text-decoration: none; color: inherit; min-height: 44px; gap: 8px; }
 .brand-coin { color: var(--gold); display: inline-flex; }
+/* The coin is a button: a 44px target around the 26px mark, and a quick flip each time it switches Lite and Pro. */
+button.brand-coin { align-self: center; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: -9px -9px -9px -9px;
+  padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; perspective: 200px; }
+button.brand-coin .coin { transition: transform 0.45s var(--ease-out); }
+button.brand-coin[data-mode="pro"] .coin { transform: rotateY(360deg); }
+button.brand-coin:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+@media (prefers-reduced-motion: reduce) { button.brand-coin .coin { transition: none; } }
 .brand .logo { letter-spacing: -0.035em; }
 .coin { display: block; }
 .brand { align-items: center; }

@@ -46,9 +46,13 @@ export function Header() {
 
   return (
     <header className={`top${scrolled ? " scrolled" : ""}`}>
-      {/* The mark and the wordmark go home. Lite/Pro is the one pill on the right, on every screen size. */}
+      {/* The coin switches Lite and Pro (a shortcut for the pill on the right); the wordmark goes home. */}
       <div className="brand">
-        <Link href="/" className="logo logo-link"><span className="brand-coin"><Coin size={26} /></span>Precedence</Link>
+        <button type="button" className="brand-coin" data-mode={mode} onClick={() => set(mode === "pro" ? "lite" : "pro")}
+          aria-label={mode === "pro" ? "Switch to Lite" : "Switch to Pro"} title={mode === "pro" ? "Switch to Lite" : "Switch to Pro"}>
+          <Coin size={26} />
+        </button>
+        <Link href="/" className="logo logo-link">Precedence</Link>
       </div>
       <nav className="nav" aria-label="Main">
         {NAV.map((l) => (
