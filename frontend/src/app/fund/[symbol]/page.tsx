@@ -105,7 +105,7 @@ function FundScreen() {
       <div className="box">
         <h3>What&apos;s going on</h3>
         <p className="say-big">{fundLine(f)}</p>
-        {sameIndexAsSpy && <p>Same index as SPY, so SPY&apos;s test applies.</p>}
+        {sameIndexAsSpy && <p><span className="lite-only">Same index as SPY.</span><span className="pro-only">Same index as SPY, so SPY&apos;s test applies.</span></p>}
         <MarketCard onlyFor={borrowed ?? (sameIndexAsSpy ? "SPY" : f.symbol)} />
       </div>
 
@@ -134,9 +134,12 @@ function FundScreen() {
             </div>
             <p className="note">
               {more > 0 ? `And ${more} more${f.built_from === "api" ? "" : " that we can see"}. ` : ""}
-              {nport && f.holdings_as_of ? <><span className="lite-only">As of {shortDate(f.holdings_as_of)}, from its quarterly filing.</span><span className="pro-only">As of {shortDate(f.holdings_as_of)} · SEC N-PORT (quarterly filing).</span></> : borrowed
-                ? `Same index as ${borrowed}. Holdings shown from ${borrowed}'s ${(source ?? "").replace(/ \(.*\)$/, "")} file${f.holdings_as_of ? ` (${monthDay(f.holdings_as_of)})` : ""}.`
-                : f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}.` : ""}
+              {nport && f.holdings_as_of ? <><span className="lite-only">As of {shortDate(f.holdings_as_of)}, from its quarterly filing.</span><span className="pro-only">As of {shortDate(f.holdings_as_of)} · SEC N-PORT (quarterly filing).</span></> : borrowed ? (
+                <>
+                  <span className="lite-only">Same index as {borrowed}.</span>
+                  <span className="pro-only">Same index as {borrowed}. Holdings shown from {borrowed}&apos;s {(source ?? "").replace(/ \(.*\)$/, "")} file{f.holdings_as_of ? ` (${monthDay(f.holdings_as_of)})` : ""}.</span>
+                </>
+              ) : f.holdings_as_of ? `As of ${shortDate(f.holdings_as_of)}.` : ""}
               {nport && <span className="pro-only"> N-PORT is published about two months after that date, so these are older than a daily issuer file.</span>}
               <span className="pro-only">{unseen > 0.005 ? ` The other ${w(unseen)} of the fund is in companies Precedence doesn't track yet.` : ""}</span>
             </p>

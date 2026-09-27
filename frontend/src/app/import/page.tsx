@@ -289,7 +289,7 @@ export default function ImportScreen() {
           <p className="badline">No price for {unpriced.join(", ")}. Type a price, or remove the row.</p>
         )}
         {check && !(check.status === "no_total" && unpriced.length > 0) && (typedOk ? (
-          <div className="okline">✓ Rows add up to {money(check.rows_sum)}. Check them, then save.</div>
+          <div className="okline">✓ Rows add up to {money(check.rows_sum)}.</div>
         ) : (
           <div className={check.status === "ok" ? "okline" : "badline"}>
             {check.status === "ok" ? "✓ " : ""}{check.message}

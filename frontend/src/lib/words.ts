@@ -129,6 +129,50 @@ export const SIGNAL_WORDS: Record<string, string> = {
   market_rate_jump: "Rate jump (whole market)",
 };
 
+const EVENT_ROW_WORDS: Record<string, string> = {
+  insider_cluster: "After insiders sold",
+  rate_jump: "After a rate jump",
+  gap_down: "After a drop",
+  market_rate_jump: "After a rate jump",
+};
+
+const QUESTION_WORDS: Record<string, (ticker: string, vsMarket: boolean) => string> = {
+  insider_cluster: (t) => `After insiders sold, did ${t} fall?`,
+  rate_jump: (t, vsMarket) => (vsMarket ? `When rates jumped, did ${t} lag the market?` : `When rates jumped, did ${t} fall?`),
+  gap_down: (t) => `After a drop, did ${t} fall further?`,
+  market_rate_jump: (t) => `When rates jumped, did ${t} fall?`,
+};
+
+/** Signals Lite: the section's heading, as a question. "When rates jumped, did BX lag the market?" */
+export function liteQuestion(signal: string, ticker: string, vsMarket: boolean): string {
+  return (QUESTION_WORDS[signal] ?? ((t: string) => `Has this happened to ${t} before?`))(ticker, vsMarket);
+}
+
+/** Signals Lite: the event row's label. "After a rate jump". */
+export function eventRowWords(signal: string): string {
+  return EVENT_ROW_WORDS[signal] ?? "After this happened";
+}
+
+/** How the event rate compares with the normal rate: the only four buckets the Lite answer line uses. */
+export function freqWords(hitRate: number, normalRate: number): string {
+  if (normalRate <= 0) return hitRate > 0 ? "More often than usual" : "Same as usual";
+  const ratio = hitRate / normalRate;
+  if (ratio >= 1.75) return "Twice as often as usual";
+  if (ratio >= 1.25) return "More often than usual";
+  if (ratio <= 0.8) return "Less often than usual";
+  return "Same as usual";
+}
+
+/** Signals Lite: the one-line answer under the two rows. "Same as usual. No clear pattern." */
+export function liteAnswer(s: SignalResult): string {
+  const tag = s.label === "STRONG" ? (NOT_PROVEN_WORDS ? "Not proven." : "Has mattered before.")
+    : s.label === "NOT PROVEN" ? "No clear pattern."
+    : s.label === "WEAK" ? "Too few times to tell."
+    : "Not tested yet.";
+  if (!s.n || s.hit_rate == null || s.normal_rate == null) return tag;
+  return `${freqWords(s.hit_rate, s.normal_rate)}. ${tag}`;
+}
+
 export const FORM_WORDS: Record<string, string> = {
   "10-K": "Annual report",
   "10-Q": "Quarterly report",

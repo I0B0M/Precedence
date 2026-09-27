@@ -162,13 +162,13 @@ export default function Home() {
         <div className="home-cards">
           <article className="card home-card">
             <h3>Portfolio</h3>
-            <p className="mute">Everything you own, with the one thing worth a look.</p>
+            <p className="mute">Everything you own, one thing worth a look.</p>
             <Link className="btn" href="/portfolio">Open your portfolio</Link>
             <DotsArt />
           </article>
           <article className="card home-card">
             <h3>Funds</h3>
-            <p className="mute">Look inside the fund, down to every company. All {spy ? spy.total_holdings_count : "…"} SPY companies, with the Heads up names flagged.</p>
+            <p className="mute">All {spy ? spy.total_holdings_count : "…"} SPY companies, Heads up flagged.</p>
             <Link className="btn" href="/fund/SPY">Open SPY</Link>
             <FundsPanel />
           </article>
@@ -184,13 +184,13 @@ export default function Home() {
         <div className="home-cards">
           <article className="card home-card">
             <h3>Signals</h3>
-            <p className="mute">Every past time the news happened, and what followed.</p>
+            <p className="mute">Every past time, and what followed.</p>
             <Link className="btn" href="/signals?t=BX&s=rate_jump">Signals</Link>
             <RangeArt />
           </article>
           <article className="card home-card">
             <h3>Stock pages</h3>
-            <p className="mute">Chart first, with a dot for every past event. Financials and filings from the SEC, in plain words.</p>
+            <p className="mute">Chart, filings and financials for one stock.</p>
             <Link className="btn" href="/company/BX">Open BX</Link>
             <ChartPanel />
           </article>
@@ -211,7 +211,6 @@ export default function Home() {
           <div className="home-head">
             <span className="kicker">Lite and Pro</span>
             <h2>Lite for everyone. Pro shows the working.</h2>
-            <p className="lede">Switch at the top of any page. Pro adds the evidence, the sources and the raw rows under the same answer.</p>
           </div>
           <div className="card home-badges" aria-label="The badges">
             {BADGES.map(([t, s, c]) => (
@@ -230,7 +229,7 @@ export default function Home() {
           <div className="home-head">
             <span className="kicker">Paper trading</span>
             <h2>Try a trade with pretend money</h2>
-            <p className="lede">{money(PRACTICE_CASH)} of pretend cash, under a yellow &ldquo;Not real money&rdquo; bar.</p>
+            <p className="lede">{money(PRACTICE_CASH)} of pretend cash.</p>
             <Link className="btn" href="/paper">Try paper trading</Link>
           </div>
           <div className="card home-card"><PaperPanel /></div>
