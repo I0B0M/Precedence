@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 
@@ -352,6 +353,37 @@ def test_overlapping_normal_days_count_as_the_periods_they_span():
     r = e.evaluate(e.Spec("t", "", "", 5), bars, [e.Event(at(bars[10].day, 17), "x")])
     # normal starts 0..6 (spanning days 0..10) and 16..25 (spanning 16..29): 25 days = 5 periods, not 17
     assert r.normal_n == 17 and r.normal_periods == pytest.approx(5.0)
+
+
+def test_newcombe_matches_statsmodels_including_fractional_periods():
+    # statsmodels 0.15.0 confint_proportions_2indep(method="newcomb", compare="diff") gives the same to 1e-15.
+    # It takes fractional counts as they are, which the stricter test needs: normal periods aren't whole.
+    z95 = 1.959963984540054
+    cases = [((6, 12, 32 / 125 * 12.9, 12.9), e.Z90, (-0.069656, 0.502476)),  # AMZN's insider cluster
+             ((9, 10, 3, 10), z95, (0.170523, 0.809018)),
+             ((10, 10, 0, 20), z95, (0.679086, 1.0)),  # the high end stops at 1
+             ((0, 10, 0, 10), z95, (-0.277533, 0.277533))]  # no hits on either side: centred on 0
+    for args, z, expected in cases:
+        assert e.newcombe(*args, z=z) == pytest.approx(expected, abs=1e-6), args
+
+
+def average_uniqueness_sum(starts: list[int], h: int) -> float:
+    """Lopez de Prado, Advances in Financial Machine Learning (2018), ch. 4, snippets 4.1-4.2: a window's
+    average uniqueness is the mean, over its days, of 1 / (the number of windows covering that day)."""
+    cover: dict[int, int] = {}
+    for s in starts:
+        for t in range(s, s + h):
+            cover[t] = cover.get(t, 0) + 1
+    return sum(sum(1 / cover[t] for t in range(s, s + h)) / h for s in starts)
+
+
+def test_normal_periods_are_the_sum_of_average_uniqueness():
+    rng = random.Random(7)
+    for _ in range(300):
+        h, n = rng.choice((1, 2, 5, 10, 20)), rng.randint(30, 200)
+        windows = [(a, a + h) for a in sorted(rng.sample(range(n), rng.randint(0, 6)))]
+        starts = e.normal_starts(e.window_days(n, windows), h)
+        assert e.periods_spanned(starts, h) == pytest.approx(average_uniqueness_sum(starts, h), abs=1e-9)
 
 
 def counts(n, hits, normal_rate, periods, label=e.STRONG):
