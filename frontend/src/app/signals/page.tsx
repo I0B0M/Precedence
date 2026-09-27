@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { HitDots, HoldoutNote, LabelTag } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
+import { Why } from "@/components/Why";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { api, type CompanyRow, type SignalResult } from "@/lib/api";
 import { horizonWords, pct, shortDate, whole } from "@/lib/format";
@@ -60,10 +61,10 @@ export default function SignalLab() {
   return (
     <section className="stack" style={{ gap: 28 }}>
       <div className="stack" style={{ gap: 8 }}>
-        <span className="ticker">Does it matter?</span>
-        <h1>Has this ever mattered?</h1>
+        <span className="kicker">Signals</span>
+        <h1><span className="lite-only">Has this mattered before?</span><span className="pro-only">Signal history</span></h1>
         <p className="lede">
-          <span className="lite-only">Pick a stock and a kind of news. We check every time it happened in the last two years and what the stock did next.</span>
+          <span className="lite-only">Pick a stock and a kind of news. See every time it happened.</span>
           <span className="pro-only">Two years per stock. Entry at the next open after the event was public; hit = lower after the horizon.
             A rate jump hits every stock on the same days, so there hit = did worse than SPY over the same days.
             Compared with the same stock&apos;s normal days, measured the same way; 90% Wilson range.</span>
@@ -163,6 +164,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
           <div>
             <div className="bignum" aria-label={whole(r.hit_rate)}>{r.hit_rate == null ? "—" : <CountUp to={Math.round(r.hit_rate * 100)} ms={fill} />}</div>
             <p className="note">{r.hits} of {r.n} times, it {hitWords(r)}</p>
+            <Why signal={r} what={`${ticker} ${r.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" asOf={cases[cases.length - 1]?.exit_day ?? null} />
           </div>
           <div className="lab-after">
             <div className="bignum mute">{whole(r.normal_rate)}</div>
@@ -173,7 +175,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
 
 
       {r.n > 0 && (
-        <div className="stack lab-after" style={{ gap: 4 }}>
+        <div className="stack lab-after pro-only" style={{ gap: 4 }}>
           <span className="note">
             <span className="lite-only">The dark bar is where the real rate likely is. The blue line is a normal {span}.
               If the whole bar is right of the line, it&apos;s a real pattern.</span>

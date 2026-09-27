@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { BadgeKey, HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
 import { FilingSummary } from "@/components/FilingSummary";
+import { Why } from "@/components/Why";
 import { MarketCard } from "@/components/MarketCard";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
@@ -54,6 +55,7 @@ export default function CompanyScreen() {
   // The Lab tests single stocks; the market's own rate-jump result has no case page there.
   const inLab = (signal: string) => signal !== "market_rate_jump";
   const nextSignal = co.kind === "stock" ? ((main && inLab(main.signal) ? main : null) ?? d.signals.find((s) => inLab(s.signal) && s.label !== "NO DATA") ?? null) : null;
+  const lastDay = d.prices[d.prices.length - 1]?.day ?? null;
   const filingUrl = (accession: string) => d.filings.find((f) => f.accession === accession)?.url ?? null;
 
   return (
@@ -77,6 +79,7 @@ export default function CompanyScreen() {
           <h3>What&apos;s going on</h3>
           {main ? (
             <>
+              {main.n > 0 && main.hit_rate != null && <div className="bignum">{whole(main.hit_rate)}</div>}
               <p className="say-big"><b>{main.lite}.</b> {liteHistory(main, co.ticker)}</p>
               <HitDots cases={main.cases ?? []} vsMarket={main.vs_market} />
               <p><b>{liteVerdict(main)}</b></p>
@@ -130,16 +133,6 @@ export default function CompanyScreen() {
             {mine && <p className="note">&quot;A bad day&quot; is this {isFund ? "fund" : "stock"}&apos;s 1-in-20 worst day of the past year.</p>}
           </div>
 
-          {factsFrom && (
-            <div className="box">
-              <h3>The numbers</h3>
-              <dl className="kv">
-                {d.facts.map((f) => (<Fragment key={f.key}><dt>{f.lite}</dt><dd>{bigMoney(f.value)}</dd></Fragment>))}
-              </dl>
-              <p className="note">From {co.name}&apos;s own {factsFrom.form} filed with the SEC, period ending {shortDate(factsFrom.period_end)}.</p>
-            </div>
-          )}
-
           <div className="box">
             <h3>What&apos;s new</h3>
             <div className="list">
@@ -171,7 +164,7 @@ export default function CompanyScreen() {
                     <tr key={s.signal}>
                       <td>{s.pro}<div className="note">horizon {s.horizon} trading days</div></td>
                       <td className="num">{s.n}</td>
-                      <td className="num">{s.n ? `${s.hits} (${whole(s.hit_rate)})` : "—"}<div className="note">{s.vs_market ? "worse than SPY" : "lower"}</div></td>
+                      <td className="num">{s.n ? `${s.hits} (${whole(s.hit_rate)})` : "—"}<div className="note">{s.vs_market ? "worse than SPY" : "lower"}</div><Why signal={s} scan={scan} what={`${co.ticker} ${s.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" asOf={lastDay} /></td>
                       <td className="num">{whole(s.normal_rate)}<div className="note">of {s.normal_n} days</div></td>
                       <td className="num nowrap">{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</td>
                       <td><LabelTag label={s.label} /></td>
@@ -196,6 +189,7 @@ export default function CompanyScreen() {
                     <div><dt>Normal days</dt><dd>{whole(s.normal_rate)} <span className="note">of {s.normal_n}</span></dd></div>
                     <div><dt>90% range</dt><dd>{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</dd></div>
                   </dl>
+                  <Why signal={s} scan={scan} what={`${co.ticker} ${s.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" asOf={lastDay} />
                   <p className="note">Horizon {s.horizon} trading days · {s.firing ? <b>firing now</b> : "not firing"}{s.holdout ? <> · hold-out <HoldoutNote s={s} /></> : null}</p>
                   {inLab(s.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${s.signal}`}>See the cases ›</Link>}
                 </div>

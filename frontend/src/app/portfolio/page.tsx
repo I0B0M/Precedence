@@ -6,6 +6,7 @@ import { BadgeKey, LabelTag, StateBadge } from "@/components/bits";
 import { Spark } from "@/components/HoldingsRail";
 import { OtherAssetsRows } from "@/components/OtherAssets";
 import { ApiProblem, Loading } from "@/components/Problem";
+import { Why } from "@/components/Why";
 import { StartFlow, TodayFunnel } from "@/components/Today";
 import { api, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { money, pct, shortDate, whole } from "@/lib/format";
@@ -78,7 +79,7 @@ export default function HoldingsBoard() {
           </p>
         </div>
         <p className="note" style={{ maxWidth: "34ch" }}>
-          <span className="lite-only">Tap a holding to see what&apos;s going on, in plain words.</span>
+          <span className="lite-only">Tap a holding to see more.</span>
           <span className="pro-only">WATCH only when a signal that has proven itself on this stock is firing.</span>
           {" "}{board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in Stone's price data."}
         </p>
@@ -205,7 +206,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
                       <span className="lite-only"><b>{s.lite}.</b> <span className="mute">{liteVerdict(s)}</span></span>
                       <span className="pro-only">{s.pro}</span>
                     </span>
-                    <span className="pro-only"><LabelTag label={s.label} /></span>
+                    <span className="pro-only"><LabelTag label={s.label} /> <Why signal={s} what={`${e.symbol} ${s.pro}`} source="SEC EDGAR · FRED DGS10 · Alpaca IEX daily prices" /></span>
                   </div>
                 ))}
               </div>

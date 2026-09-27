@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { StateBadge } from "@/components/bits";
 import { ApiProblem, Loading } from "@/components/Problem";
+import { Why } from "@/components/Why";
 import { api, type CompanyRow, type PortfolioOut } from "@/lib/api";
 import { money, shortDate } from "@/lib/format";
 import { readHoldings } from "@/lib/holdings";
@@ -91,6 +92,7 @@ export default function PracticeScreen() {
   return (
     <section className="stack" style={{ gap: 24 }}>
       <div className="practice-banner" role="note">Practice money. Not real. No order is ever sent.</div>
+      <h1>Trade with {money(PRACTICE_CASH)} of pretend money</h1>
 
       <div className="pf-head" style={{ margin: 0 }}>
         <div className="stack" style={{ gap: 4 }}>
@@ -129,7 +131,9 @@ export default function PracticeScreen() {
               </div>
               <dl className="t-sum">
                 <dt>Price</dt>
-                <dd>{pick?.last_close != null ? <>{money(pick.last_close, true)} <span className="note">close {pick.as_of ? shortDate(pick.as_of) : ""}</span></> : "—"}</dd>
+                <dd>{pick?.last_close != null ? <>{money(pick.last_close, true)} <span className="note">close {pick.as_of ? shortDate(pick.as_of) : ""}</span>
+                  <Why what={`${symbol} price`} source="Alpaca (IEX feed) daily close" asOf={pick.as_of}
+                    rows={[["Used as", "the fill price for practice trades; no order is sent anywhere"]]} /></> : "—"}</dd>
                 <dt>{side === "buy" ? "Estimated cost" : "Estimated proceeds"}</dt>
                 <dd className="t-total">{pick?.last_close != null && shares > 0 ? money(shares * pick.last_close) : "—"}</dd>
               </dl>

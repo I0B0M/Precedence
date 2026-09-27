@@ -50,6 +50,17 @@ async function common(page, w) {
 
 const PAGES = [
   {
+    name: "landing", path: "/", ready: ".land-row .spark path",
+    async check(page) {
+      eq((await page.textContent(".land-title"))?.trim(), "See what's happening to what you own, and whether it has ever mattered.", "landing line");
+      eq(await page.evaluate(() => document.querySelectorAll(".land-row").length), 3, "example has 3 rows");
+      eq((await page.textContent(".land-example .kicker"))?.trim(), "Example", "example is labelled");
+      eq(await page.evaluate(() => document.querySelectorAll(".land-cta .btn:not(.light)").length), 1, "one primary button");
+      eq(await page.getAttribute(".land-cta .btn:not(.light)", "href"), "/import?example=1", "primary goes to the example import");
+      eq(await page.evaluate(() => document.querySelectorAll(".land-card").length), 3, "three cards");
+    },
+  },
+  {
     name: "company", path: "/company/BX", ready: ".sc-svg",
     async check(page, w) {
       const phone = w <= 640;
@@ -89,7 +100,7 @@ const PAGES = [
     },
   },
   {
-    name: "board", path: "/", ready: ".hrow .spark path",
+    name: "board", path: "/portfolio", ready: ".hrow .spark path",
     async check(page, w) {
       const tot = await style(page, ".pf-total", ["font-size", "line-height", "font-family"]);
       eq(tot?.["font-size"], T.type.price.size, "total size");
@@ -109,7 +120,7 @@ const PAGES = [
     },
   },
   {
-    name: "lab", path: "/lab?t=BX&s=rate_jump", ready: ".verdict",
+    name: "lab", path: "/signals?t=BX&s=rate_jump", ready: ".verdict",
     async check(page) {
       const d = await page.evaluate(() => [...document.querySelectorAll(".hitdots i.h")].slice(0, 2).map((i) => ({ delay: getComputedStyle(i).animationDelay, bg: getComputedStyle(i).backgroundColor, idx: i.style.getPropertyValue("--i") })));
       ok(d.length === 2, "filled dots present", d.length);
@@ -130,7 +141,7 @@ const PAGES = [
     },
   },
   {
-    name: "practice", path: "/practice", ready: ".ticket",
+    name: "practice", path: "/paper", ready: ".ticket",
     async check(page) {
       const b = await style(page, ".practice-banner", ["background-color", "font-size", "font-weight", "font-family"]);
       eq(b?.["background-color"], T.color.practice, "practice banner yellow");
@@ -158,7 +169,7 @@ for (const w of T.widths) {
   // The demo portfolio: two stocks and two funds, so the board has fund rows and looked-through stocks.
   await ctx.addInitScript((h) => { if (!localStorage.getItem("stone.holdings")) localStorage.setItem("stone.holdings", h); }, JSON.stringify(DEMO));
   const page = await ctx.newPage();
-  await page.goto(BASE + "/");
+  await page.goto(BASE + "/portfolio");
   await page.waitForSelector(".hrow", { timeout: 30000 });
   for (const p of PAGES) {
     console.log(`${p.name} @ ${w}`);
@@ -171,6 +182,10 @@ for (const w of T.widths) {
     }
     await page.waitForTimeout(400);
     await common(page, w);
+    if (p.name !== "landing") {
+      const steps = await page.evaluate(() => document.querySelectorAll(".next-step").length);
+      eq(steps, 1, `${p.name} ends with one next step`);
+    }
     await p.check(page, w);
     if (p.name === "practice") {
       const tags = await page.evaluate(() => document.querySelectorAll(".copied").length);
@@ -193,7 +208,7 @@ for (const w of T.widths) {
 {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: "reduce" });
   const page = await ctx.newPage();
-  await page.goto(BASE + "/lab?t=BX&s=rate_jump");
+  await page.goto(BASE + "/signals?t=BX&s=rate_jump");
   await page.waitForSelector(".verdict");
   await page.waitForTimeout(200);
   console.log("lab (reduced motion)");
