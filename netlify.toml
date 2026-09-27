@@ -8,4 +8,4 @@
 [build.environment]
   NEXT_PUBLIC_STONE_SAVED = "1"
   NODE_VERSION = "22"
-  # GEMINI_API_KEY for Ask Stone is set in Netlify's site settings, never in this file.
+  # GEMINI_API_KEY for the Gemini features is set in Netlify's site settings, never in this file.

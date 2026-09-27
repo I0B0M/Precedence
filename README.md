@@ -1,9 +1,9 @@
-# ST◯NE
+# Precedence
 
 Built at ShellHacks 2026 for the Blackstone track, "Reimagining the Investor Experience".
 
 Investors have more information than ever, spread across filings, prices, rates and news.
-Stone starts from **what you own**, pulls those sources into one screen per holding, and
+Precedence starts from **what you own**, pulls those sources into one screen per holding, and
 **tests whether a kind of news has ever actually mattered for that stock** before it asks
 for your attention. Each holding is CALM, or WATCH when a proven signal is firing.
 
