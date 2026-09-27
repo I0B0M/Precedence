@@ -586,7 +586,10 @@ export const api = {
     call<Reconciled>("/api/import/reconcile", post({ rows, printed_total })),
   risk: (holdings: Holding[]) => call<PortfolioRisk>("/api/portfolio/risk", post({ holdings })),
   /** The backend panel's briefing, unparsed: lib/briefing/source.ts checks its shape before anything is spoken. */
-  briefing: (holdings: Holding[]) => call<unknown>("/api/briefing/portfolio", post({ holdings })),
+  // extras: the home, 401(k)/IRA and private funds (portfolioExtras()), so the script's total is the board's;
+  // saved mode still keys the file by the holdings alone
+  briefing: (holdings: Holding[], extras: Omit<PortfolioIn, "holdings"> = {}) =>
+    call<unknown>("/api/briefing/portfolio", post({ holdings, ...extras })),
   screenshot: (file: File) => {
     const form = new FormData();
     form.append("file", file);

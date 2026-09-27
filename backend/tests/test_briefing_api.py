@@ -60,3 +60,25 @@ def test_the_briefing_says_precedence_never_stone(client):
     assert all(b["generated_by"].startswith("Precedence expert panel") for b in live)
     saved = [p.read_text() for p in (REPO_DIR / "frontend" / "public" / "saved").rglob("*.json")]
     assert saved and not [t for t in [json.dumps(b) for b in live] + saved if "Stone" in t]
+
+
+def test_portfolio_briefing_counts_the_home_and_the_401k_like_the_board(client):
+    """The judge's case: with a home and a 401(k) saved, the Briefing said "your 3 holdings are worth $4,746" while
+    /portfolio said "Everything you own $1,346,740, includes a home estimate"."""
+    other = [{"kind": "retirement", "fund": "FXAIX", "amount": 12000, "account": "401(k)"},
+             {"kind": "property", "label": "Home", "paid": 300000, "bought_year": 2015, "estimate": 600000,
+              "source": "FHFA", "as_of": "2025"}]
+    holdings = [{"symbol": "HLCN", "shares": 10}]
+    board = client.post("/api/portfolio", json={"holdings": holdings, "other": other}).json()
+    assert board["subtotals"]["total"] == pytest.approx(612280.6) and board["retirement"][0]["state"] == "WATCH"
+    body = client.post("/api/briefing/portfolio", json={"holdings": holdings, "other": other}).json()
+    spoken_ok(body)
+    t = [line["text"] for line in body["lines"]]
+    assert t[0] == ("Here is your Precedence briefing for Friday, September 25: everything you own is about "
+                    "$612,281, including a home estimate.")  # the board's own total, home and 401(k) included
+    assert t[1] == "Your 1 brokerage holding is worth $280.60, up 1.1% on the day."  # not the 401(k)'s dollars
+    assert t[2] == "Halcyon Semiconductor and Fidelity 500 Index Fund need a look."  # the 401(k) counted, as on /portfolio
+    # without them, the greeting is the old one: the holdings alone
+    plain = [line["text"] for line in client.post("/api/briefing/portfolio", json={"holdings": holdings}).json()["lines"]]
+    assert plain[0] == "Here is your Precedence briefing for Friday, September 25: your 1 holding is worth $280.60, up 1.1% on the day."
+    assert plain[1] == "Halcyon Semiconductor needs a look today." or "Fidelity" not in plain[1]

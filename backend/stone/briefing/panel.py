@@ -136,21 +136,42 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
     values = {r["symbol"]: r["value"] for r in rows}
 
     opening = []
-    total = board.get("total") or 0.0
+    subs = board.get("subtotals") or {}
+    # brokerage rows only; board["total"] also counts a mapped 401(k), which isn't one of "your N holdings"
+    investments = subs.get("investments", board.get("total") or 0.0)
+    whole = subs.get("total")
+    others = [*(board.get("retirement") or []), *(board.get("properties") or []), *(board.get("private_funds") or [])]
+    # 401(k)/IRA funds with a state (an exact-index stand-in), counted like /portfolio counts them; the rest aren't tested
+    funds = [r for r in board.get("retirement") or [] if r.get("state") in ("WATCH", "CALM")]
+    fund_names = {r["fund"]: r.get("name") or r["fund"] for r in funds}
     before = sum(r["value"] / (1 + r["change"]) for r in rows if r.get("change") is not None)
     now = sum(r["value"] for r in rows if r.get("change") is not None)
-    if rows:
-        hello = f"Here is your Precedence briefing for {day_words(as_of, weekday=True)}: your" if as_of else "Your"
-        moved = f", {up_down(now - before)} {pct(now / before - 1, 1)} on the day" if before else ""
+    cite = (f"price:{as_of}",) if as_of else ("portfolio:total",)
+    hello = f"Here is your Precedence briefing for {day_words(as_of, weekday=True)}: " if as_of else ""
+    moved = f", {up_down(now - before)} {pct(now / before - 1, 1)} on the day" if before else ""
+    change = (now / before - 1,) if before else ()
+    if others and whole:  # a home, 401(k) or private fund: lead with everything, as /portfolio does
+        home = ", including a home estimate" if subs.get("includes_home_estimate") else ""
+        opening.append(Line("portfolio:everything", "note",
+                            ex.cap(f"{hello}everything you own is about {money(whole)}{home}."),
+                            (whole,), ("portfolio:total",), None, "Precedence briefing", "/"))
+        if rows:
+            opening.append(Line("portfolio:total", "note",
+                                f"Your {len(rows)} brokerage {'holding is' if len(rows) == 1 else 'holdings are'} worth "
+                                f"{money(investments)}{moved}.", (len(rows), investments, *change), cite, None,
+                                "Brokerage", "/"))
+    elif rows:
         opening.append(Line("portfolio:total", "note",
-                            f"{hello} {len(rows)} {'holding is' if len(rows) == 1 else 'holdings are'} worth "
-                            f"{money(total)}{moved}.",
-                            (len(rows), total, *((now / before - 1,) if before else ())),
-                            (f"price:{as_of}",) if as_of else ("portfolio:total",), None, "Precedence briefing", "/"))
-        watch = [r["symbol"] for r in rows if states.get(r["symbol"]) == "WATCH"]
+                            ex.cap(f"{hello}your {len(rows)} {'holding is' if len(rows) == 1 else 'holdings are'} "
+                                   f"worth {money(investments)}{moved}."),
+                            (len(rows), investments, *change), cite, None, "Precedence briefing", "/"))
+    if rows or funds:
+        watch = [names.get(r["symbol"], r["symbol"]) for r in rows if states.get(r["symbol"]) == "WATCH"]
+        watch += [fund_names[r["fund"]] for r in funds if r["state"] == "WATCH"]
         calm = [r["symbol"] for r in rows if states.get(r["symbol"]) == "CALM"]
+        calm += [r["fund"] for r in funds if r["state"] == "CALM"]
         if watch:
-            who = ex.cap(ex.and_list([names.get(t, t) for t in watch]))
+            who = ex.cap(ex.and_list(watch))
             rest = f"; the other {len(calm)} {'is' if len(calm) == 1 else 'are'} calm" if calm else ""
             opening.append(Line("portfolio:states", "watch", f"{who} {'needs' if len(watch) == 1 else 'need'} a look{rest}.",
                                 (len(calm),), ("portfolio:states",),
@@ -181,7 +202,7 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
             f"only {proven} of the signals happening now {'has' if proven == 1 else 'have'} mattered before."
             if proven else "nothing happening now has mattered before.")
     closing = Line("portfolio:closing", "calm", said, (ran, proven), ("portfolio:states",), None, "That's all", "/")
-    spoken_names = tuple(n for t, name in names.items() for n in (name, ex.cap(name), t))
+    spoken_names = tuple(n for t, name in [*names.items(), *fund_names.items()] for n in (name, ex.cap(name), t))
     return assemble("portfolio", subject, as_of, opening, points, closing, PORTFOLIO_LINES, spoken_names)
 
 

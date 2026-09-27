@@ -2,7 +2,7 @@
 // saved copy on the saved-data demo). If that isn't there, the same panel runs here on the board
 // the page already fetched. Either way the page always has lines to say.
 
-import { api, type Holding, type PortfolioOut, type PortfolioRisk } from "@/lib/api";
+import { api, type Holding, type PortfolioIn, type PortfolioOut, type PortfolioRisk } from "@/lib/api";
 import { composeScript, namesOf } from "./compose";
 import { toSpeech } from "./spoken";
 import type { Line, Script, Tone } from "./types";
@@ -49,10 +49,11 @@ export function normalizeScript(raw: unknown, names: Record<string, string>): Sc
 
 /** The script for these holdings: the backend's when it has one, else composed here. Never throws
     for a missing backend script; only the board itself is required. */
-export async function loadScript(holdings: Holding[], portfolio: PortfolioOut, risk: PortfolioRisk | null): Promise<Script> {
+export async function loadScript(holdings: Holding[], portfolio: PortfolioOut, risk: PortfolioRisk | null,
+                                 extras: Omit<PortfolioIn, "holdings"> = {}): Promise<Script> {
   const names = namesOf(portfolio);
   try {
-    const remote = normalizeScript(await api.briefing(holdings), names);
+    const remote = normalizeScript(await api.briefing(holdings, extras), names);
     if (remote) return remote;
   } catch {
     // 404 in saved mode, backend without the endpoint, or a network slip: the browser panel takes over.

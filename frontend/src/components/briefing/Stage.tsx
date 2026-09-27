@@ -11,6 +11,7 @@ import type { Line, Script } from "@/lib/briefing/types";
 import { money, pct, shortDate } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
 import "@/app/briefing/briefing.css";
+import { portfolioExtras, useOtherAssets } from "@/lib/other-assets";
 import { useMode } from "@/lib/mode";
 import { SIGNAL_WORDS } from "@/lib/words";
 import type { OrbState } from "./orb/palette";
@@ -80,16 +81,20 @@ export function Stage({ fallback, compact = false }: { fallback?: Holding[]; com
 
   // The board, the risk card and the script, for these holdings. A stale answer (holdings changed
   // meanwhile) is ignored by its key.
-  const key = holdings ? JSON.stringify(holdings) : null;
+  // The home, 401(k)/IRA and private funds too, as /portfolio sends them, so the Briefing's total is the board's.
+  const other = useOtherAssets();
+  const extras = JSON.stringify(portfolioExtras(other));
+  const key = holdings ? JSON.stringify([holdings, extras]) : null;
   useEffect(() => {
     if (!key) return;
-    const h = JSON.parse(key) as Holding[];
+    const [h, extra] = JSON.parse(key) as [Holding[], string];
     if (!h.length) return;
+    const ex = JSON.parse(extra) as ReturnType<typeof portfolioExtras>;
     let live = true;
     (async () => {
       try {
-        const [portfolio, risk] = await Promise.all([api.portfolio(h), api.risk(h).catch(() => null)]);
-        const script = await loadScript(h, portfolio, risk);
+        const [portfolio, risk] = await Promise.all([api.portfolio(h, ex), api.risk(h).catch(() => null)]);
+        const script = await loadScript(h, portfolio, risk, ex);
         if (live) setLoaded({ key, portfolio, risk, script });
       } catch (e) {
         if (live) setError(e);
