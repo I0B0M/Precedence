@@ -554,3 +554,41 @@ label.btn.is-busy { opacity: 0.5; cursor: progress; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ---- What you really own (treemap) and How bumpy it's been (risk card) ---- */
+.board-extras { margin: 22px 0 8px; }
+.ownmap, .risk { display: flex; flex-direction: column; gap: 10px; }
+.om-plot { width: 100%; overflow: hidden; }
+.om-plot svg { display: block; }
+.om-plot a rect { transition: filter 0.2s var(--ease-out); }
+.om-plot a:hover rect, .om-plot a:focus-visible rect { filter: brightness(0.93); }
+.om-plot a:focus-visible { outline: none; }
+.om-plot a:focus-visible rect { stroke: var(--accent); stroke-width: 3px; }
+html[data-mode="pro"] .om-plot a:hover rect { filter: brightness(1.25); }
+@media (max-width: 700px) { .board-extras { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Pro candles (lightweight-charts) ---- */
+.sc-candles { width: 100%; }
+.sc-kind { margin-top: 12px; }
+
+/* ---- Guided tour (driver.js), in Stone's look: outlined card, dot-matrix title, one blue button ---- */
+.tourb { background: none; border: 0; padding: 6px 0; font-size: 14px; color: var(--accent-text); cursor: pointer; font-weight: 600; }
+.tourb:hover { text-decoration: underline; text-underline-offset: 3px; }
+.driver-popover.stone-tour {
+  background: var(--group); color: var(--text); border: var(--edge); border-radius: var(--r-card);
+  box-shadow: none; font-family: var(--font); padding: 18px 18px 14px; max-width: 320px;
+}
+.driver-popover.stone-tour .driver-popover-title { font-family: var(--dot); font-weight: 900; text-transform: uppercase; font-size: 17px; letter-spacing: 0.02em; }
+.driver-popover.stone-tour .driver-popover-description { font-size: 15px; line-height: 1.45; color: var(--text); margin-top: 6px; }
+.driver-popover.stone-tour .driver-popover-progress-text { color: var(--text-2); font-size: 13px; }
+.driver-popover.stone-tour .driver-popover-footer button {
+  font-family: var(--font); font-size: 14px; font-weight: 600; text-shadow: none; border-radius: 10px; padding: 8px 14px; min-height: 40px;
+  border: 1.5px solid var(--edge-c); background: var(--bg); color: var(--text);
+}
+.driver-popover.stone-tour .driver-popover-next-btn { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
+.driver-popover.stone-tour .driver-popover-close-btn { color: var(--text-2); }
+.driver-popover.stone-tour .driver-popover-arrow { border-color: var(--edge-c); }
+.driver-popover.stone-tour .driver-popover-arrow-side-left.driver-popover-arrow,
+.driver-popover.stone-tour .driver-popover-arrow-side-right.driver-popover-arrow,
+.driver-popover.stone-tour .driver-popover-arrow-side-top.driver-popover-arrow,
+.driver-popover.stone-tour .driver-popover-arrow-side-bottom.driver-popover-arrow { display: none; }

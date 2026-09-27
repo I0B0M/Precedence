@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { ApiError, SAVED, SAVED_AS_OF, SAVED_TICKERS } from "@/lib/api";
 
 /** The API answered "we have no data for this" (as opposed to not answering at all). */
 export const isNotFound = (e: unknown) => e instanceof ApiError && e.status === 404;
@@ -37,8 +37,10 @@ export function ApiProblem() {
 export function NotFollowed({ ticker }: { ticker: string }) {
   return (
     <div className="card problem">
-      <h3>We don&apos;t follow {ticker} yet</h3>
-      <p>Stone has filings, prices and signals for the S&amp;P 100 companies and a few funds. {ticker} isn&apos;t one of them yet.</p>
+      <h3>{SAVED ? `${ticker} isn't in the live demo` : <>We don&apos;t follow {ticker} yet</>}</h3>
+      {SAVED
+        ? <p>The live demo runs on real data saved at the close on {SAVED_AS_OF}, for {SAVED_TICKERS}. The full app covers the S&amp;P 100 and a few funds.</p>
+        : <p>Stone has filings, prices and signals for the S&amp;P 100 companies and a few funds. {ticker} isn&apos;t one of them yet.</p>}
       <div className="row-flex">
         <Link className="btn small" href="/">Back to your portfolio</Link>
         <Link className="btn light small" href="/lab">Does it matter?</Link>

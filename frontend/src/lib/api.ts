@@ -169,7 +169,9 @@ export interface InsiderSale {
 export interface CompanyDetail {
   company: { ticker: string; name: string; sector: string | null; kind: "stock" | "etf"; cik: number | null; source: string };
   last: { close: number; day: string; change: number | null } | null;
-  prices: { day: string; open: number; close: number }[];
+  prices: { day: string; open: number; high?: number; low?: number; close: number }[];
+  /** Saved data only: where each part of a bar came from when it isn't all Alpaca (IEX feed). */
+  price_sources?: { close: string; high_low: string; last?: string };
   filings: Filing[];
   insider_sales: InsiderSale[];
   facts: Fact[];
@@ -241,6 +243,35 @@ export interface Today {
   } | null; // null when no symbols were passed
 }
 
+/** POST /api/portfolio/risk: how bumpy this mix has been, next to the market. QuantStats on daily closes. */
+export interface RiskFigures {
+  volatility: number; // annualised
+  max_drawdown: number; // negative
+  drawdown_start: string;
+  drawdown_bottom: string;
+  beta: number | null; // null for the market itself
+  sharpe: number;
+  worst_day: number;
+  worst_day_on: string;
+  total_return: number;
+  max_drawdown_dollars?: number; // portfolio only: at today's total
+  worst_day_dollars?: number;
+}
+
+export interface PortfolioRisk {
+  total: number;
+  symbols: string[];
+  unknown: string[];
+  market_symbol: string;
+  start: string;
+  end: string;
+  days: number;
+  portfolio: RiskFigures;
+  market: RiskFigures;
+  basis: string;
+  source: string;
+}
+
 export interface ReadRow {
   symbol: string;
   shares: number | null;
@@ -263,7 +294,44 @@ export class ApiError extends Error {
   }
 }
 
+// Saved data: the live site runs without the backend, on real API responses saved at one market close
+// (frontend/public/saved, built by backend/scripts/build_saved.py). Anything not saved answers 404, or 503 for
+// what needs the backend (screenshots, typed rows, filing summaries), and every page already handles both.
+export const SAVED = process.env.NEXT_PUBLIC_STONE_SAVED === "1";
+
+/** Same key as holdings_key() in build_saved.py: symbols sorted, "SYM-shares" joined by "_". */
+export const savedKey = (holdings: Holding[]) =>
+  [...holdings].map((h) => ({ s: h.symbol.trim().toUpperCase(), n: h.shares })).sort((a, b) => (a.s < b.s ? -1 : a.s > b.s ? 1 : 0))
+    .map((h) => `${h.s}-${h.n}`).join("_");
+
+/** The one portfolio the saved data has (frontend/fixtures/holdings.json): real prices, illustrative share counts. */
+export const SAVED_EXAMPLE: Holding[] = [
+  { symbol: "BX", shares: 10 }, { symbol: "AAPL", shares: 10 }, { symbol: "NVDA", shares: 10 },
+  { symbol: "JPM", shares: 10 }, { symbol: "AMZN", shares: 10 }, { symbol: "SPY", shares: 5 },
+];
+export const SAVED_TICKERS = "BX, AAPL, NVDA, JPM, AMZN and SPY";
+export const SAVED_AS_OF = "Sep 25, 2026";
+
+const NEEDS_BACKEND = "This needs the full app; the live demo runs on saved data.";
+
+async function fromSaved<T>(path: string): Promise<T> {
+  const [route, query] = path.replace(/^\/api\//, "").split("?");
+  const sym = new URLSearchParams(query ?? "").get("symbols");
+  const res = await fetch(`/saved/${route}${sym ? `/${sym}` : ""}.json`);
+  if (!res.ok) throw new ApiError(404, "Not in the saved data.");
+  return res.json() as Promise<T>;
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  if (SAVED && !path.startsWith("/api/ask")) {
+    if (init?.method === "POST") {
+      const body = typeof init.body === "string" ? JSON.parse(init.body) : null;
+      if (!body?.holdings) throw new ApiError(503, NEEDS_BACKEND);
+      return fromSaved<T>(`${path}/${savedKey(body.holdings)}`);
+    }
+    if (path.includes("/summary")) throw new ApiError(503, NEEDS_BACKEND);
+    return fromSaved<T>(path);
+  }
   const res = await fetch(path, { cache: "no-store", ...init });
   if (!res.ok) {
     let detail = res.statusText;
@@ -294,9 +362,11 @@ export const api = {
   today: (symbols: string[] = []) =>
     call<Today>(`/api/today${symbols.length ? `?symbols=${encodeURIComponent(symbols.join(","))}` : ""}`),
   portfolio: (holdings: Holding[]) => call<PortfolioOut>("/api/portfolio", post({ holdings })),
+  risk: (holdings: Holding[]) => call<PortfolioRisk>("/api/portfolio/risk", post({ holdings })),
   reconcile: (rows: ReadRow[], printed_total: number | null) =>
     call<Reconciled>("/api/import/reconcile", post({ rows, printed_total })),
   screenshot: (file: File) => {
+    if (SAVED) return Promise.reject(new ApiError(503, NEEDS_BACKEND));
     const form = new FormData();
     form.append("file", file);
     return call<Reconciled>("/api/import/screenshot", { method: "POST", body: form });
