@@ -18,6 +18,7 @@ from pathlib import Path
 
 import yfinance as yf
 
+from stone import saved
 from stone.api.main import FUND_TOP, PERFORMANCE_BASIS, return_over, risk_json
 from stone.config import REPO_DIR
 from stone.portfolio.risk import BASIS as RISK_BASIS
@@ -178,3 +179,5 @@ write(f"portfolio/risk/{key}", {
 
 write("index", {"as_of": as_of, "tickers": [*stocks, MARKET], "example": request["holdings"], "example_key": key,
                 "sources": {"fixtures": "frontend/fixtures (real database export)", "fill_ins": YAHOO}})
+
+saved.finish(OUT)  # strict and the current hold-out verdict, rebuilt from the files just written

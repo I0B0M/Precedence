@@ -30,6 +30,10 @@ export interface SignalResult {
   label: Label;
   firing: { known_at: string; note: string } | null;
   note?: string | null; // why there is no result, for label "NO DATA"
+  // The same counts under a stricter test that counts the normal rate's own uncertainty (Newcombe range for
+  // hit rate - normal rate; normal days as separate periods). Pro shows it as the evidence behind "borderline";
+  // it never changes the label. null below 10 cases, or when it can't be rebuilt from saved data.
+  strict?: { p: number; diff_low: number; diff_high: number; normal_periods: number } | null;
   // held up only with 10+ cases in each half, each beating its own normal rate
   holdout: { first: Half; second: Half; held_up: boolean;
     verdict?: "held up" | "did not hold" | "too few cases to check" } | null;

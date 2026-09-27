@@ -122,7 +122,7 @@ export default function ImportScreen() {
       // Only a failure to reach Stone at all gets our own wording.
       const known = e instanceof ApiError && [413, 415, 422, 502, 503].includes(e.status);
       setNote(known
-        ? `${(e as ApiError).message} You can type the rows below instead.`
+        ? `${(e as ApiError).message}${SAVED ? "" : " You can type the rows below instead."}`
         : "Couldn't read that screenshot: Stone can't reach its data right now. Is the server running? You can type the rows below instead.");
     } finally {
       setBusy(false);
@@ -283,7 +283,9 @@ export default function ImportScreen() {
           <button className="btn light" type="button" onClick={() => runCheck()}>Check it adds up</button>
         </div>
 
-        {checkErr && <div className="badline">Stone can&apos;t reach its data right now, so it can&apos;t check the rows. Is the server running?</div>}
+        {checkErr && <div className="badline">{SAVED
+          ? "Checking typed rows needs the full app; this live demo runs on saved data. Try the example portfolio above."
+          : "Stone can't reach its data right now, so it can't check the rows. Is the server running?"}</div>}
         {priced.length > 0 && (
           <p className="note">Price filled in from the latest close: {priced.map((p) => `${p.symbol}${p.day ? ` (close ${shortDate(p.day)})` : ""}`).join(", ")}.</p>
         )}

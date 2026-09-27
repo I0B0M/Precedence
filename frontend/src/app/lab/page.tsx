@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { HitDots, HoldoutNote, LabelTag } from "@/components/bits";
+import { HitDots, HoldoutNote, LabelTag, StrictNote } from "@/components/bits";
 import { MarketCard } from "@/components/MarketCard";
 import { ApiProblem, Loading } from "@/components/Problem";
 import { api, type CompanyRow, type SignalResult } from "@/lib/api";
 import { horizonWords, pct, shortDate, whole } from "@/lib/format";
-import { hitWords, liteHistory, liteVerdict } from "@/lib/words";
+import { hitWords, isBorderline, liteHistory, liteVerdict } from "@/lib/words";
 
 type Spec = { key: string; lite: string; pro: string; horizon: number };
 
@@ -185,7 +185,7 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
         <div className="stack lab-after" style={{ gap: 4 }}>
           <span className="note">
             <span className="lite-only">The dark bar is where the real rate likely is. The blue line is a normal {span}.
-              If the whole bar is right of the line, it&apos;s a real pattern.</span>
+              Stone says it has mattered before only when the whole bar is right of the line.</span>
             <span className="pro-only">90% Wilson interval for P({r.vs_market ? "worse than SPY" : "lower"} after {r.horizon}d) vs normal-day rate ({r.normal_hits}/{r.normal_n}).</span>
           </span>
           <div className="rangebar" role="img" aria-label={`Range ${whole(r.low)} to ${whole(r.high)}, normal ${whole(r.normal_rate)}`}>
@@ -199,18 +199,22 @@ function LabResult({ r, ticker }: { r: SignalResult; ticker: string }) {
       )}
 
       <div className={`verdict ${tone}`} role="status">
-        <LabelTag label={r.label} />
+        <LabelTag label={r.label} borderline={isBorderline(r)} />
         <p><b>{liteVerdict(r)}</b> <span className="lite-only">{liteHistory(r, ticker)}</span></p>
       </div>
 
       {r.holdout && (
         <p className="pro-only note">Split-half hold-out: <HoldoutNote s={r} /></p>
       )}
+      <StrictNote s={r} />
 
       {r.firing && (
         <p className={r.label === "STRONG" ? "watchline" : "okline"}>
           <b>Happening now:</b> {r.firing.note}.{" "}
-          {r.label === "STRONG" ? "This is why the stock is on WATCH." : "Not proven for this stock, so it stays CALM."}
+          {r.label === "STRONG"
+            ? <><span className="lite-only">This is why Stone gives it a Heads up.</span><span className="pro-only">This is why the stock is on WATCH.</span></>
+            : <><span className="lite-only">Not proven for this stock, so this news alone doesn&apos;t give it a Heads up.</span>
+              <span className="pro-only">Not proven for this stock, so this signal alone doesn&apos;t put it on WATCH.</span></>}
         </p>
       )}
 

@@ -1,4 +1,4 @@
-import type { Label, Scan, SignalResult, State } from "@/lib/api";
+import type { Half, Label, Scan, SignalResult, State } from "@/lib/api";
 import { whole } from "@/lib/format";
 
 /** CALM / WATCH. A fund or stock the engine hasn't tested gets a quiet "Not tested", never "Calm". */
@@ -27,13 +27,41 @@ export function BadgeKey() {
   );
 }
 
-export function LabelTag({ label }: { label: Label }) {
+export function LabelTag({ label, borderline = false }: { label: Label; borderline?: boolean }) {
   // NO DATA: the source data isn't loaded, so nothing was tested. A neutral tag, never a verdict.
   if (label === "NO DATA") {
     return <span className="label nodata" title="Source data not loaded yet, so this wasn't tested"
       style={{ borderColor: "var(--sep)", color: "var(--text-2)", fontWeight: 500 }}>Not loaded</span>;
   }
-  return <span className={`label ${label.toLowerCase().replace(" ", "")}`}>{label}</span>;
+  return (
+    <span className={`label ${label.toLowerCase().replace(" ", "")}`}
+      title={borderline ? "Clears Stone's rule, but not the stricter test (see Pro)" : undefined}>
+      {label}{borderline ? " · borderline" : ""}
+    </span>
+  );
+}
+
+/** Pro: the same counts under the stricter test, as the evidence behind "borderline". Never changes the label. */
+export function StrictNote({ s }: { s: SignalResult }) {
+  const st = s.strict;
+  if (!st || s.label === "NO DATA") return null;
+  const pts = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(Math.round(x * 100))}`;
+  const p = st.p < 0.1 ? st.p.toFixed(3) : st.p.toFixed(2);
+  const lead = s.label === "STRONG" ? (st.p >= 0.05 ? "Borderline: the stricter test doesn't clear it." : "The stricter test agrees.")
+    : "Stricter test:";
+  return (
+    <p className="pro-only note">
+      <b>{lead}</b> It also counts the normal rate&apos;s own uncertainty: p = {p}; the gap to normal is {pts(st.diff_low)} to{" "}
+      {pts(st.diff_high)} points (90% Newcombe range); the normal days count as {st.normal_periods} separate {s.horizon}-day periods.
+    </p>
+  );
+}
+
+/** The hold-out verdict when saved data predates it: each half needs 10+ cases, then both must beat normal. */
+function holdoutVerdict(first: Half, second: Half): string {
+  if (first.n < 10 || second.n < 10) return "too few cases to check";
+  const beats = [first, second].every((h) => h.hit_rate != null && h.normal_rate != null && h.hit_rate > h.normal_rate);
+  return beats ? "held up" : "did not hold";
 }
 
 /** One dot per past case; filled = the stock was lower afterwards (or, vsMarket, did worse than SPY). */
@@ -56,12 +84,11 @@ export function HitDots({ cases, vsMarket = false }: { cases: { hit: boolean }[]
 /** Pro: whether a STRONG result held up on each half of the history. */
 export function HoldoutNote({ s }: { s: SignalResult }) {
   if (!s.holdout) return <span className="mute">—</span>;
-  // Say only what the backend says: its verdict ("held up" / "did not hold" / "too few cases to check"),
-  // else "held up" / "did not hold" only for an explicit true / false.
-  const h = s.holdout as NonNullable<SignalResult["holdout"]> & { label?: string | null; held_up: boolean | null };
+  // The backend's verdict ("held up" / "did not hold" / "too few cases to check"). Saved data from before the
+  // verdict existed carries an old held_up flag, so there the verdict is worked out from the halves by the same rule.
+  const h = s.holdout as NonNullable<SignalResult["holdout"]> & { label?: string | null };
   const { first, second } = h;
-  const verdict = h.verdict ?? h.label
-    ?? (h.held_up === true ? "held up" : h.held_up === false ? "did not hold" : "too few cases to check");
+  const verdict = h.verdict ?? h.label ?? holdoutVerdict(first, second);
   return (
     <span>
       <b>{verdict}</b>

@@ -13,7 +13,7 @@ import { api, SAVED, SAVED_EXAMPLE, SAVED_TICKERS, type CompanyDetail, type Expo
 import { money, pct, shortDate, whole } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
 import { maybeAutoTour, startTour } from "@/lib/tour";
-import { liteSummary, liteVerdict, proSummary } from "@/lib/words";
+import { isBorderline, liteSummary, liteVerdict, proSummary } from "@/lib/words";
 
 const SPARK_DAYS = 30;
 const FUND_SOURCES: Record<string, string> = { ssga: "State Street (SSGA)", sample: "sample data" };
@@ -223,7 +223,7 @@ function Panel({ e, kind, fund, portfolio }: { e: ExposureRow; kind?: string; fu
                       <span className="lite-only"><b>{s.lite}.</b> <span className="mute">{liteVerdict(s)}</span></span>
                       <span className="pro-only">{s.pro}</span>
                     </span>
-                    <span className="pro-only"><LabelTag label={s.label} /></span>
+                    <span className="pro-only"><LabelTag label={s.label} borderline={isBorderline(s)} /></span>
                   </div>
                 ))}
               </div>

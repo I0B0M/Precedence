@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
-import { BadgeKey, HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge } from "@/components/bits";
+import { BadgeKey, HitDots, HoldoutNote, LabelTag, ScanLine, StateBadge, StrictNote } from "@/components/bits";
 import { FilingSummary } from "@/components/FilingSummary";
 import { MarketCard } from "@/components/MarketCard";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api";
 import { bigMoney, money, pct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
-import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
+import { FORM_WORDS, headline, isBorderline, liteHistory, liteVerdict } from "@/lib/words";
 import { StockChart } from "./StockChart";
 
 // Filings that get a plain-words summary (Gemini, figures checked against XBRL).
@@ -182,7 +182,7 @@ export default function CompanyScreen() {
                       <td className="num">{s.n ? `${s.hits} (${whole(s.hit_rate)})` : "—"}<div className="note">{s.vs_market ? "worse than SPY" : "lower"}</div></td>
                       <td className="num">{whole(s.normal_rate)}<div className="note">of {s.normal_n} days</div></td>
                       <td className="num nowrap">{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</td>
-                      <td><LabelTag label={s.label} /></td>
+                      <td><LabelTag label={s.label} borderline={isBorderline(s)} /></td>
                       <td><HoldoutNote s={s} /></td>
                       <td>{s.firing ? <b>firing</b> : <span className="mute">—</span>}</td>
                       <td className="nowrap">{inLab(s.signal) && <Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>cases ›</Link>}</td>
@@ -190,13 +190,14 @@ export default function CompanyScreen() {
                   ))}
                 </tbody>
               </table>
+              {d.signals.filter((s) => s.label === "STRONG").map((s) => <StrictNote key={s.signal} s={s} />)}
             </div>
             <div className="sig-cards">
               {d.signals.map((s) => (
                 <div key={s.signal} className="sig-card">
                   <div className="row-flex" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "nowrap" }}>
                     <b>{s.pro}</b>
-                    <LabelTag label={s.label} />
+                    <LabelTag label={s.label} borderline={isBorderline(s)} />
                   </div>
                   <dl className="stats">
                     <div><dt>Cases</dt><dd>{s.n}</dd></div>
@@ -205,6 +206,7 @@ export default function CompanyScreen() {
                     <div><dt>90% range</dt><dd>{s.n ? `${whole(s.low)}–${whole(s.high)}` : "—"}</dd></div>
                   </dl>
                   <p className="note">Horizon {s.horizon} trading days · {s.firing ? <b>firing now</b> : "not firing"}{s.holdout ? <> · hold-out <HoldoutNote s={s} /></> : null}</p>
+                  <StrictNote s={s} />
                   {inLab(s.signal) && <Link className="linkb" href={`/lab?t=${co.ticker}&s=${s.signal}`}>See the cases ›</Link>}
                 </div>
               ))}
