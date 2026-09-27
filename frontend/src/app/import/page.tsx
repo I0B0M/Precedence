@@ -3,11 +3,35 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { OtherAssetsForms } from "@/components/OtherAssets";
-import { SHOW_CONNECT, SHOW_CRYPTO } from "@/lib/flags";
+import { SHOW_CONNECT, SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
 import { comingNext } from "@/lib/features";
-import { api, ApiError, EXAMPLE_PORTFOLIO, type ReadRow, type Reconciled, type Status } from "@/lib/api";
+import { api, ApiError, EXAMPLE_PORTFOLIO, SAVED, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { andList, money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
+import { addPrivateFund, addProperty, addRetirement, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
+
+// The example's other assets, beside its stock rows: a 401(k) mapped to the S&P 500, a home (real FHFA estimate,
+// same ZIP as the form's own placeholder), a Blackstone fund. Live mode only — the saved-data demo is a static
+// snapshot keyed on stock holdings alone, so it can't grow these until it's rebuilt with them baked in.
+// A localStorage flag, not just `current`'s length, guards this: effects can fire twice back to back (React
+// Strict Mode in dev, or a fast double-click) before either call's state update lands, and `current` is a
+// snapshot from render time, so two overlapping calls would both still see it empty and both would seed.
+const SEEDED_KEY = "stone.example-seeded";
+async function seedExampleExtras(current: OtherAssets) {
+  if (SAVED || current.retirement.length || current.properties.length || current.privateFunds.length) return;
+  try {
+    if (localStorage.getItem(SEEDED_KEY)) return;
+    localStorage.setItem(SEEDED_KEY, "1");
+  } catch {
+    return; // no localStorage: don't risk seeding twice with nothing to guard it
+  }
+  addRetirement([{ account: "401(k)", name: "FXAIX", amount: 15000, lookup: null }]);
+  if (SHOW_PRIVATE_FUNDS) addPrivateFund("BREIT", 10000);
+  try {
+    const estimate = await api.estimateHome({ zip: "33133", paid: 450000, bought_year: 2018 });
+    addProperty({ address: "33133", paid: 450000, bought: "2018", estimate });
+  } catch {}
+}
 
 const CONNECT = [
   { name: "Robinhood", what: "Stocks and funds" },
@@ -81,6 +105,7 @@ export default function ImportScreen() {
   const [priced, setPriced] = useState<{ symbol: string; day: string | null }[]>([]);
   const [unpriced, setUnpriced] = useState<string[]>([]);
   const [example, setExample] = useState<string | null>(null); // the close date, while example rows are in the table
+  const other = useOtherAssets();
 
   function applyExample(ex: Example | null) {
     if (!ex) return setCheckErr(true);
@@ -94,13 +119,17 @@ export default function ImportScreen() {
   // Fill the table, then bring it into view (the button sits at the top of the page).
   const fillAndShow = () => loadExample().then((ex) => {
     applyExample(ex);
+    seedExampleExtras(other);
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     setTimeout(() => document.getElementById("check-rows")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }), 50);
   });
 
   useEffect(() => {
     api.status().then(setStatus).catch(() => {});
-    if (new URLSearchParams(window.location.search).get("example") === "1") loadExample().then(applyExample);
+    if (new URLSearchParams(window.location.search).get("example") === "1") {
+      loadExample().then((ex) => { applyExample(ex); seedExampleExtras(other); });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function upload(file: File) {
@@ -200,7 +229,7 @@ export default function ImportScreen() {
       {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
       <div className="card" style={{ borderWidth: 2 }}>
         <h3>Example portfolio</h3>
-        <p>{andList(EXAMPLE_PORTFOLIO.map((h) => h.symbol))} at real closing prices.</p>
+        <p>{andList(EXAMPLE_PORTFOLIO.map((h) => h.symbol))} at real closing prices{SAVED ? "" : ", plus a 401(k), a home and a Blackstone fund"}.</p>
         <button className="btn" type="button" onClick={fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
       </div>
 
