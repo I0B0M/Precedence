@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { OtherAssetsForms } from "@/components/OtherAssets";
-import { SHOW_CONNECT, SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
-import { comingNext } from "@/lib/features";
+import { SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
 import { api, ApiError, EXAMPLE_PORTFOLIO, SAVED, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { andList, money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
+import { PRACTICE_CASH } from "@/lib/practice";
 import { addPrivateFund, addProperty, addRetirement, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
 
 // The example's other assets, beside its stock rows: a 401(k) mapped to the S&P 500, a home (real FHFA estimate,
@@ -32,11 +33,6 @@ async function seedExampleExtras(current: OtherAssets) {
     addProperty({ address: "33133", paid: 450000, bought: "2018", estimate });
   } catch {}
 }
-
-const CONNECT = [
-  { name: "Robinhood", what: "Stocks and funds" },
-  ...(SHOW_CRYPTO ? [{ name: "Binance", what: "Crypto" }] : []),
-];
 
 /** Fill what a person typing would leave out: price from the latest close, value from shares x price. */
 async function fillTyped(rows: EditRow[]): Promise<{ rows: EditRow[]; priced: { symbol: string; day: string | null }[]; unpriced: string[] }> {
@@ -226,25 +222,38 @@ export default function ImportScreen() {
         <p className="lede">Read-only. Never trades or moves money.</p>
       </div>
 
-      {/* The quickest way in: real tickers at real closing prices, clearly labelled, nothing saved until Save. */}
+      {/* Every way in, real state each: two aren't built (never a fake "Coming soon" button, just no button at
+       *  all), the screenshot reader needs a key we don't have, practice money is real and one tap away. */}
+      <div className="card">
+        <h3>Bring your money in</h3>
+        <p className="note">No account needed to start.</p>
+        <div className="list">
+          <div className="list-row" style={{ alignItems: "center" }}>
+            <span><b>Robinhood</b><span className="note" style={{ display: "block" }}>Connect · read-only</span></span>
+            <span className="note">Coming next</span>
+          </div>
+          <div className="list-row" style={{ alignItems: "center" }}>
+            <span><b>Screenshot</b><span className="note" style={{ display: "block" }}>Any app, any account</span></span>
+            <span className="note">Coming next</span>
+          </div>
+          <div className="list-row" style={{ alignItems: "center" }}>
+            <span><b>Crypto wallet</b><span className="note" style={{ display: "block" }}>Paste an address</span></span>
+            <span className="note">Coming next</span>
+          </div>
+          <Link href="/paper" className="list-row" style={{ alignItems: "center", textDecoration: "none", color: "inherit" }}>
+            <span><b>Practice money</b><span className="note" style={{ display: "block" }}>Start with {money(PRACTICE_CASH)}</span></span>
+            <span className="chev" aria-hidden>›</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* The quickest way in that actually works today: real tickers at real closing prices, clearly labelled,
+       *  nothing saved until Save. */}
       <div className="card" style={{ borderWidth: 2 }}>
         <h3>Example portfolio</h3>
         <p>{andList(EXAMPLE_PORTFOLIO.map((h) => h.symbol))} at real closing prices{SAVED ? "" : ", plus a 401(k), a home and a Blackstone fund"}.</p>
         <button className="btn" type="button" onClick={fillAndShow} style={{ alignSelf: "flex-start" }}>Try an example portfolio</button>
       </div>
-
-      {/* Connecting isn't built yet (no SnapTrade endpoint). Never fake a connection. */}
-      {SHOW_CONNECT && <div className="card">
-        <h3>Connect an account</h3>
-        <div className="list">
-          {CONNECT.map((c) => (
-            <div key={c.name} className="list-row" style={{ alignItems: "center" }}>
-              <span><b>{c.name}</b><span className="note" style={{ display: "block" }}>{c.what} · read-only</span></span>
-              <button className="btn light small" type="button" disabled>Coming soon</button>
-            </div>
-          ))}
-        </div>
-      </div>}
 
       {shots && <>
       <div className="stack" style={{ gap: 12, marginTop: 8 }}>
@@ -252,7 +261,7 @@ export default function ImportScreen() {
         <p className="mute">Checked against the total on your screen.</p>
       </div>
 
-      <div className="drop">
+      <div className="drop" id="screenshot-drop" style={{ scrollMarginTop: 110 }}>
         <b>Any app: Cash App, Webull, Fidelity…</b>
         <label className={`btn${busy ? " is-busy" : ""}`}>
           <input className="sr-only" type="file" accept="image/*" disabled={busy}
@@ -340,7 +349,6 @@ export default function ImportScreen() {
         <p className="mute">A home, a 401(k) or an IRA{SHOW_CRYPTO ? ", crypto" : ""}.</p>
       </div>
       <OtherAssetsForms />
-      {!(SHOW_CONNECT && shots) && <p className="note">{comingNext(shots)}</p>}
     </section>
   );
 }

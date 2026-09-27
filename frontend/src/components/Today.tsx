@@ -6,8 +6,7 @@ import { api, type Scan, type Today } from "@/lib/api";
 import { Why } from "@/components/Why";
 import { useMode } from "@/lib/mode";
 import { shortDate } from "@/lib/format";
-import { SHOW_CONNECT, SHOW_CRYPTO } from "@/lib/flags";
-import { comingNext, useFeatures } from "@/lib/features";
+import { SHOW_CRYPTO } from "@/lib/flags";
 import { FORM_WORDS, PROMISE_WORDS, SIGNAL_WORDS, strongCountWords } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { sec: "SEC EDGAR", fred: "FRED" };
@@ -245,7 +244,6 @@ export function StartFlow() {
   const [step, setStep] = useState<1 | 2>(1);
   const toggle = (k: string) => setOwn(own.includes(k) ? own.filter((x) => x !== k) : [...own, k]);
   const notCovered = own.filter((k) => k === "crypto" || k === "other");
-  const shots = useFeatures().screenshots === true;
 
   return (
     <section className="stack" style={{ gap: 28 }}>
@@ -296,20 +294,15 @@ export function StartFlow() {
                 <span><b>A home or 401(k)</b><span className="note" style={{ display: "block" }}>Address or fund name</span></span>
                 <Link className="btn light small" href="/import#other">Add one</Link>
               </div>
-              {shots && (
-                <div className="list-row" style={{ alignItems: "center" }}>
-                  <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app</span></span>
-                  <Link className="btn light small" href="/import">Add a screenshot</Link>
-                </div>
-              )}
-              {SHOW_CONNECT && (
-                <div className="list-row" style={{ alignItems: "center" }}>
-                  <span><b>Connect Robinhood{SHOW_CRYPTO ? " or Binance" : ""}</b><span className="note" style={{ display: "block" }}>Read-only</span></span>
-                  <Link className="btn light small" href="/import">Connect</Link>
-                </div>
-              )}
+              <div className="list-row" style={{ alignItems: "center" }}>
+                <span><b>Add a screenshot</b><span className="note" style={{ display: "block" }}>Any app</span></span>
+                <span className="note">Coming next</span>
+              </div>
+              <div className="list-row" style={{ alignItems: "center" }}>
+                <span><b>Connect Robinhood</b><span className="note" style={{ display: "block" }}>Read-only</span></span>
+                <span className="note">Coming next</span>
+              </div>
             </div>
-            {!(SHOW_CONNECT && shots) && <p className="note">{comingNext(shots)}</p>}
             <button className="linkb" type="button" onClick={() => setStep(1)}>‹ Back</button>
           </>
         )}
