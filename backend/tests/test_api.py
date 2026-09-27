@@ -437,6 +437,18 @@ def test_home_estimate_falls_back_to_county_and_zip_only_skips_the_geocoder(clie
     assert after["estimate"] == 400000 and "2025" in after["note"]
 
 
+def test_home_estimate_places_an_address_on_the_map_and_not_a_zip(client, monkeypatch, hpi_rows):
+    import stone.api.main as m
+    from stone.sources.census import Geocode
+    monkeypatch.setattr(m, "geocode_address", lambda a: Geocode("3500 PAN AMERICAN DR, MIAMI, FL, 33133", "33133",
+                                                                  "12086", "FL", 25.728662483198, -80.23499374077))
+    e = client.post("/api/estimate/home", json={"address": "3500 Pan American Dr", "paid": 400000,
+                                                 "bought_year": 2012}).json()
+    assert (e["lat"], e["lon"]) == (25.728662483198, -80.23499374077)  # the geocoder's own point, unchanged
+    z = client.post("/api/estimate/home", json={"zip": "33133", "paid": 400000, "bought_year": 2012}).json()
+    assert z["lat"] is None and z["lon"] is None  # no ZIP centre is looked up, so no point is invented
+
+
 def test_home_estimate_errors_are_plain(client, monkeypatch, hpi_rows):
     import stone.api.main as m
     monkeypatch.setattr(m, "geocode_address", lambda a: None)

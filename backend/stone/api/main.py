@@ -720,7 +720,7 @@ def estimate_home(body: HomeIn, c: psycopg.Connection = Conn):
     """What you paid × how much the FHFA house price index moved since. An estimate, not an appraisal."""
     if body.paid <= 0:
         raise HTTPException(422, "Enter what you paid for the home.")
-    matched = county = us_state = None
+    matched = county = us_state = lat = lon = None  # ZIP only: no point to place on a map
     if body.address and body.address.strip():
         try:
             g = geocode_address(body.address.strip())
@@ -730,6 +730,7 @@ def estimate_home(body: HomeIn, c: psycopg.Connection = Conn):
             raise HTTPException(422, "The Census geocoder couldn't match that address. "
                                      "Try the full street address with city and state, or just the ZIP code.")
         located_by, matched, zip5, county, us_state = "address", g.matched, g.zip, g.county_fips, g.state
+        lat, lon = g.lat, g.lon  # where the Census geocoder placed the match
     elif body.zip:
         zip5 = body.zip.strip()
         if not (len(zip5) == 5 and zip5.isdigit()):
@@ -754,6 +755,7 @@ def estimate_home(body: HomeIn, c: psycopg.Connection = Conn):
         "zip": zip5, "county_fips": county, "us_state": us_state, **e, "note": note,
         "method": homes.METHOD if level == "zip5" else f"paid × FHFA {homes.LEVEL_WORDS[level]} index change",
         "source": HPI_SOURCE[level], "geocoder": census.NAME if located_by == "address" else None, "state": None,
+        "lat": lat, "lon": lon,
     }
 
 

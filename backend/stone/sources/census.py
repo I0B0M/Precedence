@@ -20,6 +20,8 @@ class Geocode:
     zip: str | None
     county_fips: str | None
     state: str | None  # two-letter
+    lat: float | None = None  # the match's coordinates: Census gives x = longitude, y = latitude
+    lon: float | None = None
 
 
 def parse_geocode(doc: dict) -> Geocode | None:
@@ -30,9 +32,12 @@ def parse_geocode(doc: dict) -> Geocode | None:
     geo = m.get("geographies") or {}
     counties, states = geo.get("Counties") or [], geo.get("States") or []
     comps = m.get("addressComponents") or {}
+    xy = m.get("coordinates") or {}
     return Geocode(m.get("matchedAddress", ""), comps.get("zip") or None,
                    counties[0].get("GEOID") if counties else None,
-                   (states[0].get("STUSAB") if states else None) or comps.get("state") or None)
+                   (states[0].get("STUSAB") if states else None) or comps.get("state") or None,
+                   float(xy["y"]) if xy.get("y") is not None else None,
+                   float(xy["x"]) if xy.get("x") is not None else None)
 
 
 class CensusGeocoder:
