@@ -13,7 +13,7 @@ import { api, type CompanyDetail, type ExposureRow, type Scan } from "@/lib/api"
 import { bigMoney, money, pct, sharePct, shortDate, timeET, whole } from "@/lib/format";
 import { readHoldings, SAMPLE_PORTFOLIO } from "@/lib/holdings";
 import { portfolioExtras } from "@/lib/other-assets";
-import { FORM_WORDS, headline, liteHistory, liteVerdict } from "@/lib/words";
+import { FORM_WORDS, headline, liteHistory, liteVerdict, personName } from "@/lib/words";
 import { StockChart } from "./StockChart";
 
 // Filings that get a plain-words summary (Gemini, figures checked against XBRL).
@@ -99,10 +99,17 @@ export default function CompanyScreen() {
                 const f4 = main.signal === "insider_cluster" && s0 ? s0.url ?? filingUrl(s0.accession) : null;
                 return (
                   <>
-                    {main.signal === "insider_cluster" && s0 && (
-                      <p className="note">Latest sale: {s0.owner_name ?? "an insider"}{s0.owner_title ? `, ${s0.owner_title}` : ""}, {shortDate(s0.accepted_at).replace(/, \d{4}$/, "")}
-                        {f4 && <> · <a href={f4} target="_blank" rel="noopener noreferrer">sec.gov</a></>}</p>
-                    )}
+                    {main.signal === "insider_cluster" && s0 && (() => {
+                      // One Form 4 can have several sale lines: add them up. The date is the trade, not the filing.
+                      const lines = d.insider_sales.filter((x) => x.accession === s0.accession);
+                      const shares = lines.reduce((a, x) => a + (x.shares ?? 0), 0);
+                      const when = shortDate(s0.transaction_date ?? s0.accepted_at).replace(/, \d{4}$/, "");
+                      return (
+                        <p className="note">Latest sale: {personName(s0.owner_name) ?? "An insider"}{s0.owner_title ? `, ${s0.owner_title},` : ""} sold{" "}
+                          {shares > 0 ? `${shares.toLocaleString("en-US")} shares` : "shares"} on {when}.
+                          {f4 && <> <a href={f4} target="_blank" rel="noopener noreferrer">sec.gov ›</a></>}</p>
+                      );
+                    })()}
                     {inLab(main.signal) && <Link className="linkb" href={`/signals?t=${co.ticker}&s=${main.signal}`}>See each past time this happened ›</Link>}
                   </>
                 );

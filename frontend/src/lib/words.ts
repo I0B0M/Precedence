@@ -106,6 +106,15 @@ export const LEARN_STRONG = NOT_PROVEN_WORDS
   : { figure: "This has mattered before.", watch: "Something that has mattered for this stock before is happening now.",
       calm: "Nothing that has mattered before is happening." };
 
+/** A Form 4 owner as people say it: the SEC files people as "Last First Middle" ("Herrington Douglas J" → "Douglas J
+ *  Herrington"). Anything that looks like a company or trust is left exactly as filed. */
+export function personName(filed: string | null): string | null {
+  if (!filed) return null;
+  if (/\b(LLC|L\.?P\.?|INC|CORP|TRUST|FUND|HOLDINGS|PARTNERS|CAPITAL|FOUNDATION|LTD|CO)\b/i.test(filed)) return filed;
+  const parts = filed.trim().split(/\s+/);
+  return parts.length > 1 ? [...parts.slice(1), parts[0]].join(" ") : filed;
+}
+
 /** Signal keys in plain words, for places that get only the key (e.g. fund holdings). */
 export const SIGNAL_WORDS: Record<string, string> = {
   insider_cluster: "Insider selling",
