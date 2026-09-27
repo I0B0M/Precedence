@@ -55,6 +55,22 @@
         "3002"
       ],
       "port": 3002
+    },
+    {
+      "name": "web-saved",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "NEXT_PUBLIC_STONE_SAVED=1",
+        "npm",
+        "--prefix",
+        "frontend",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3003"
+      ],
+      "port": 3003
     }
   ]
 }
