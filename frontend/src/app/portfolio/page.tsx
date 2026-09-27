@@ -79,9 +79,8 @@ export default function HoldingsBoard() {
           </p>
         </div>
         <p className="note" style={{ maxWidth: "34ch" }}>
-          <span className="lite-only">Tap a holding to see more.</span>
-          <span className="pro-only">WATCH only when a signal that has proven itself on this stock is firing.</span>
-          {" "}{board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in our price data."}
+          <span className="pro-only">WATCH only when a signal that has proven itself on this stock is firing. </span>
+          {board.price_as_of ? `Values at the close on ${shortDate(board.price_as_of)}.` : "Values at the latest close in our price data."}
         </p>
       </div>
 
