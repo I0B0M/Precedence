@@ -109,6 +109,10 @@ class Holdout:
     """The same test run separately on each half of the history."""
     first: "Result"
     second: "Result"
+    split_day: date | None = None  # the second half's first trading day
+    # full-history cases in neither half: a window that starts before the split and ends after it
+    # isn't whole in either half, so neither can measure it
+    excluded: tuple[Case, ...] = ()
 
     @property
     def verdict(self) -> str:
@@ -317,20 +321,22 @@ def evaluate(spec: Spec, bars: list[BarLike], events: list[Event],
 
 
 def holdout(spec: Spec, bars: list[BarLike], events: list[Event],
-            market: list[BarLike] | None = None) -> Holdout:
+            market: list[BarLike] | None = None, cases: list[Case] = ()) -> Holdout:
+    """cases: the full-history run's cases, so the ones neither half holds can be named."""
     bars = sorted(bars, key=lambda b: b.day)
     mid = len(bars) // 2
     cut = open_at(bars[mid].day)
     first = evaluate(spec, bars[:mid], [e for e in events if e.known_at < cut], market)
     second = evaluate(spec, bars[mid:], [e for e in events if e.known_at >= cut], market)
-    return Holdout(first, second)
+    held = {c.known_at for c in first.cases} | {c.known_at for c in second.cases}
+    return Holdout(first, second, bars[mid].day, tuple(c for c in cases if c.known_at not in held))
 
 
 def test_signal(spec: Spec, bars: list[BarLike], events: list[Event],
                 market: list[BarLike] | None = None) -> Result:
     """evaluate(), plus the split-half hold-out for anything that comes out STRONG."""
     r = evaluate(spec, bars, events, market)
-    return replace(r, holdout=holdout(spec, bars, events, market)) if r.label == STRONG else r
+    return replace(r, holdout=holdout(spec, bars, events, market, r.cases)) if r.label == STRONG else r
 
 
 def holding_state(results: list[Result]) -> str:

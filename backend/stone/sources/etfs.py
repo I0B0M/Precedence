@@ -8,7 +8,7 @@ file (HTTP 406), so QQQ stays on the board as one whole fund.
 import re
 import xml.etree.ElementTree as ET
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from io import BytesIO
 
@@ -28,6 +28,7 @@ class Holdings:
     as_of: date
     weights: dict[str, float]  # ticker -> share of the fund, 0..1
     source: str
+    names: dict[str, str] = field(default_factory=dict)  # ticker -> the issuer's name for it, e.g. "MICRON TECHNOLOGY INC"
 
 
 def xlsx_rows(content: bytes) -> list[list[str | None]]:
@@ -62,7 +63,9 @@ def parse_spdr(etf: str, content: bytes) -> Holdings:
                  for r in rows if len(r) > 1 and r[0] == "Holdings:" and r[1])
     header = next(i for i, r in enumerate(rows) if "Ticker" in r and "Weight" in r)
     tcol, wcol = rows[header].index("Ticker"), rows[header].index("Weight")
+    ncol = rows[header].index("Name") if "Name" in rows[header] else None
     weights: dict[str, float] = {}
+    names: dict[str, str] = {}
     for r in rows[header + 1:]:
         if not r or not r[0]:
             break  # the table ends at the first blank row; disclaimers follow
@@ -70,7 +73,9 @@ def parse_spdr(etf: str, content: bytes) -> Holdings:
         if not ticker or ticker == "-" or weight in (None, "-"):
             continue  # cash and other lines without a stock ticker
         weights[ticker] = weights.get(ticker, 0.0) + float(weight) / 100
-    return Holdings(etf, as_of, {t: w for t, w in weights.items() if w > 0}, "ssga")
+        if ncol is not None and ncol < len(r) and (r[ncol] or "").strip():
+            names.setdefault(ticker, r[ncol].strip())
+    return Holdings(etf, as_of, {t: w for t, w in weights.items() if w > 0}, "ssga", names)
 
 
 class SpdrClient:

@@ -26,6 +26,7 @@ from stone.signals import engine, service
 from stone.signals.scan import fdr10_by_signal
 from stone.sources.gemini import MODEL as GEMINI_MODEL
 from stone.sources.gemini import GeminiClient, ScreenshotUnreadable, first_sentences
+from stone.sources.gemini import connected as gemini_connected
 from stone.sources import census
 from stone.sources.fhfa import SOURCE as HPI_SOURCE
 from stone.sources.sec import SecClient
@@ -96,7 +97,9 @@ def status(c: psycopg.Connection = Conn):
         "select source, count(*) as n from companies group by source").fetchall()}
     real = sum(n for s, n in counts.items() if s != "sample")
     data = "empty" if not counts else "sample" if not real else "mixed" if "sample" in counts else "real"
-    return {"data": data, "companies_by_source": counts}
+    gemini = gemini_connected(config.load())
+    # summaries / screenshots: false means those endpoints answer 503, so pages can skip calling them
+    return {"data": data, "companies_by_source": counts, "summaries": gemini, "screenshots": gemini}
 
 
 @app.get("/api/companies")
@@ -387,7 +390,7 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
     closes = [(r["day"], float(r["close"])) for r in c.execute(
         "select day, close from prices_daily where ticker = %s order by day", (t,)).fetchall()]
     as_of = c.execute("select max(as_of) as d from etf_holdings where etf = %s", (src,)).fetchone()["d"]
-    rows = c.execute("select holding, weight, source from etf_holdings where etf = %s and as_of = %s "
+    rows = c.execute("select holding, weight, source, name from etf_holdings where etf = %s and as_of = %s "
                      "order by weight desc", (src, as_of)).fetchall() if as_of else []
     tracked = {r["ticker"]: r for r in c.execute(
         "select ticker, name, kind from companies where ticker = any(%s)", ([r["holding"] for r in rows],)).fetchall()}
@@ -397,7 +400,8 @@ def fund(symbol: str, c: psycopg.Connection = Conn):
     for r in rows[:FUND_TOP]:
         k = tracked.get(r["holding"])
         results = signal_results(c, r["holding"], k["kind"], market_symbol, rates, market) if k else None
-        holdings.append({"ticker": r["holding"], "name": k["name"] if k else None, "weight": float(r["weight"]),
+        holdings.append({"ticker": r["holding"], "name": k["name"] if k else r["name"],  # untracked: the issuer's name
+                         "weight": float(r["weight"]),
                          "in_stone": k is not None, "state": state_of(results),
                          "firing": [{"signal": x.signal, "label": x.label} for x in results or [] if x.firing],
                          "lite_line": lite_line(results)})

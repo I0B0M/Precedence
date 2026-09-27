@@ -51,5 +51,7 @@ mut "no market: silently absolute"     "        if not market:
             raise"                     "        if False:
             raise"
 mut "hold-out drops the market"        "e.known_at < cut], market)"          "e.known_at < cut])"
+mut "hold-out names no excluded case"  "tuple(c for c in cases if c.known_at not in held))" "())"
+mut "hold-out split day off by one"    "Holdout(first, second, bars[mid].day," "Holdout(first, second, bars[mid - 1].day,"
 cmp -s "$BAK" "$F" && echo "engine.py restored, identical to original"
 rm "$BAK" "$OUT"

@@ -76,12 +76,15 @@ def upsert_rates(conn: psycopg.Connection, series: str, obs: list[tuple[date, fl
 
 
 def upsert_etf_holdings(conn: psycopg.Connection, etf: str, as_of: date,
-                        weights: dict[str, float], source: str) -> None:
+                        weights: dict[str, float], source: str, names: dict[str, str] | None = None) -> None:
+    """names: the issuer's name per holding; a name already stored is kept when the file has none."""
+    names = names or {}
     with conn.cursor() as cur:
         cur.executemany(
-            """insert into etf_holdings (etf, holding, weight, as_of, source) values (%s, %s, %s, %s, %s)
-               on conflict (etf, holding, as_of) do update set weight = excluded.weight""",
-            [(etf, h, w, as_of, source) for h, w in weights.items()])
+            """insert into etf_holdings (etf, holding, weight, as_of, source, name) values (%s, %s, %s, %s, %s, %s)
+               on conflict (etf, holding, as_of) do update
+               set weight = excluded.weight, name = coalesce(excluded.name, etf_holdings.name)""",
+            [(etf, h, w, as_of, source, names.get(h)) for h, w in weights.items()])
 
 
 def delete_source(conn: psycopg.Connection, source: str) -> None:

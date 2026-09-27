@@ -129,6 +129,12 @@ def test_spdr_holdings_file_gives_date_and_weights():
     assert all(w > 0 for w in h.weights.values())
 
 
+def test_spdr_holdings_file_keeps_the_issuers_name_for_each_holding():
+    h = etfs.parse_spdr("SPY", fixture("spdr_spy_holdings.xlsx"))
+    assert h.names["GOOG"] == "ALPHABET INC CL C" and h.names["MU"] == "MICRON TECHNOLOGY INC"
+    assert set(h.weights) <= set(h.names)  # every holding kept has a name
+
+
 def test_xlsx_reader_places_cells_by_column_when_one_is_empty():
     import io
     import zipfile

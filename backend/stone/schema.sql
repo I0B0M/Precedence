@@ -96,6 +96,8 @@ create table if not exists etf_holdings (
     source   text not null,
     primary key (etf, holding, as_of)
 );
+-- the issuer's name for the holding ("MICRON TECHNOLOGY INC"), shown when Precedence doesn't track it
+alter table etf_holdings add column if not exists name text;
 
 -- One row per full scan of every stock x signal, so "how many did you test?" has a real answer.
 -- expected_by_chance = 5% of the eligible pairs: the low end of a 90% range sits above the

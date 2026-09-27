@@ -232,6 +232,31 @@ def test_holdout_with_fewer_than_ten_cases_in_a_half_is_too_few_to_check():
     assert not r.holdout.held_up and r.holdout.verdict == e.TOO_FEW_TO_CHECK
 
 
+def test_a_case_whose_window_crosses_the_split_is_in_neither_half_and_is_named():
+    bars, evs = strong_setup(fire_now=False)  # 400 bars, cases every 30 from bar 20; the split is bar 200
+    for k in range(196, 201):  # one more fall, from bar 196 through bar 200: it starts before the split, ends on it
+        bars[k] = B(bars[k].day, 100, 97)
+    evs.append(e.Event(at(bars[195].day, 17), "crosses"))
+    r = e.test_signal(e.Spec("t", "", "", 5), bars, evs)
+    assert r.label == e.STRONG and r.n == 13 and r.hits == 13
+    h = r.holdout
+    assert h.split_day == bars[200].day
+    assert h.first.n + h.second.n == 12
+    assert [c.note for c in h.excluded] == ["crosses"] and h.excluded[0].hit
+    from stone.api.views import excluded_json
+    ex = excluded_json(h, 5)
+    assert (ex["n"], ex["hits"]) == (1, 1) and ex["cases"][0]["entry_day"] == bars[196].day.isoformat()
+    assert ex["reason"] == (f"Its 5-trading-day window starts before the split ({bars[200].day.isoformat()}) "
+                            "and ends after it, so neither half has the whole window to measure.")
+
+
+def test_no_case_crossing_the_split_means_nothing_excluded():
+    r = e.test_signal(e.Spec("t", "", "", 5), *strong_setup(fire_now=False, events=24))
+    assert r.holdout.excluded == ()
+    from stone.api.views import excluded_json
+    assert excluded_json(r.holdout, 5) == {"n": 0, "hits": 0, "reason": None, "cases": []}
+
+
 def test_holdout_fails_when_one_half_does_not_hold():
     bars, evs = strong_setup(fire_now=False, events=24)
     half = len(bars) // 2

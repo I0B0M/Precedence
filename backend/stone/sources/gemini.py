@@ -138,9 +138,14 @@ def parse_summary_response(doc: dict) -> FilingRead:
     return FilingRead(body.get("summary", "").strip(), figures)
 
 
+def connected(settings: Settings) -> bool:
+    """Whether Gemini calls (screenshot import, filing summaries) can run at all."""
+    return bool(settings.gemini_api_key)
+
+
 class GeminiClient:
     def __init__(self, settings: Settings, offline: bool = False):
-        if not settings.gemini_api_key and not offline:
+        if not connected(settings) and not offline:
             raise NotConnected("GEMINI_API_KEY is not set")
         self.http = CachedFetcher("gemini", settings.cache_dir, RateLimiter(1),
                                   headers={"x-goog-api-key": settings.gemini_api_key},
