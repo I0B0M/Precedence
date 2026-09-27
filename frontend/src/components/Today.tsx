@@ -132,9 +132,10 @@ function Countdown({ stages }: { stages: Stage[] }) {
 }
 
 /** On the board: from everything that landed this week, down to what has mattered before for what you own. */
-export function TodayFunnel({ symbols }: { symbols: string[] }) {
+/** `alsoLite`: show it in Lite too (the home page has no board header to carry the count). */
+export function TodayFunnel({ symbols, alsoLite = false }: { symbols: string[]; alsoLite?: boolean }) {
   const { mode } = useMode();
-  const t = useToday(mode === "pro" ? symbols : []);
+  const t = useToday(mode === "pro" || alsoLite ? symbols : []);
   const [scan, setScan] = useState<Scan | null>(null);
   useEffect(() => {
     api.scan().then(setScan).catch(() => {});
@@ -151,8 +152,8 @@ export function TodayFunnel({ symbols }: { symbols: string[] }) {
     ];
     return out.filter((x): x is Stage => x !== null && Number.isFinite(x.n));
   }, [t]);
-  // Lite shows nothing here: the board header already says how many things are worth a look.
-  if (mode !== "pro" || !t?.day || !t.holdings || !stages.length) return null;
+  // On the board Lite shows nothing here: its header already says how many things are worth a look.
+  if ((mode !== "pro" && !alsoLite) || !t?.day || !t.holdings || !stages.length) return null;
   const h = t.holdings, w = t.week;
   const mine = w && h.week_filings ? h.week_filings : h.filings;
   const about = mine.count + h.signals.firing;

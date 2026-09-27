@@ -10,6 +10,8 @@ import { HeroLoop } from "@/components/landing/Loops";
 import { api, type CompanyDetail, type FundPage, type PortfolioOut, type Scan, type Status, type Today } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { PRACTICE_CASH } from "@/lib/practice";
+import { useHoldings } from "@/lib/holdings";
+import { TodayFunnel } from "@/components/Today";
 
 // The example the home page shows, and the one /import?example=1 fills in.
 const EXAMPLE = [{ symbol: "BX", shares: 10 }, { symbol: "AMZN", shares: 5 }, { symbol: "SPY", shares: 3 }];
@@ -23,10 +25,11 @@ const BADGES: [string, string, string][] = [
 
 const day = (iso: string | null | undefined) => (iso ? shortDate(iso).replace(/, \d{4}$/, "") : "…");
 
-/** One band of the home page, full width, on one of the two surfaces. */
-function Band({ id, alt = false, label, children }: { id: string; alt?: boolean; label: string; children: React.ReactNode }) {
+/** One band of the home page, full width. The two surfaces alternate by position (home.css), so an optional band
+ *  (your week) never puts two of the same colour together. */
+function Band({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return (
-    <section id={id} className={`home-band${alt ? " alt" : ""}`} aria-label={label}>
+    <section id={id} className="home-band" aria-label={label}>
       <div className="home-inner">{children}</div>
     </section>
   );
@@ -41,6 +44,7 @@ export default function Home() {
   const [spy, setSpy] = useState<FundPage | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [scan, setScan] = useState<Scan | null>(null);
+  const [mine] = useHoldings(null); // your saved holdings: their week comes first when you come back
 
   useEffect(() => {
     api.portfolio(EXAMPLE).then(setBoard).catch(() => {});
@@ -97,8 +101,20 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---- coming back: this week for what you own ---- */}
+      {mine && mine.length > 0 && (
+        <Band id="your-week" label="This week for what you own">
+          <div className="home-head">
+            <span className="kicker">Your week</span>
+            <h2>What happened to what you own</h2>
+          </div>
+          <TodayFunnel symbols={mine.map((h) => h.symbol)} alsoLite />
+          <Link className="btn" href="/portfolio">Open your portfolio</Link>
+        </Band>
+      )}
+
       {/* ---- what you own: portfolio and funds ---- */}
-      <Band id="what-you-own" alt label="What you own">
+      <Band id="what-you-own" label="What you own">
         <div className="home-head">
           <span className="kicker">What you own</span>
           <h2>Stocks, funds, a 401(k) and a home, in one place</h2>
@@ -150,7 +166,7 @@ export default function Home() {
       </Band>
 
       {/* ---- Lite vs Pro ---- */}
-      <Band id="lite-pro" alt label="Lite and Pro">
+      <Band id="lite-pro" label="Lite and Pro">
         <div className="home-split">
           <div className="home-head">
             <span className="kicker">Lite and Pro</span>
@@ -183,7 +199,7 @@ export default function Home() {
       </Band>
 
       {/* ---- where the data comes from ---- */}
-      <Band id="sources" alt label="Where the data comes from">
+      <Band id="sources" label="Where the data comes from">
         <div className="home-head">
           <span className="kicker">Where the data comes from</span>
           <h2><span className="home-inline-icon"><IconSources /></span>Real SEC, Fed and price data. No samples.</h2>
