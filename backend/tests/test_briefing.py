@@ -213,3 +213,10 @@ def test_build_writes_what_the_api_would_send_and_refuses_a_failing_line(tmp_pat
     with pytest.raises(saved_briefings.FailedCheck):
         saved_briefings.build(out)
     assert not (out / "briefing").exists()  # nothing half-written
+
+
+def test_an_untested_fund_or_a_company_without_prices_says_so():
+    fund = {**company("QQQ", "Invesco QQQ Trust", "etf"), "state": None, "last": None}
+    b = company_briefing(fund)
+    assert texts(b) == ["Stone hasn't tested any signals for Invesco QQQ Trust yet, so it can't say whether news matters here."]
+    assert not b.held_back and b.as_of == ""

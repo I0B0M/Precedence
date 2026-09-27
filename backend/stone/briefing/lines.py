@@ -12,7 +12,7 @@ from datetime import date
 MAX_WORDS = 28  # one breath: the narration tab speaks each line as one caption
 TONES = ("watch", "calm", "note")
 CITE = re.compile(r"^(signal:[a-z_]+|market:rate_jump|filing:[0-9A-Za-z-]+|price:\d{4}-\d{2}-\d{2}"
-                  r"|rate:\d{4}-\d{2}-\d{2}|risk:[a-z_]+|fact:[a-z_]+|portfolio:[a-z_]+)$")
+                  r"|rate:\d{4}-\d{2}-\d{2}|risk:[a-z_]+|fact:[a-z_]+|portfolio:[a-z_]+|company:[A-Z0-9.]+)$")
 
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
           "November", "December"]

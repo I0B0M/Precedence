@@ -101,7 +101,7 @@ def company_briefing(detail: dict) -> Briefing:
     elif state == "CALM":
         opening.append(Line(f"{ticker}:state", "calm",
                             f"{ex.cap(name)} is calm: nothing happening now has mattered here before.", (),
-                            tuple(f"signal:{s['signal']}" for s in detail.get("signals") or []) or (f"price:{as_of}",),
+                            tuple(f"signal:{s['signal']}" for s in detail.get("signals") or []) or (f"company:{ticker}",),
                             ticker, "Calm", f"/company/{ticker}"))
 
     market = next((s for s in detail.get("signals") or [] if s["signal"] == "market_rate_jump"), None)
@@ -110,11 +110,14 @@ def company_briefing(detail: dict) -> Briefing:
               *ex.not_firing_expert(detail), *ex.facts_expert(detail),
               *(ex.filings_expert(detail, as_of) if as_of else []), *ex.insider_expert(detail)]
     ran, proven = tests_run([detail])
-    closing = Line(f"{ticker}:closing", "calm" if not proven else "note",
-                   f"Stone ran {ran} test{'' if ran == 1 else 's'} on {name}, and " + (
-                       f"{proven} of what is happening now has mattered before." if proven
-                       else "nothing happening now has mattered before."),
-                   (ran, proven), tuple(f"signal:{s['signal']}" for s in detail.get("signals") or []) or (f"price:{as_of}",),
+    cites = tuple(f"signal:{s['signal']}" for s in detail.get("signals") or []) or (f"company:{ticker}",)
+    if not ran:
+        said = f"Stone hasn't tested any signals for {name} yet, so it can't say whether news matters here."
+    else:
+        said = f"Stone ran {ran} test{'' if ran == 1 else 's'} on {name}, and " + (
+            f"{proven} of what is happening now has mattered before." if proven
+            else "nothing happening now has mattered before.")
+    closing = Line(f"{ticker}:closing", "note" if proven or not ran else "calm", said, (ran, proven), cites,
                    ticker, "That's all", f"/company/{ticker}")
     return assemble("company", ticker, as_of, opening, points, closing, COMPANY_LINES, (name, ex.cap(name)))
 
@@ -171,11 +174,13 @@ def portfolio_briefing(board: dict, companies: dict[str, dict], market: dict | N
         points += ex.filings_expert(co, as_of) if as_of else []
 
     ran, proven = tests_run(held)
-    closing = Line("portfolio:closing", "calm",
-                   f"That's everything: Stone ran {ran} test{'' if ran == 1 else 's'} on your holdings, and " + (
-                       f"only {proven} of the signals happening now {'has' if proven == 1 else 'have'} mattered before."
-                       if proven else "nothing happening now has mattered before."),
-                   (ran, proven), ("portfolio:states",), None, "That's all", "/")
+    if not ran:
+        said = "That's everything: Stone hasn't tested any signals for these holdings yet."
+    else:
+        said = f"That's everything: Stone ran {ran} test{'' if ran == 1 else 's'} on your holdings, and " + (
+            f"only {proven} of the signals happening now {'has' if proven == 1 else 'have'} mattered before."
+            if proven else "nothing happening now has mattered before.")
+    closing = Line("portfolio:closing", "calm", said, (ran, proven), ("portfolio:states",), None, "That's all", "/")
     spoken_names = tuple(n for name in names.values() for n in (name, ex.cap(name)))
     return assemble("portfolio", subject, as_of, opening, points, closing, PORTFOLIO_LINES, spoken_names)
 
