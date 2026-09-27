@@ -76,6 +76,14 @@ export function liteMarket(m: MarketResult): string {
   return `The market fell ${horizonWords(m.horizon)} after ${m.hits} of ${m.n} rate jumps.`;
 }
 
+/** A fund's one line: its own signal if one is firing, else how many of its holdings have a Heads up. */
+export function fundLine(f: { symbol: string; fund_firing: SignalResult[]; heads_up: unknown[]; holdings: unknown[] }): string {
+  if (f.fund_firing.length) return liteSummary(f.fund_firing, f.symbol);
+  const n = f.heads_up.length;
+  if (n) return `${n} of its holdings ${n > 1 ? "have" : "has"} a Heads up.`;
+  return f.holdings.length ? "A fund: many stocks in one." : "What's inside isn't loaded yet.";
+}
+
 /** Signal keys in plain words, for places that get only the key (e.g. fund holdings). */
 export const SIGNAL_WORDS: Record<string, string> = {
   insider_cluster: "Insider selling",

@@ -10,7 +10,7 @@ import { api, type Scan } from "@/lib/api";
 import { ApiProblem, isNotFound, Loading, NotFollowed } from "@/components/Problem";
 import { loadFund, type FundView } from "@/lib/fund";
 import { money, pct, shortDate } from "@/lib/format";
-import { FORM_WORDS, liteSummary, SIGNAL_WORDS } from "@/lib/words";
+import { FORM_WORDS, fundLine, SIGNAL_WORDS } from "@/lib/words";
 
 const SOURCES: Record<string, string> = { ssga: "State Street (SSGA)", sample: "sample data" };
 /** "this week (Sep 19–25)" or "on Sep 25, 2026" when only one day is covered. */
@@ -93,7 +93,7 @@ export default function FundScreen() {
 
       <div className="box">
         <h3>What&apos;s going on</h3>
-        <p className="say-big">{f.fund_firing.length ? liteSummary(f.fund_firing, f.symbol) : "Nothing important today."}</p>
+        <p className="say-big">{fundLine(f)}</p>
         <MarketCard onlyFor={borrowed ?? f.symbol} />
       </div>
 

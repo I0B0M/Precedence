@@ -8,7 +8,7 @@ import { api, type FundPage } from "@/lib/api";
 import { money, pct, shortDate } from "@/lib/format";
 import { readHoldings } from "@/lib/holdings";
 import { useOtherAssets } from "@/lib/other-assets";
-import { liteSummary } from "@/lib/words";
+import { fundLine } from "@/lib/words";
 
 // The S&P 500 funds and QQQ that Precedence has fund pages for, shown after the funds you hold.
 const SHOWN = ["SPY", "VOO", "IVV", "QQQ"];
@@ -110,7 +110,7 @@ function FundRow({ f }: { f: FundPage }) {
       <span>
         <b>{f.symbol}</b> <span className="mute">{f.name}</span>
         <span className="note" style={{ display: "block" }}>
-          {f.fund_firing.length ? liteSummary(f.fund_firing, f.symbol) : f.holdings.length ? "A fund: many stocks in one." : "What's inside isn't loaded yet."}
+          {fundLine(f)}
         </span>
         <span className="note pro-only pro-add" style={{ display: "block" }}>
           {f.holdings_as_of
