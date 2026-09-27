@@ -104,7 +104,7 @@ PY
 }
 L=stone/briefing/lines.py; X=stone/briefing/experts.py; P=stone/briefing/panel.py
 mutb $L "check never looks at numbers"       'if not grounded(t, line.evidence)]'         'if False]'
-mutb $L "rounding ignores the places shown"  'if f"{c / scale:.{places}f}" == target:'    'if round(c / scale) == round(float(digits)):'
+mutb $L "rounding ignores the places shown"  'if half_up(c / scale, places) == target:'   'if round(c / scale) == round(float(digits)):'
 mutb $L "percent of a fraction not allowed"  'for c in (abs(e), abs(e) * 100):'           'for c in (abs(e),):'
 mutb $L "millions/billions not scaled"       'scale = _SCALE.get(m.group(3) or "", 1.0)'  'scale = 1.0'
 mutb $L "no word limit"                      'if words > MAX_WORDS:'                      'if False:'

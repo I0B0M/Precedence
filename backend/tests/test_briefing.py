@@ -237,3 +237,17 @@ def test_an_untested_fund_or_a_company_without_prices_says_so():
     b = company_briefing(fund)
     assert texts(b) == ["Precedence hasn't tested any signals for Invesco QQQ Trust yet, so it can't say whether news matters here."]
     assert not b.held_back and b.as_of == ""
+
+
+def test_dollars_round_half_up_like_the_pages():
+    from stone.briefing.lines import money
+    assert money(4746.5) == "$4,747"  # BX 1,184.30 + AMZN 1,248.15 + SPY 2,314.05: the pages show $4,747
+    assert money(1184.30 + 1248.15 + 2314.05) == "$4,747"
+    assert money(1184.49) == "$1,184" and money(2.5) == "$2.50" and money(0.125) == "$0.13"
+
+
+def test_the_check_rounds_the_same_way_the_line_prints():
+    from stone.briefing.lines import grounded, pct
+    # a greeting that says $4,747 for 4746.50 must pass its own check, or the whole line is held back
+    assert grounded("$4,747", (4746.5,)) and not grounded("$4,746", (4746.5,))
+    assert pct(0.28125, 2) == "28.13%" and grounded("28.13%", (0.28125,))

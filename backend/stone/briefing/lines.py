@@ -8,6 +8,7 @@ aren't in its evidence, so a wrong field or a slipped rounding can never be spok
 import re
 from dataclasses import dataclass, replace
 from datetime import date
+from decimal import ROUND_HALF_UP, Decimal
 
 MAX_WORDS = 28  # one breath: the narration tab speaks each line as one caption
 MAX_PRO_WORDS = 40  # Pro's caption shows the working, so it may run longer; it is read, not spoken
@@ -59,18 +60,24 @@ def day_words(iso: str, as_of: str | None = None, weekday: bool = False) -> str:
     return f"{WEEKDAYS[d.weekday()]}, {out}" if weekday else out
 
 
+def half_up(x: float, places: int) -> Decimal:
+    """Round half up, the way the pages do: $4,746.50 is $4,747. Python's round() and format() go to the even
+    number instead ($4,746). Starts from the float's shortest decimal form, so 4746.5 is exactly .50."""
+    return Decimal(repr(x)).quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
+
+
 def money(x: float) -> str:
     """Dollars without a sign (the sentence says gained or lost): $1,263, $5.0 billion."""
     a = abs(x)
     for scale, word in ((1e12, "trillion"), (1e9, "billion"), (1e6, "million")):
         if a >= scale:
-            return f"${a / scale:.1f} {word}"
-    return f"${a:,.2f}" if a < 1000 and a != int(a) else f"${a:,.0f}"
+            return f"${half_up(a / scale, 1)} {word}"
+    return f"${half_up(a, 2):,}" if a < 1000 and a != int(a) else f"${half_up(a, 0):,}"
 
 
 def pct(x: float, places: int = 0) -> str:
     """A fraction as a percent without a sign: 0.256 -> "26%"."""
-    return f"{abs(x) * 100:.{places}f}%"
+    return f"{half_up(abs(x) * 100, places)}%"
 
 
 def up_down(x: float) -> str:
@@ -117,10 +124,10 @@ def grounded(token: str, evidence: tuple[float, ...]) -> bool:
     digits = m.group(2).replace(",", "")
     places = len(digits.partition(".")[2])
     scale = _SCALE.get(m.group(3) or "", 1.0)
-    target = f"{float(digits):.{places}f}"
+    target = Decimal(digits)
     for e in evidence:
         for c in (abs(e), abs(e) * 100):
-            if f"{c / scale:.{places}f}" == target:
+            if half_up(c / scale, places) == target:  # the same rounding money() and pct() print with
                 return True
     return False
 
