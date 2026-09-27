@@ -87,13 +87,15 @@ export default function PracticeScreen() {
   function place() {
     if (!draft || !s) return;
     placeTrade(s, draft);
+    // Sold the whole position: it leaves the sell list, so the ticket must not keep its symbol and price.
+    if (draft.side === "sell" && draft.shares >= (s.positions[draft.symbol] ?? 0)) setSymbol("");
     setDone(`${draft.side === "buy" ? "Bought" : "Sold"} ${draft.shares} ${draft.symbol} (practice).`);
     setDraft(null);
   }
 
   return (
     <section className="stack" style={{ gap: 24 }}>
-      <div className="practice-banner" role="note">Pretend money. No real orders.</div>
+      <div className="practice-banner" role="note">Practice money. Not real. No order is ever sent.</div>
       <h1>Trade with {money(PRACTICE_CASH)} of pretend money</h1>
 
       <div className="pf-head" style={{ margin: 0 }}>
@@ -112,7 +114,7 @@ export default function PracticeScreen() {
             <>
               <div className="seg-choice" role="group" aria-label="Buy or sell">
                 {(["buy", "sell"] as const).map((x) => (
-                  <button key={x} type="button" aria-pressed={side === x} onClick={() => { setSide(x); setDone(null); }}>{x === "buy" ? "Buy" : "Sell"}</button>
+                  <button key={x} type="button" aria-pressed={side === x} onClick={() => { setSide(x); setDone(null); if (x === "sell" && !(symbol in s.positions)) setSymbol(""); }}>{x === "buy" ? "Buy" : "Sell"}</button>
                 ))}
               </div>
               <div className="t-row">
@@ -126,8 +128,8 @@ export default function PracticeScreen() {
               </div>
               <div className="t-row">
                 <label htmlFor="p-qty">Whole shares</label>
-                <input id="p-qty" className="field" inputMode="numeric" value={qty}
-                  onChange={(e) => { setQty(e.target.value.replace(/[^0-9]/g, "")); setDone(null); }} />
+                <input id="p-qty" className="field" inputMode="decimal" value={qty}
+                  onChange={(e) => { setQty(e.target.value.replace(/[^0-9.]/g, "")); setDone(null); }} />
               </div>
               <dl className="t-sum">
                 <dt>Price</dt>
