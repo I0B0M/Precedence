@@ -3,7 +3,7 @@
 [build]
   base = "frontend"
   command = "npm run build"
-  publish = ".next"
+  publish = "frontend/.next"
 
 [build.environment]
   NEXT_PUBLIC_STONE_SAVED = "1"
@@ -16,3 +16,12 @@
 # scoped to the `live` branch, not here: a value in this file would override the site setting.
 [context.live.environment]
   NEXT_PUBLIC_STONE_SAVED = "0"
+
+# The site isn't linked to GitHub: it's deployed by hand with the Netlify CLI. Without this plugin the upload is a
+# bare .next folder with no server function, and every page is a 404. Deploy from a checkout outside this repo's
+# folder (not a .claude/worktrees one): inside it the CLI takes the main checkout for the base and builds that.
+#   cd frontend && npm ci && npm install --no-save @netlify/plugin-nextjs@5.16.0 && cd ..
+#   netlify deploy --build --site 4f835886-efdf-45b3-b93d-fac0ce0c9c4b        # draft: check its URL first
+#   netlify api restoreSiteDeploy --data '{"site_id":"4f835886-efdf-45b3-b93d-fac0ce0c9c4b","deploy_id":"<draft id>"}'
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
