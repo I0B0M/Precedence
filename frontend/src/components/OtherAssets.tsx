@@ -11,6 +11,7 @@ import { CRYPTO_CLOSES, CRYPTO_NAMES, CRYPTO_SOURCE, cryptoValue } from "@/lib/c
 import { navMoney, PRIVATE_FUNDS, PRIVATE_LITE, PRIVATE_WITHDRAW, type PrivateFundKey, type PrivateFundRow } from "@/lib/private-funds";
 import { approxMoney, money, pct } from "@/lib/format";
 import { addCrypto, addPrivateFund, addProperty, addRetirement, portfolioExtras, removeOther, useOtherAssets, type Property, type RetirementFund } from "@/lib/other-assets";
+import { isExample401k, isExampleBreit, isExampleCoin, isExampleHome } from "@/lib/example-extras";
 
 const num = (s: string) => {
   const v = Number(s.replace(/[$,\s]/g, ""));
@@ -215,7 +216,7 @@ function HomeMap({ lat, lon, place }: { lat: number; lon: number; place: string 
 
 /** One home: "Your home · address", about how much it's worth, what was paid and how local prices moved, and where
  *  it is on a map (address lookups only). Pro adds the method, the FHFA index values and the sources. */
-function HomeRow({ p }: { p: Property }) {
+function HomeRow({ p, fixed }: { p: Property; fixed: boolean }) {
   const e = p.estimate;
   const place = e?.address_matched ?? p.address;
   const area = e?.index_level === "zip5" ? "your ZIP" : e?.index_level === "county" ? "your county" : e?.index_level === "state" ? (e.us_state ?? "your state") : null;
@@ -240,7 +241,7 @@ function HomeRow({ p }: { p: Property }) {
               </p>
             </>
           ) : <p>No estimate yet.</p>}
-          <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`} style={{ alignSelf: "flex-start" }}>Remove</button>
+          {!fixed && <button className="linkb" type="button" onClick={() => removeOther(p.id)} aria-label={`Remove home at ${place}`} style={{ alignSelf: "flex-start" }}>Remove</button>}
         </div>
         {e?.lat != null && e?.lon != null ? <HomeMap lat={e.lat} lon={e.lon} place={place} /> : (
           // eslint-disable-next-line @next/next/no-img-element
@@ -254,10 +255,12 @@ function HomeRow({ p }: { p: Property }) {
 /** Board: a home, 401(k) / IRA funds (and crypto, when shown). One line each in Lite; the working in Pro.
  *  `rows`: the board's own retirement rows, so the page doesn't ask the portfolio endpoint twice.
  *  `show`: one kind only, so the board can put each under its own header (funds: 401(k)/IRA and private funds;
- *  home; rest: crypto and wallets); `title`: that header, or null for none (the page already shows one). */
+ *  home; rest: crypto and wallets); `title`: that header, or null for none (the page already shows one).
+ *  `example`: the example is showing, so its own home, 401(k), BREIT and coins have no Remove (they'd come right back;
+ *  "Clear it and add your own" is the way out). Anything you added beside them keeps its Remove. */
 type Kind = "private" | "crypto" | "home" | "retirement" | "wallets";
-export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yours" }: {
-  rows?: RetirementRow[]; privateRows?: PrivateFundRow[]; show?: Kind; title?: string | null;
+export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yours", example = false }: {
+  rows?: RetirementRow[]; privateRows?: PrivateFundRow[]; show?: Kind; title?: string | null; example?: boolean;
 } = {}) {
   const all = useOtherAssets();
   const keep = (k: Kind) => !show || show === k;
@@ -285,7 +288,7 @@ export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yo
     <div className="stack" style={{ gap: 10, marginTop: title ? 24 : 0 }}>
       {title && <span className="ticker">{title}</span>}
       <div className="rows">
-        {v.properties.map((p) => <HomeRow key={p.id} p={p} />)}
+        {v.properties.map((p) => <HomeRow key={p.id} p={p} fixed={example && isExampleHome(p)} />)}
         {v.retirement.map((r) => {
           const b = backend.find((x) => x.fund === (r.lookup?.ticker ?? r.name));
           const match = b?.match ?? r.lookup?.match ?? null;
@@ -309,7 +312,7 @@ export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yo
                       ]} />
                   )}
                 </span>
-                <button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`} style={{ alignSelf: "flex-start" }}>Remove</button>
+                {!(example && isExample401k(r)) && <button className="linkb" type="button" onClick={() => removeOther(r.id)} aria-label={`Remove ${r.name}`} style={{ alignSelf: "flex-start" }}>Remove</button>}
                 </span>
                 <span className="sp" aria-hidden />
                 <span className="val">{money(r.amount)}<small className="mute">you entered</small></span>
@@ -336,7 +339,7 @@ export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yo
                       </span>
                     )}
                   </span>
-                  <button className="linkb" type="button" onClick={() => removeOther(pf.id)} aria-label={`Remove ${pf.fund}`} style={{ alignSelf: "flex-start" }}>Remove</button>
+                  {!(example && isExampleBreit(pf)) && <button className="linkb" type="button" onClick={() => removeOther(pf.id)} aria-label={`Remove ${pf.fund}`} style={{ alignSelf: "flex-start" }}>Remove</button>}
                 </span>
                 <span className="sp" aria-hidden />
                 <span className="val">{money(pf.amount)}<small className="mute">priced monthly</small></span>
@@ -352,7 +355,7 @@ export function OtherAssetsRows({ rows, privateRows = [], show, title = "Also yo
                 <span className="tk">{c.symbol}</span><span className="nm">{CRYPTO_NAMES[c.symbol] ?? "Crypto"}</span>
                 <span className="say">{c.amount.toLocaleString("en-US", { maximumFractionDigits: 8 })} {c.symbol}
                   {CRYPTO_CLOSES[c.symbol] != null ? ` at ${money(CRYPTO_CLOSES[c.symbol])}` : ""}</span>
-                <button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`} style={{ alignSelf: "flex-start" }}>Remove</button>
+                {!(example && isExampleCoin(c)) && <button className="linkb" type="button" onClick={() => removeOther(c.id)} aria-label={`Remove ${c.symbol}`} style={{ alignSelf: "flex-start" }}>Remove</button>}
               </span>
               <span className="sp" aria-hidden />
               {cryptoValue(c) != null

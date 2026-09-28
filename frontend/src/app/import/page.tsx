@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { OtherAssetsForms } from "@/components/OtherAssets";
-import { SHOW_CRYPTO, SHOW_PRIVATE_FUNDS } from "@/lib/flags";
+import { SHOW_CRYPTO } from "@/lib/flags";
 import { api, ApiError, EXAMPLE_PORTFOLIO, SAMPLE_SCREENSHOT, SAVED, type ReadRow, type Reconciled, type Status } from "@/lib/api";
 import { andList, money, shortDate } from "@/lib/format";
 import { saveHoldings } from "@/lib/holdings";
@@ -12,41 +12,8 @@ import { screenshotChoice, shotError } from "@/lib/importing";
 import { NotRobinhoodCsv, readRobinhoodCsv, type RobinhoodRead } from "@/lib/robinhood";
 import { walletLine, walletProblem } from "@/lib/wallets";
 import { PRACTICE_CASH } from "@/lib/practice";
-import { EXAMPLE_FXAIX, EXAMPLE_HOME_ESTIMATE } from "@/lib/example-extras";
-import { EXAMPLE_CRYPTO } from "@/lib/crypto";
-import { addCrypto, addPrivateFund, addProperty, addRetirement, addWallet, removeOther, useOtherAssets, type OtherAssets } from "@/lib/other-assets";
-
-// The example's other assets, beside its stock rows: a 401(k) mapped to the S&P 500, a home (real FHFA estimate,
-// same ZIP as the form's own placeholder), a Blackstone fund. Live mode only — the saved-data demo is a static
-// snapshot keyed on stock holdings alone, so it can't grow these until it's rebuilt with them baked in.
-// A localStorage flag, not just `current`'s length, guards this: effects can fire twice back to back (React
-// Strict Mode in dev, or a fast double-click) before either call's state update lands, and `current` is a
-// snapshot from render time, so two overlapping calls would both still see it empty and both would seed.
-// v2: the crypto joined the example, so a browser seeded before gets the parts it's missing, once.
-const SEEDED_KEY = "stone.example-seeded.v2";
-async function seedExampleExtras(current: OtherAssets) {
-  try {
-    if (localStorage.getItem(SEEDED_KEY)) return;
-    localStorage.setItem(SEEDED_KEY, "1");
-  } catch {
-    return; // no localStorage: don't risk seeding twice with nothing to guard it
-  }
-  if (!current.crypto.length) addCrypto(EXAMPLE_CRYPTO); // priced from fixed closes, no API: on the saved site too
-  if (current.retirement.length || current.properties.length || current.privateFunds.length) return;
-  if (SAVED) {
-    // No server here: the same three assets, with the live API's own answers for them saved in lib/example-extras.ts.
-    addRetirement([{ account: "401(k)", name: "FXAIX", amount: 15000, lookup: EXAMPLE_FXAIX }]);
-    if (SHOW_PRIVATE_FUNDS) addPrivateFund("BREIT", 10000);
-    addProperty({ address: "33133", paid: 450000, bought: "2018", estimate: EXAMPLE_HOME_ESTIMATE });
-    return;
-  }
-  addRetirement([{ account: "401(k)", name: "FXAIX", amount: 15000, lookup: null }]);
-  if (SHOW_PRIVATE_FUNDS) addPrivateFund("BREIT", 10000);
-  try {
-    const estimate = await api.estimateHome({ zip: "33133", paid: 450000, bought_year: 2018 });
-    addProperty({ address: "33133", paid: 450000, bought: "2018", estimate });
-  } catch {}
-}
+import { ensureExampleExtras } from "@/lib/example-extras";
+import { addWallet, removeOther, useOtherAssets } from "@/lib/other-assets";
 
 /** Fill what a person typing would leave out: price from the latest close, value from shares x price. */
 async function fillTyped(rows: EditRow[]): Promise<{ rows: EditRow[]; priced: { symbol: string; day: string | null }[]; unpriced: string[] }> {
@@ -141,7 +108,7 @@ export default function ImportScreen() {
   const fillAndShow = () => loadExample().then((ex) => {
     setRh(null);
     applyExample(ex);
-    seedExampleExtras(other);
+    ensureExampleExtras();
     showRows();
   });
 
@@ -151,7 +118,7 @@ export default function ImportScreen() {
     if (q.get("example") === "1") {
       loadExample().then(async (ex) => {
         applyExample(ex);
-        await seedExampleExtras(other);
+        await ensureExampleExtras();
         // The landing's "Open your portfolio" for a first visit: the whole example, saved, then straight to the board.
         if (ex && q.get("open") === "portfolio") {
           saveHoldings(ex.rows.map((r) => ({ symbol: r.symbol, shares: Number(r.shares) })));

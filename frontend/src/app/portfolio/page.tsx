@@ -16,6 +16,7 @@ import { StartFlow } from "@/components/Today";
 import { api, EXAMPLE_PORTFOLIO, SAVED, type CompanyDetail, type ExposureRow, type FundInfo, type PortfolioOut, type Status } from "@/lib/api";
 import { approxMoney, money, pct, shortDate } from "@/lib/format";
 import { NO_HOLDINGS, SAMPLE_PORTFOLIO, useHoldings } from "@/lib/holdings";
+import { ensureExampleExtras, exampleGaps } from "@/lib/example-extras";
 import { portfolioExtras, removeOther, useOtherAssets } from "@/lib/other-assets";
 import { liteSummary, proSummary } from "@/lib/words";
 
@@ -77,15 +78,25 @@ export default function HoldingsBoard() {
   // "Clear it and add your own", /portfolio?start=1 shows the ways to bring your own in.
   const router = useRouter();
   // Read once; it only matters once holdings have loaded (client-only), so server and first render still agree.
-  const [showStart] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("start") === "1");
+  const [showStart, setShowStart] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("start") === "1");
   useEffect(() => {
     if (holdings && !holdings.length && !showStart) router.replace("/import?example=1&open=portfolio");
   }, [holdings, showStart, router]);
   const isExample = !!holdings?.length && holdings.length === EXAMPLE_PORTFOLIO.length
     && EXAMPLE_PORTFOLIO.every((e) => holdings.some((h) => h.symbol === e.symbol && h.shares === e.shares));
+  // The example always has its home, 401(k), crypto and BREIT: any that are missing (a browser that cleared the
+  // example once, or seeded before one joined) are put back while the example is what's showing.
+  const gaps = isExample ? exampleGaps(other) : null;
+  const missing = !!gaps && (gaps.home || gaps.retirement || gaps.breit || gaps.crypto.length > 0);
+  useEffect(() => {
+    if (missing) ensureExampleExtras();
+  }, [missing]);
   const clearExample = () => {
+    // Start screen on in the same render the holdings empty: read only from the URL at load, it was still off, so
+    // the empty holdings sent the page straight back to /import?example=1 and the example reloaded.
+    setShowStart(true);
+    setHoldings([]); // before the parts go, so the example stops showing and nothing puts them back
     [...other.properties, ...other.retirement, ...other.crypto, ...other.privateFunds, ...other.wallets].forEach((x) => removeOther(x.id));
-    setHoldings([]);
     router.push("/portfolio?start=1");
   };
 
@@ -172,25 +183,25 @@ export default function HoldingsBoard() {
       {(fundsSum > 0 || privateRows.length > 0 || localPrivate > 0) && (
         <Section label="Funds" sum={money(fundsSum + privateSum)}>
           <div className="rows">{board.rows.filter((r) => r.kind === "etf").map(ownRow)}</div>
-          <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="private" title={null} />
+          <OtherAssetsRows rows={board.retirement ?? []} privateRows={privateRows} show="private" title={null} example={isExample} />
         </Section>
       )}
       {other.crypto.length > 0 && (
         <Section label="Crypto" sum={money(cryptoSum)}>
-          <OtherAssetsRows show="crypto" title={null} />
+          <OtherAssetsRows show="crypto" title={null} example={isExample} />
         </Section>
       )}
       {other.properties.length > 0 && (
         <Section label="Real estate" sum={(board.subtotals?.home_estimate ?? 0) + localHome ? approxMoney((board.subtotals?.home_estimate ?? 0) + localHome) : "—"}>
-          <OtherAssetsRows show="home" title={null} />
+          <OtherAssetsRows show="home" title={null} example={isExample} />
         </Section>
       )}
       {other.retirement.length > 0 && (
         <Section label="401(k)" sum={money((board.subtotals?.retirement ?? 0) + localRetirement)}>
-          <OtherAssetsRows rows={board.retirement ?? []} show="retirement" title={null} />
+          <OtherAssetsRows rows={board.retirement ?? []} show="retirement" title={null} example={isExample} />
         </Section>
       )}
-      <OtherAssetsRows show="wallets" />
+      <OtherAssetsRows show="wallets" example={isExample} />
 
       {/* Pro: every dollar looked through, stocks inside your funds included, below the five sections. */}
       <div className="stack pro-only" style={{ gap: 10, marginTop: 22 }}>

@@ -124,6 +124,9 @@ export function removeOther(id: string) {
   });
 }
 
+/** What's saved right now, not a render's snapshot: a write is visible to the very next call. */
+export const currentOtherAssets = () => read();
+
 export function useOtherAssets() {
   return useSyncExternalStore(subscribe, read, () => EMPTY);
 }
